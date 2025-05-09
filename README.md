@@ -25,3 +25,6 @@ Continuous Integration is set up to ensure changes do not break the native expo 
 11. Switch back to the main branch on your local machine with `git checkout main`.
 12. Run `git pull` to pull the changes from the remote branch. Do this frequently to stay up to date with everyone's changes.
 13. Repeat the process for each new feature.
+
+### NOTE: If your change is small, you may merge your pull request without waiting for the action to finish.
+Please shut down the action by clicking on the small yellow dot in line with your commit message. This conserves resources in our free plan.
