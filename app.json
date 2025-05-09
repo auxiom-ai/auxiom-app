@@ -2,6 +2,12 @@
   "expo": {
     "name": "auxiom-app",
     "slug": "auxiom-app",
+    "runtimeVersion": {
+      "policy": "sdkVersion"
+    },
+    "updates": {
+      "url": "https://u.expo.dev/0a5a4d91-f01b-4289-a03c-fe58fcf6e856"
+    },
     "version": "1.0.0",
     "orientation": "portrait",
     "icon": "./assets/images/icon.png",
@@ -37,6 +43,13 @@
     ],
     "experiments": {
       "typedRoutes": true
-    }
+    },
+    "extra": {
+      "router": {},
+      "eas": {
+        "projectId": "0a5a4d91-f01b-4289-a03c-fe58fcf6e856"
+      }
+    },
+    "owner": "rahilv99"
   }
 }
