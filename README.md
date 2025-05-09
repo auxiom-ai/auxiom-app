@@ -1,50 +1,27 @@
-# Welcome to your Expo app 👋
-
-This is an [Expo](https://expo.dev) project created with [`create-expo-app`](https://www.npmjs.com/package/create-expo-app).
+# Auxiom React Native App Built with Expo
 
 ## Get started
-
 1. Install dependencies
-
    ```bash
    npm install
    ```
-
 2. Start the app
-
    ```bash
    npx expo start
    ```
+## Repository Practices
+Continuous Integration is set up to ensure changes do not break the native expo builds. Please make all changes via pull requests.
 
-In the output, you'll find options to open the app in a
-
-- [development build](https://docs.expo.dev/develop/development-builds/introduction/)
-- [Android emulator](https://docs.expo.dev/workflow/android-studio-emulator/)
-- [iOS simulator](https://docs.expo.dev/workflow/ios-simulator/)
-- [Expo Go](https://expo.dev/go), a limited sandbox for trying out app development with Expo
-
-You can start developing by editing the files inside the **app** directory. This project uses [file-based routing](https://docs.expo.dev/router/introduction).
-
-## Get a fresh project
-
-When you're ready, run:
-
-```bash
-npm run reset-project
-```
-
-This command will move the starter code to the **app-example** directory and create a blank **app** directory where you can start developing.
-
-## Learn more
-
-To learn more about developing your project with Expo, look at the following resources:
-
-- [Expo documentation](https://docs.expo.dev/): Learn fundamentals, or go into advanced topics with our [guides](https://docs.expo.dev/guides).
-- [Learn Expo tutorial](https://docs.expo.dev/tutorial/introduction/): Follow a step-by-step tutorial where you'll create a project that runs on Android, iOS, and the web.
-
-## Join the community
-
-Join our community of developers creating universal apps.
-
-- [Expo on GitHub](https://github.com/expo/expo): View our open source platform and contribute.
-- [Discord community](https://chat.expo.dev): Chat with Expo users and ask questions.
+1. Ensure the repo is cloned locally
+2. Open a git bash terminal and navigate to the parent `/` directory (titled auxiom-app).
+3. Type `git branch [branch name]`. You have created a new local branch. Name your branch after the feature you're creating.
+4. Type `git checkout [branch name]`. You should now be on that branch.
+5. Make your changes
+6. Type `git push --set-upstream origin [branch name]`. You have now created a branch on the origin (remote) with the same name as your local branch.
+7. Type `git add [file name]` to stage the changes from your specifed file. Type `git add .` to stage all changes.
+8. Type `git commit -m [message]` with an informative message.
+9. Type `git push` to push your changes to the remote instance of your branch.
+10. The change has now created a pull request. Wait for the github actions to finish. If they pass, merge your branch into main.
+11. Switch back to the main branch on your local machine with `git checkout main`.
+12. Run `git pull` to pull the changes from the remote branch. Do this frequently to stay up to date with everyone's changes.
+13. Repeat the process for each new feature.
