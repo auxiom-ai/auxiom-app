@@ -1,6 +1,11 @@
 name: Expo Test
 
 on: [pull_request]
+
+permissions:
+  pull-requests: write
+  contents: read
+
 jobs:
   preview:
     runs-on: ubuntu-latest
