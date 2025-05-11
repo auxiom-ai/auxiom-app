@@ -4,6 +4,7 @@ import { DarkTheme, DefaultTheme, ThemeProvider } from '@react-navigation/native
 import { useFonts } from 'expo-font';
 import { Redirect, Stack } from 'expo-router';
 import { StatusBar } from 'expo-status-bar';
+import { Platform } from 'react-native';
 import 'react-native-reanimated';
 
 import { AuthProvider, useAuth } from '@/contexts/AuthContext';
@@ -33,9 +34,17 @@ function RootLayoutNav() {
 }
 
 export default function RootLayout() {
-  const [loaded] = useFonts({
-    SpaceMono: require('../assets/fonts/SpaceMono-Regular.ttf'),
+  const [loaded, error] = useFonts({
+    SpaceMono: Platform.select({
+      ios: require('@/assets/fonts/SpaceMono-Regular.ttf'),
+      android: require('@/assets/fonts/SpaceMono-Regular.ttf'),
+      default: require('@/assets/fonts/SpaceMono-Regular.ttf'),
+    }),
   });
+
+  if (error) {
+    console.error('Error loading fonts:', error);
+  }
 
   if (!loaded) {
     // Async font loading only occurs in development.

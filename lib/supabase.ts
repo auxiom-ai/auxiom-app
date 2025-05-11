@@ -3,20 +3,45 @@ import { createClient } from '@supabase/supabase-js';
 import 'react-native-url-polyfill/auto';
 
 // Initialize the Supabase client
-// Replace these with your Supabase project URL and anon key
 const supabaseUrl = process.env.EXPO_PUBLIC_SUPABASE_URL || '';
 const supabaseAnonKey = process.env.EXPO_PUBLIC_SUPABASE_ANON_KEY || '';
 
+// Create a custom storage implementation
+const customStorage = {
+  getItem: async (key: string) => {
+    try {
+      return await AsyncStorage.getItem(key);
+    } catch (error) {
+      return null;
+    }
+  },
+  setItem: async (key: string, value: string) => {
+    try {
+      await AsyncStorage.setItem(key, value);
+    } catch (error) {
+      // Handle error
+    }
+  },
+  removeItem: async (key: string) => {
+    try {
+      await AsyncStorage.removeItem(key);
+    } catch (error) {
+      // Handle error
+    }
+  },
+};
+
 export const supabase = createClient(supabaseUrl, supabaseAnonKey, {
   auth: {
-    storage: AsyncStorage,
+    storage: customStorage,
     autoRefreshToken: true,
     persistSession: true,
     detectSessionInUrl: false,
   },
+  // Minimize realtime features
   realtime: {
     params: {
-      eventsPerSecond: 10,
+      eventsPerSecond: 0,
     },
   },
   global: {
