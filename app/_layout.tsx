@@ -26,15 +26,6 @@ export default function RootLayout() {
           {/* Main tab navigation */}
           <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
           
-          {/* Onboarding screens - separate from tab navigation */}
-          <Stack.Screen 
-            name="onboarding" 
-            options={{ 
-              headerShown: false,
-              // This ensures onboarding screens present modally
-              presentation: 'modal'
-            }} 
-          />
           
           {/* Error screen */}
           <Stack.Screen name="+not-found" />

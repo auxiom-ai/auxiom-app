@@ -1,3 +1,4 @@
+import { Alert } from 'react-native';
 import { useNavigation } from '@react-navigation/native';
 import Fuse from 'fuse.js';
 import React, { useLayoutEffect, useMemo, useRef, useState } from 'react';
@@ -140,7 +141,10 @@ navigation.setOptions({
 
   const handleSubmit = () => {
     console.log('Submitting interests:', keywords);
-    alert(`Submitted interests: ${keywords.join(', ')}`);
+    Alert.alert(
+      "Interests Updated", // Custom title
+      `Submitted interests: ${keywords.join(', ')}` // Message
+    );
   };
 
   return (
@@ -193,7 +197,7 @@ navigation.setOptions({
                       color="#555"
                     />
                   }
-                  onSubmitEditing={() => addInterest(inputValue)}
+                //   onSubmitEditing={() => addInterest(inputValue)}
                 />
               </View>
               

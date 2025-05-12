@@ -55,7 +55,6 @@ export default function IdentityScreen() {
               style={styles.logo}
               contentFit="contain"
             /> */}
-            <ThemedText type="title">Onboarding</ThemedText>
           </View>
 
           {/* Main Content */}
