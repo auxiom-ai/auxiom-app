@@ -1,6 +1,6 @@
 import Fuse from 'fuse.js';
 import React, { useMemo, useRef, useState } from 'react';
-import { FlatList, ScrollView, StyleSheet, TouchableOpacity, View } from 'react-native';
+import { FlatList, Platform, SafeAreaView, ScrollView, StatusBar, StyleSheet, TouchableOpacity, View } from 'react-native';
 import { Button, Chip, DefaultTheme, Provider as PaperProvider, Surface, Text, TextInput } from 'react-native-paper';
 
 // Sample interests data
@@ -83,145 +83,162 @@ export default function InterestsScreen() {
 
   return (
     <PaperProvider theme={theme}>
-      <ScrollView style={styles.container}>
-        <View style={styles.content}>
-          {/* Header Section */}
-          <View style={styles.header}>
-            <Text style={styles.title}>Tell us about your interests</Text>
-            <Text style={styles.subtitle}>
-              Enter 5-10 topics to stay informed about.
-            </Text>
-          </View>
-
-          {/* Interests Container */}
-          <Surface style={styles.surface}>
-            <Text style={styles.sectionTitle}>I want my podcasts to be about...</Text>
-            
-            {/* Selected Interests */}
-            <View style={styles.chipContainer}>
-              {keywords.map((interest) => (
-                <Chip 
-                  key={interest}
-                  onClose={() => removeInterest(interest)}
-                  style={styles.chip}
-                  textStyle={styles.chipText}
-                >
-                  {interest}
-                </Chip>
-              ))}
+      <SafeAreaView style={styles.safeArea}>
+        <StatusBar barStyle="dark-content" backgroundColor="#f5f5f5" />
+        <ScrollView style={styles.container}>
+          <View style={styles.content}>
+            {/* Header Section - Added extra top padding */}
+            <View style={styles.header}>
+              <Text style={styles.title}>Tell us about your interests</Text>
+              <Text style={styles.subtitle}>
+                Enter 5-10 topics to stay informed about.
+              </Text>
             </View>
-            
-            {/* Input Field */}
-            <TextInput
-              ref={inputRef}
-              value={inputValue}
-              onChangeText={handleTextChange}
-              placeholder={keywords.length === 0 ? "Add interest..." : "Add another interest..."}
-              style={styles.input}
-              mode="outlined"
-              outlineColor="#333"
-              activeOutlineColor="#555"
-              right={
-                <TextInput.Icon 
-                  icon="plus" 
-                  onPress={() => addInterest(inputValue)}
-                  color="#555"
-                />
-              }
-              onSubmitEditing={() => addInterest(inputValue)}
-            />
-            
-            {/* Suggestions Dropdown */}
-            {suggestions.length > 0 && (
-              <View style={styles.suggestionsContainer}>
-                <FlatList
-                  data={suggestions}
-                  keyExtractor={(item) => item}
-                  renderItem={({ item }) => (
-                    <TouchableOpacity
-                      style={styles.suggestionItem}
-                      onPress={() => addInterest(item)}
-                    >
-                      <Text>{item}</Text>
-                    </TouchableOpacity>
-                  )}
-                  style={styles.suggestionsList}
-                />
-              </View>
-            )}
-          </Surface>
-          
-          {/* Related Interests */}
-          <View style={styles.relatedSection}>
-            <Text style={styles.relatedTitle}>
-              {keywords.length > 0 ? "Related interests" : "Suggested interests"}
-            </Text>
-            
-            <ScrollView horizontal showsHorizontalScrollIndicator={false}>
-              <View style={styles.relatedChipsContainer}>
-                {dynamicSuggestions.map((interest) => (
-                  <Chip
+
+            {/* Interests Container */}
+            <Surface style={styles.surface}>
+              <Text style={styles.sectionTitle}>I want my podcasts to be about...</Text>
+              
+              {/* Selected Interests */}
+              <View style={styles.chipContainer}>
+                {keywords.map((interest) => (
+                  <Chip 
                     key={interest}
-                    onPress={() => addInterest(interest)}
-                    style={styles.relatedChip}
-                    icon="plus"
-                    mode="outlined"
+                    onClose={() => removeInterest(interest)}
+                    style={styles.chip}
+                    textStyle={styles.chipText}
                   >
                     {interest}
                   </Chip>
                 ))}
               </View>
-            </ScrollView>
+              
+              {/* Input Field */}
+              <View style={styles.inputContainer}>
+                <TextInput
+                  ref={inputRef}
+                  value={inputValue}
+                  onChangeText={handleTextChange}
+                  placeholder={keywords.length === 0 ? "Add interest..." : "Add another interest..."}
+                  style={styles.input}
+                  mode="outlined"
+                  outlineColor="#ddd"
+                  activeOutlineColor="#555"
+                  right={
+                    <TextInput.Icon 
+                      icon="plus" 
+                      onPress={() => addInterest(inputValue)}
+                      color="#555"
+                    />
+                  }
+                  onSubmitEditing={() => addInterest(inputValue)}
+                />
+              </View>
+              
+              {/* Suggestions Dropdown */}
+              {suggestions.length > 0 && (
+                <View style={styles.suggestionsContainer}>
+                  <FlatList
+                    data={suggestions}
+                    keyExtractor={(item) => item}
+                    renderItem={({ item }) => (
+                      <TouchableOpacity
+                        style={styles.suggestionItem}
+                        onPress={() => addInterest(item)}
+                      >
+                        <Text>{item}</Text>
+                      </TouchableOpacity>
+                    )}
+                    style={styles.suggestionsList}
+                  />
+                </View>
+              )}
+            </Surface>
+            
+            {/* Related Interests */}
+            <View style={styles.relatedSection}>
+              <Text style={styles.relatedTitle}>
+                {keywords.length > 0 ? "Related interests" : "Suggested interests"}
+              </Text>
+              
+              <ScrollView horizontal showsHorizontalScrollIndicator={false}>
+                <View style={styles.relatedChipsContainer}>
+                  {dynamicSuggestions.map((interest) => (
+                    <Chip
+                      key={interest}
+                      onPress={() => addInterest(interest)}
+                      style={styles.relatedChip}
+                      icon="plus"
+                      mode="outlined"
+                    >
+                      {interest}
+                    </Chip>
+                  ))}
+                </View>
+              </ScrollView>
+            </View>
+            
+            {/* Submit Button */}
+            <View style={styles.buttonContainer}>
+              <Button 
+                mode="contained" 
+                onPress={handleSubmit}
+                style={styles.submitButton}
+                labelStyle={styles.buttonLabel}
+              >
+                Submit
+              </Button>
+            </View>
           </View>
-          
-          {/* Submit Button */}
-          <View style={styles.buttonContainer}>
-            <Button 
-              mode="contained" 
-              onPress={handleSubmit}
-              style={styles.submitButton}
-              labelStyle={styles.buttonLabel}
-            >
-              Submit
-            </Button>
-          </View>
-        </View>
-      </ScrollView>
+        </ScrollView>
+      </SafeAreaView>
     </PaperProvider>
   );
 }
 
 const styles = StyleSheet.create({
+  safeArea: {
+    flex: 1,
+    backgroundColor: '#f5f5f5',
+    // Add padding for status bar on Android
+    paddingTop: Platform.OS === 'android' ? StatusBar.currentHeight : 0,
+  },
   container: {
     flex: 1,
     backgroundColor: '#f5f5f5',
   },
   content: {
     padding: 16,
+    // Added extra top padding to prevent title from being cut off
+    paddingTop: 24,
   },
   header: {
     marginBottom: 16,
+    // Added extra top padding specifically for the header
+    paddingTop: 16,
   },
   title: {
-    fontSize: 24,
+    fontSize: 28, // Increased font size for better visibility
     fontWeight: 'bold',
     color: '#000',
+    marginBottom: 8, // Added margin to separate from subtitle
   },
   subtitle: {
     fontSize: 16,
     color: '#666',
-    marginTop: 8,
+    marginTop: 4,
   },
   surface: {
     padding: 16,
-    borderRadius: 8,
+    borderRadius: 12,
     elevation: 4,
     backgroundColor: '#fff',
+    marginTop: 8, // Added margin
   },
   sectionTitle: {
     fontSize: 18,
     fontWeight: '600',
-    marginBottom: 12,
+    marginBottom: 16,
   },
   chipContainer: {
     flexDirection: 'row',
@@ -234,6 +251,9 @@ const styles = StyleSheet.create({
   },
   chipText: {
     color: '#fff',
+  },
+  inputContainer: {
+    marginBottom: 8,
   },
   input: {
     backgroundColor: '#f9f9f9',
@@ -254,7 +274,7 @@ const styles = StyleSheet.create({
     borderBottomColor: '#eee',
   },
   relatedSection: {
-    marginTop: 16,
+    marginTop: 24,
   },
   relatedTitle: {
     fontSize: 14,
@@ -273,6 +293,7 @@ const styles = StyleSheet.create({
   buttonContainer: {
     alignItems: 'flex-end',
     marginTop: 24,
+    marginBottom: 16, // Added bottom margin
   },
   submitButton: {
     borderRadius: 24,
