@@ -1,28 +1,9 @@
-import { config } from '@gluestack-ui/config';
-import {
-    Box,
-    Button,
-    ButtonText,
-    FlatList,
-    GluestackUIProvider,
-    Heading,
-    HStack,
-    Icon,
-    Input,
-    InputField,
-    Pressable,
-    ScrollView,
-    Tag,
-    TagCloseButton,
-    TagText,
-    Text,
-    VStack
-} from '@gluestack-ui/themed';
 import Fuse from 'fuse.js';
-import { Plus, X } from 'lucide-react-native';
 import React, { useMemo, useRef, useState } from 'react';
+import { FlatList, ScrollView, StyleSheet, TouchableOpacity, View } from 'react-native';
+import { Button, Chip, DefaultTheme, Provider as PaperProvider, Surface, Text, TextInput } from 'react-native-paper';
 
-// Sample interests data (much smaller than your original list)
+// Sample interests data
 const SUGGESTED_INTERESTS = [
   "Climate Change", "Technology", "Economics", "Public Health", "Immigration",
   "Media", "Healthcare", "Education", "Civil Rights", "Human Rights",
@@ -32,28 +13,15 @@ const SUGGESTED_INTERESTS = [
   "Globalization", "Energy", "AI Ethics", "Mental Health", "Foreign Policy"
 ];
 
-// Function to calculate similarity between two strings (simplified version)
-function calculateSimilarity(str1: string, str2: string): number {
-  const s1 = str1.toLowerCase();
-  const s2 = str2.toLowerCase();
-
-  // Check for word matches
-  const words1 = s1.split(/\s+/);
-  const words2 = s2.split(/\s+/);
-
-  let wordMatchCount = 0;
-  for (const word1 of words1) {
-    if (word1.length < 3) continue;
-    for (const word2 of words2) {
-      if (word2.length < 3) continue;
-      if (word1 === word2 || word1.includes(word2) || word2.includes(word1)) {
-        wordMatchCount++;
-      }
-    }
-  }
-
-  return wordMatchCount * 3;
-}
+// Custom theme
+const theme = {
+  ...DefaultTheme,
+  colors: {
+    ...DefaultTheme.colors,
+    primary: '#333333',
+    accent: '#f1c40f',
+  },
+};
 
 export default function InterestsScreen() {
   const [keywords, setKeywords] = useState<string[]>([]);
@@ -70,26 +38,13 @@ export default function InterestsScreen() {
   // Get dynamic suggestions based on current interests
   const dynamicSuggestions = useMemo(() => {
     if (keywords.length === 0) {
-      // If no interests selected yet, return original suggestions
       return SUGGESTED_INTERESTS.slice(0, 5);
     }
 
-    // Calculate similarity scores for each suggestion based on current interests
-    const scoredSuggestions = SUGGESTED_INTERESTS
-      .filter((suggestion) => !keywords.includes(suggestion))
-      .map((suggestion) => {
-        let totalScore = 0;
-        for (const keyword of keywords) {
-          totalScore += calculateSimilarity(keyword, suggestion);
-        }
-        return { suggestion, score: totalScore };
-      });
-
-    // Sort by score (highest first) and return the top 5 suggestions
-    return scoredSuggestions
-      .sort((a, b) => b.score - a.score)
-      .slice(0, 5)
-      .map((item) => item.suggestion);
+    // Simple implementation for related suggestions
+    return SUGGESTED_INTERESTS
+      .filter(suggestion => !keywords.includes(suggestion))
+      .slice(0, 5);
   }, [keywords]);
 
   const handleTextChange = (text: string) => {
@@ -121,166 +76,211 @@ export default function InterestsScreen() {
     setKeywords(keywords.filter((i) => i !== interest));
   };
 
-  const handleKeyPress = ({ nativeEvent }: any) => {
-    if (nativeEvent.key === 'Enter' && inputValue.trim()) {
-      addInterest(inputValue);
-    }
-  };
-
   const handleSubmit = () => {
-    // In a real app, you would submit the interests to your backend
     console.log('Submitting interests:', keywords);
     alert(`Submitted interests: ${keywords.join(', ')}`);
   };
 
   return (
-    <GluestackUIProvider config={config}>
-      <Box flex={1} bg="$backgroundLight50" safeAreaTop>
-        <ScrollView>
-          <VStack space="md" p="$4">
-            {/* Header Section */}
-            <VStack space="sm">
-              <Heading size="xl">Tell us about your interests</Heading>
-              <Text size="md" color="$textLight500">
-                Enter 5-10 topics to stay informed about.
-              </Text>
-            </VStack>
+    <PaperProvider theme={theme}>
+      <ScrollView style={styles.container}>
+        <View style={styles.content}>
+          {/* Header Section */}
+          <View style={styles.header}>
+            <Text style={styles.title}>Tell us about your interests</Text>
+            <Text style={styles.subtitle}>
+              Enter 5-10 topics to stay informed about.
+            </Text>
+          </View>
 
-            {/* Interests Container */}
-            <Box 
-              bg="$backgroundLight100" 
-              borderRadius="$lg" 
-              p="$4" 
-              borderWidth={1}
-              borderColor="$borderLight200"
-              shadowColor="$shadowLight500"
-              shadowOffset={{ width: 0, height: 1 }}
-              shadowOpacity={0.1}
-              shadowRadius={2}
-            >
-              <Heading size="md" mb="$2">I want my podcasts to be about...</Heading>
-              
-              {/* Selected Interests */}
-              <Box flexDirection="row" flexWrap="wrap" gap="$2" mb="$4">
-                {keywords.map((interest) => (
-                  <Tag 
-                    key={interest} 
-                    size="md" 
-                    borderRadius="$full"
-                    bg="$gray800"
-                    mb="$1"
-                  >
-                    <TagText color="$white">{interest}</TagText>
-                    <TagCloseButton onPress={() => removeInterest(interest)}>
-                      <Icon as={X} size="xs" color="$gray400" />
-                    </TagCloseButton>
-                  </Tag>
-                ))}
-              </Box>
-              
-              {/* Input Field */}
-              <Box position="relative">
-                <Input
-                  size="md"
-                  borderRadius="$full"
-                  bg="$gray800"
-                  borderWidth={0}
+          {/* Interests Container */}
+          <Surface style={styles.surface}>
+            <Text style={styles.sectionTitle}>I want my podcasts to be about...</Text>
+            
+            {/* Selected Interests */}
+            <View style={styles.chipContainer}>
+              {keywords.map((interest) => (
+                <Chip 
+                  key={interest}
+                  onClose={() => removeInterest(interest)}
+                  style={styles.chip}
+                  textStyle={styles.chipText}
                 >
-                  <InputField
-                    ref={inputRef}
-                    placeholder={keywords.length === 0 ? "Add interest..." : "Add another interest..."}
-                    placeholderTextColor="$gray400"
-                    color="$gray100"
-                    value={inputValue}
-                    onChangeText={handleTextChange}
-                    onKeyPress={handleKeyPress}
-                    onSubmitEditing={() => addInterest(inputValue)}
-                  />
-                </Input>
-                <Pressable 
-                  position="absolute" 
-                  right="$3" 
-                  top="50%" 
-                  marginTop="-10px"
+                  {interest}
+                </Chip>
+              ))}
+            </View>
+            
+            {/* Input Field */}
+            <TextInput
+              ref={inputRef}
+              value={inputValue}
+              onChangeText={handleTextChange}
+              placeholder={keywords.length === 0 ? "Add interest..." : "Add another interest..."}
+              style={styles.input}
+              mode="outlined"
+              outlineColor="#333"
+              activeOutlineColor="#555"
+              right={
+                <TextInput.Icon 
+                  icon="plus" 
                   onPress={() => addInterest(inputValue)}
-                >
-                  <Icon as={Plus} size="sm" color="$gray400" />
-                </Pressable>
-              </Box>
-              
-              {/* Suggestions Dropdown */}
-              {suggestions.length > 0 && (
-                <Box 
-                  mt="$2" 
-                  bg="$white" 
-                  borderRadius="$md" 
-                  borderWidth={1}
-                  borderColor="$borderLight200"
-                  maxHeight={200}
-                >
-                  <FlatList
-                    data={suggestions}
-                    keyExtractor={(item) => item}
-                    renderItem={({ item }) => (
-                      <Pressable
-                        px="$4"
-                        py="$2"
-                        onPress={() => addInterest(item)}
-                        _hover={{ bg: "$gray100" }}
-                      >
-                        <Text>{item}</Text>
-                      </Pressable>
-                    )}
-                  />
-                </Box>
-              )}
-            </Box>
+                  color="#555"
+                />
+              }
+              onSubmitEditing={() => addInterest(inputValue)}
+            />
             
-            {/* Related Interests */}
-            <VStack space="sm" mt="$2">
-              <Text fontWeight="$medium" size="sm" color="$textLight500">
-                {keywords.length > 0 ? "Related interests" : "Suggested interests"}
-              </Text>
-              
-              <ScrollView horizontal showsHorizontalScrollIndicator={false}>
-                <HStack space="sm">
-                  {dynamicSuggestions.map((interest) => (
-                    <Pressable
-                      key={interest}
-                      onPress={() => addInterest(interest)}
-                      flexDirection="row"
-                      alignItems="center"
-                      borderWidth={1}
-                      borderColor="$borderLight300"
-                      borderRadius="$full"
-                      px="$3"
-                      py="$1"
-                      bg="$transparent"
+            {/* Suggestions Dropdown */}
+            {suggestions.length > 0 && (
+              <View style={styles.suggestionsContainer}>
+                <FlatList
+                  data={suggestions}
+                  keyExtractor={(item) => item}
+                  renderItem={({ item }) => (
+                    <TouchableOpacity
+                      style={styles.suggestionItem}
+                      onPress={() => addInterest(item)}
                     >
-                      <Icon as={Plus} size="xs" mr="$1" />
-                      <Text size="sm">{interest}</Text>
-                    </Pressable>
-                  ))}
-                </HStack>
-              </ScrollView>
-            </VStack>
+                      <Text>{item}</Text>
+                    </TouchableOpacity>
+                  )}
+                  style={styles.suggestionsList}
+                />
+              </View>
+            )}
+          </Surface>
+          
+          {/* Related Interests */}
+          <View style={styles.relatedSection}>
+            <Text style={styles.relatedTitle}>
+              {keywords.length > 0 ? "Related interests" : "Suggested interests"}
+            </Text>
             
-            {/* Submit Button */}
-            <Box alignItems="flex-end" mt="$4">
-              <Button 
-                bg="$gray800" 
-                borderRadius="$full"
-                px="$6"
-                onPress={handleSubmit}
-                _hover={{ bg: "$gray700" }}
-                _pressed={{ bg: "$gray900" }}
-              >
-                <ButtonText>Submit</ButtonText>
-              </Button>
-            </Box>
-          </VStack>
-        </ScrollView>
-      </Box>
-    </GluestackUIProvider>
+            <ScrollView horizontal showsHorizontalScrollIndicator={false}>
+              <View style={styles.relatedChipsContainer}>
+                {dynamicSuggestions.map((interest) => (
+                  <Chip
+                    key={interest}
+                    onPress={() => addInterest(interest)}
+                    style={styles.relatedChip}
+                    icon="plus"
+                    mode="outlined"
+                  >
+                    {interest}
+                  </Chip>
+                ))}
+              </View>
+            </ScrollView>
+          </View>
+          
+          {/* Submit Button */}
+          <View style={styles.buttonContainer}>
+            <Button 
+              mode="contained" 
+              onPress={handleSubmit}
+              style={styles.submitButton}
+              labelStyle={styles.buttonLabel}
+            >
+              Submit
+            </Button>
+          </View>
+        </View>
+      </ScrollView>
+    </PaperProvider>
   );
 }
+
+const styles = StyleSheet.create({
+  container: {
+    flex: 1,
+    backgroundColor: '#f5f5f5',
+  },
+  content: {
+    padding: 16,
+  },
+  header: {
+    marginBottom: 16,
+  },
+  title: {
+    fontSize: 24,
+    fontWeight: 'bold',
+    color: '#000',
+  },
+  subtitle: {
+    fontSize: 16,
+    color: '#666',
+    marginTop: 8,
+  },
+  surface: {
+    padding: 16,
+    borderRadius: 8,
+    elevation: 4,
+    backgroundColor: '#fff',
+  },
+  sectionTitle: {
+    fontSize: 18,
+    fontWeight: '600',
+    marginBottom: 12,
+  },
+  chipContainer: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    marginBottom: 16,
+  },
+  chip: {
+    margin: 4,
+    backgroundColor: '#333',
+  },
+  chipText: {
+    color: '#fff',
+  },
+  input: {
+    backgroundColor: '#f9f9f9',
+  },
+  suggestionsContainer: {
+    marginTop: 8,
+    borderWidth: 1,
+    borderColor: '#eee',
+    borderRadius: 4,
+    maxHeight: 200,
+  },
+  suggestionsList: {
+    backgroundColor: '#fff',
+  },
+  suggestionItem: {
+    padding: 12,
+    borderBottomWidth: 1,
+    borderBottomColor: '#eee',
+  },
+  relatedSection: {
+    marginTop: 16,
+  },
+  relatedTitle: {
+    fontSize: 14,
+    fontWeight: '500',
+    color: '#666',
+    marginBottom: 8,
+  },
+  relatedChipsContainer: {
+    flexDirection: 'row',
+    paddingVertical: 4,
+  },
+  relatedChip: {
+    marginRight: 8,
+    backgroundColor: 'transparent',
+  },
+  buttonContainer: {
+    alignItems: 'flex-end',
+    marginTop: 24,
+  },
+  submitButton: {
+    borderRadius: 24,
+    paddingHorizontal: 16,
+    backgroundColor: '#333',
+  },
+  buttonLabel: {
+    color: '#fff',
+    fontWeight: '600',
+  },
+});
