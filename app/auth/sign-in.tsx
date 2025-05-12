@@ -1,24 +1,6 @@
 import { supabase } from '@/lib/supabase';
-import {
-    Button,
-    ButtonText,
-    FormControl,
-    FormControlLabel,
-    FormControlLabelText,
-    HStack,
-    Input,
-    InputField,
-    InputIcon,
-    InputSlot,
-    Link,
-    LinkText,
-    Text,
-    VStack,
-} from '@gluestack-ui/themed';
-import { router } from 'expo-router';
-import { Lock, Mail } from 'lucide-react-native';
 import React, { useState } from 'react';
-import { Alert, StyleSheet, View } from 'react-native';
+import { Alert, Button, StyleSheet, Text, TextInput, View } from 'react-native';
 
 export default function SignIn() {
   const [email, setEmail] = useState('');
@@ -28,114 +10,48 @@ export default function SignIn() {
   async function signInWithEmail() {
     setLoading(true);
     const { error } = await supabase.auth.signInWithPassword({
-      email: email,
-      password: password,
+      email,
+      password,
     });
-
     if (error) {
       Alert.alert('Error', error.message);
-    }
-    setLoading(false);
-  }
-
-  async function signUpWithEmail() {
-    setLoading(true);
-    const {
-      data: { session },
-      error,
-    } = await supabase.auth.signUp({
-      email: email,
-      password: password,
-    });
-
-    if (error) {
-      Alert.alert('Error', error.message);
-    }
-    if (!session) {
-      Alert.alert('Success', 'Please check your inbox for email verification!');
     }
     setLoading(false);
   }
 
   return (
     <View style={styles.container}>
-      <VStack space="md" style={styles.form}>
-        <FormControl isRequired>
-          <FormControlLabel>
-            <FormControlLabelText>Email</FormControlLabelText>
-          </FormControlLabel>
-          <Input>
-            <InputSlot pl="$3">
-              <InputIcon as={Mail} />
-            </InputSlot>
-            <InputField
-              placeholder="email@address.com"
-              value={email}
-              onChangeText={setEmail}
-              autoCapitalize="none"
-              keyboardType="email-address"
-            />
-          </Input>
-        </FormControl>
-
-        <FormControl isRequired>
-          <FormControlLabel>
-            <FormControlLabelText>Password</FormControlLabelText>
-          </FormControlLabel>
-          <Input>
-            <InputSlot pl="$3">
-              <InputIcon as={Lock} />
-            </InputSlot>
-            <InputField
-              placeholder="Password"
-              value={password}
-              onChangeText={setPassword}
-              secureTextEntry
-              autoCapitalize="none"
-            />
-          </Input>
-        </FormControl>
-
-        <VStack space="sm" mt="$4">
-          <Button
-            onPress={signInWithEmail}
-            isDisabled={loading}
-            size="lg"
-            variant="solid"
-            action="primary"
-          >
-            <ButtonText>Sign In</ButtonText>
-          </Button>
-
-          <Button
-            onPress={signUpWithEmail}
-            isDisabled={loading}
-            size="lg"
-            variant="outline"
-            action="secondary"
-          >
-            <ButtonText>Sign Up</ButtonText>
-          </Button>
-        </VStack>
-
-        <HStack space="sm" justifyContent="center" mt="$4">
-          <Text>Don't have an account?</Text>
-          <Link onPress={() => router.push('/auth/sign-up')}>
-            <LinkText>Sign Up</LinkText>
-          </Link>
-        </HStack>
-      </VStack>
+      <Text style={styles.title}>Sign In</Text>
+      <Text style={styles.label}>Email</Text>
+      <TextInput
+        style={styles.input}
+        placeholder="email@address.com"
+        value={email}
+        onChangeText={setEmail}
+        autoCapitalize="none"
+        keyboardType="email-address"
+      />
+      <Text style={styles.label}>Password</Text>
+      <TextInput
+        style={styles.input}
+        placeholder="Password"
+        value={password}
+        onChangeText={setPassword}
+        secureTextEntry
+        autoCapitalize="none"
+      />
+      <Button
+        title={loading ? 'Signing In...' : 'Sign In'}
+        onPress={signInWithEmail}
+        disabled={loading}
+      />
     </View>
   );
 }
 
 const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    padding: 20,
-    backgroundColor: '#fff',
-  },
-  form: {
-    marginTop: 40,
-  },
+  container: { flex: 1, padding: 20, justifyContent: 'center', backgroundColor: '#fff' },
+  title: { fontSize: 24, fontWeight: 'bold', marginBottom: 24, textAlign: 'center' },
+  label: { marginBottom: 8, fontWeight: 'bold' },
+  input: { borderWidth: 1, borderColor: '#ccc', borderRadius: 5, marginBottom: 16, padding: 10 },
 }); 
