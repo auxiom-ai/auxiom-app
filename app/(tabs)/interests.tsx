@@ -1,4 +1,3 @@
-import * as Haptics from 'expo-haptics';
 import Fuse from 'fuse.js';
 import React, { useMemo, useRef, useState } from 'react';
 import { FlatList, Platform, SafeAreaView, ScrollView, StatusBar, StyleSheet, TouchableOpacity, View } from 'react-native';
@@ -11,8 +10,48 @@ const SUGGESTED_INTERESTS = [
   "Political Trends", "Infrastructure", "Food Security", "Housing", "Labor",
   "Indigenous Issues", "Elections", "Justice System", "Science", "Diversity",
   "Digital Privacy", "National Security", "Biodiversity", "Wages", "Child Welfare",
-  "Globalization", "Energy", "AI Ethics", "Mental Health", "Foreign Policy"
+  "Globalization", "Energy", "AI Ethics", "Mental Health", "Foreign Policy",
+  "Voting", "International Relations", "Immigration", "Inequality", "Finance",
+  "Space", "Arms Control", "Equality", "Global Trade", "Misinformation",
+  "Urban Planning", "Corporate Influence", "Water Resources", "Economic Agreements",
+  "Gun Laws", "Transportation", "Taxation", "Law Enforcement", "Drugs",
+  "Religious Rights", "Conservation", "Corporate Law", "Election Security",
+  "Transparency", "Media Regulation", "Rural Development", "Child Welfare",
+  "Healthcare Access", "Education Standards", "Civic Engagement", "Automation",
+  "Campaign Finance", "Veterans", "Corporate Taxes", "Statehood", "Free Speech"
 ];
+
+// Function to calculate similarity between two strings - from original code
+function calculateSimilarity(str1: string, str2: string): number {
+  const s1 = str1.toLowerCase();
+  const s2 = str2.toLowerCase();
+
+  // Check for exact word matches
+  const words1 = s1.split(/\s+/);
+  const words2 = s2.split(/\s+/);
+
+  let wordMatchCount = 0;
+  for (const word1 of words1) {
+    if (word1.length < 3) continue; // Skip short words
+    for (const word2 of words2) {
+      if (word2.length < 3) continue; // Skip short words
+      if (word1 === word2 || word1.includes(word2) || word2.includes(word1)) {
+        wordMatchCount++;
+      }
+    }
+  }
+
+  // Check for character-level similarity
+  let charMatchCount = 0;
+  for (let i = 0; i < s1.length - 2; i++) {
+    const trigram = s1.substring(i, i + 3);
+    if (s2.includes(trigram)) {
+      charMatchCount++;
+    }
+  }
+
+  return wordMatchCount * 3 + charMatchCount;
+}
 
 // Custom theme
 const theme = {
@@ -36,16 +75,29 @@ export default function InterestsScreen() {
     distance: 100 
   }), []);
 
-  // Get dynamic suggestions based on current interests
+  // Get dynamic suggestions based on current interests - using original algorithm
   const dynamicSuggestions = useMemo(() => {
     if (keywords.length === 0) {
+      // If no interests selected yet, return original suggestions
       return SUGGESTED_INTERESTS.slice(0, 5);
     }
 
-    // Simple implementation for related suggestions
-    return SUGGESTED_INTERESTS
-      .filter(suggestion => !keywords.includes(suggestion))
-      .slice(0, 5);
+    // Calculate similarity scores for each suggestion based on current interests
+    const scoredSuggestions = SUGGESTED_INTERESTS
+      .filter((suggestion) => !keywords.includes(suggestion))
+      .map((suggestion) => {
+        let totalScore = 0;
+        for (const keyword of keywords) {
+          totalScore += calculateSimilarity(keyword, suggestion);
+        }
+        return { suggestion, score: totalScore };
+      });
+
+    // Sort by score (highest first) and return the top 5 suggestions
+    return scoredSuggestions
+      .sort((a, b) => b.score - a.score)
+      .slice(0, 5)
+      .map((item) => item.suggestion);
   }, [keywords]);
 
   const handleTextChange = (text: string) => {
@@ -54,14 +106,13 @@ export default function InterestsScreen() {
       const filtered = fuse.search(text)
         .map(result => result.item)
         .filter(interest => !keywords.includes(interest));
-      setSuggestions(filtered);
+      setSuggestions(filtered.slice(0, 5)); // Limit to 5 suggestions
     } else {
       setSuggestions([]);
     }
   };
 
   const addInterest = (interest: string) => {
-    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
     if (interest.trim() && !keywords.includes(interest)) {
       setKeywords([...keywords, interest]);
       setInputValue('');
@@ -89,7 +140,7 @@ export default function InterestsScreen() {
         <StatusBar barStyle="dark-content" backgroundColor="#f5f5f5" />
         <ScrollView style={styles.container}>
           <View style={styles.content}>
-            {/* Header Section - Added extra top padding */}
+            {/* Header Section */}
             <View style={styles.header}>
               <Text style={styles.title}>Tell us about your interests</Text>
               <Text style={styles.subtitle}>
@@ -157,7 +208,7 @@ export default function InterestsScreen() {
               )}
             </Surface>
             
-            {/* Related Interests */}
+            {/* Related Interests - Now using the original algorithm */}
             <View style={styles.relatedSection}>
               <Text style={styles.relatedTitle}>
                 {keywords.length > 0 ? "Related interests" : "Suggested interests"}
@@ -202,7 +253,6 @@ const styles = StyleSheet.create({
   safeArea: {
     flex: 1,
     backgroundColor: '#f5f5f5',
-    // Add padding for status bar on Android
     paddingTop: Platform.OS === 'android' ? StatusBar.currentHeight : 0,
   },
   container: {
@@ -211,19 +261,17 @@ const styles = StyleSheet.create({
   },
   content: {
     padding: 16,
-    // Added extra top padding to prevent title from being cut off
     paddingTop: 24,
   },
   header: {
     marginBottom: 16,
-    // Added extra top padding specifically for the header
     paddingTop: 16,
   },
   title: {
-    fontSize: 28, // Increased font size for better visibility
+    fontSize: 28,
     fontWeight: 'bold',
     color: '#000',
-    marginBottom: 8, // Added margin to separate from subtitle
+    marginBottom: 8,
   },
   subtitle: {
     fontSize: 16,
@@ -235,7 +283,7 @@ const styles = StyleSheet.create({
     borderRadius: 12,
     elevation: 4,
     backgroundColor: '#fff',
-    marginTop: 8, // Added margin
+    marginTop: 8,
   },
   sectionTitle: {
     fontSize: 18,
@@ -295,7 +343,7 @@ const styles = StyleSheet.create({
   buttonContainer: {
     alignItems: 'flex-end',
     marginTop: 24,
-    marginBottom: 16, // Added bottom margin
+    marginBottom: 16,
   },
   submitButton: {
     borderRadius: 24,
