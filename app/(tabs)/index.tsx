@@ -1,5 +1,7 @@
 import { Image } from 'expo-image';
+import { Link } from 'expo-router';
 import { Platform, StyleSheet } from 'react-native';
+import { Button } from 'react-native-paper';
 
 import { HelloWave } from '@/components/HelloWave';
 import ParallaxScrollView from '@/components/ParallaxScrollView';
@@ -20,6 +22,20 @@ export default function HomeScreen() {
         <ThemedText type="title">Welcome!</ThemedText>
         <HelloWave />
       </ThemedView>
+      
+      {/* Add this section for onboarding */}
+      <ThemedView style={styles.stepContainer}>
+        <ThemedText type="subtitle">Start Onboarding</ThemedText>
+        <ThemedText>
+          Begin the onboarding process to customize your experience.
+        </ThemedText>
+        <Link href="/identity" asChild>
+          <Button mode="contained" style={styles.onboardingButton}>
+            Start Onboarding
+          </Button>
+        </Link>
+      </ThemedView>
+      
       <ThemedView style={styles.stepContainer}>
         <ThemedText type="subtitle">Step 1: Try it</ThemedText>
         <ThemedText>
@@ -35,6 +51,8 @@ export default function HomeScreen() {
           to open developer tools.
         </ThemedText>
       </ThemedView>
+      
+      {/* Rest of your existing content */}
       <ThemedView style={styles.stepContainer}>
         <ThemedText type="subtitle">Step 2: Explore</ThemedText>
         <ThemedText>
@@ -63,7 +81,7 @@ const styles = StyleSheet.create({
   },
   stepContainer: {
     gap: 8,
-    marginBottom: 8,
+    marginBottom: 16,
   },
   reactLogo: {
     height: 178,
@@ -71,5 +89,10 @@ const styles = StyleSheet.create({
     bottom: 0,
     left: 0,
     position: 'absolute',
+  },
+  onboardingButton: {
+    marginTop: 8,
+    borderRadius: 8,
+    backgroundColor: '#1f2937',
   },
 });

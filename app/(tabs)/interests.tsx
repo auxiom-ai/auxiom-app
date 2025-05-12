@@ -1,5 +1,6 @@
+import { useNavigation } from '@react-navigation/native';
 import Fuse from 'fuse.js';
-import React, { useMemo, useRef, useState } from 'react';
+import React, { useLayoutEffect, useMemo, useRef, useState } from 'react';
 import { FlatList, Platform, SafeAreaView, ScrollView, StatusBar, StyleSheet, TouchableOpacity, View } from 'react-native';
 import { Button, Chip, DefaultTheme, Provider as PaperProvider, Surface, Text, TextInput } from 'react-native-paper';
 
@@ -64,6 +65,14 @@ const theme = {
 };
 
 export default function InterestsScreen() {
+// ------ hide this page’s tab button ---
+const navigation = useNavigation();
+useLayoutEffect(() => {
+navigation.setOptions({
+// returning null tells React Navigation not to render the icon/label
+    tabBarButton: () => null,
+});
+}, [navigation]);
   const [keywords, setKeywords] = useState<string[]>([]);
   const [inputValue, setInputValue] = useState('');
   const [suggestions, setSuggestions] = useState<string[]>([]);
@@ -252,12 +261,12 @@ export default function InterestsScreen() {
 const styles = StyleSheet.create({
   safeArea: {
     flex: 1,
-    backgroundColor: '#f5f5f5',
+    backgroundColor: '#FAF8EC',
     paddingTop: Platform.OS === 'android' ? StatusBar.currentHeight : 0,
   },
   container: {
     flex: 1,
-    backgroundColor: '#f5f5f5',
+    backgroundColor: '#FAF8EC',
   },
   content: {
     padding: 16,
