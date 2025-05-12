@@ -1,3 +1,4 @@
+import * as Haptics from 'expo-haptics';
 import Fuse from 'fuse.js';
 import React, { useMemo, useRef, useState } from 'react';
 import { FlatList, Platform, SafeAreaView, ScrollView, StatusBar, StyleSheet, TouchableOpacity, View } from 'react-native';
@@ -60,6 +61,7 @@ export default function InterestsScreen() {
   };
 
   const addInterest = (interest: string) => {
+    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
     if (interest.trim() && !keywords.includes(interest)) {
       setKeywords([...keywords, interest]);
       setInputValue('');
