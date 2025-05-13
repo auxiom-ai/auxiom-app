@@ -2,6 +2,7 @@ import { Button, ButtonText } from "@/components/ui/button";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Input, InputField } from "@/components/ui/input";
 import { Text } from "@/components/ui/text";
+import { Google } from 'lucide-react-native';
 import React, { useEffect, useState } from 'react';
 import { Alert, AppState, StyleSheet, View } from 'react-native';
 import { supabase } from '../lib/supabase';
@@ -122,6 +123,87 @@ export default function Auth() {
     }
   }
 
+  async function signInWithGoogle() {
+    setLoading(true)
+    try {
+      const { error } = await supabase.auth.signInWithOAuth({
+        provider: 'google',
+        options: {
+          redirectTo: 'auxiom://auth/callback',
+          queryParams: {
+            access_type: 'offline',
+            prompt: 'consent',
+          },
+        },
+      })
+
+      if (error) {
+        Alert.alert('Error', error.message)
+      }
+    } catch (error) {
+      Alert.alert('Error', 'An unexpected error occurred. Please try again.')
+    } finally {
+      setLoading(false)
+    }
+  }
+
+  async function handleOAuthCallback(url: string) {
+    try {
+      const { data: { user }, error } = await supabase.auth.getUser()
+      
+      if (error) throw error
+
+      if (user) {
+        // Check if user already has a profile
+        const { data: profile, error: profileError } = await supabase
+          .from('profiles')
+          .select('*')
+          .eq('id', user.id)
+          .single()
+
+        if (profileError && profileError.code !== 'PGRST116') {
+          throw profileError
+        }
+
+        if (!profile) {
+          // Create profile with provider metadata
+          const { error: insertError } = await supabase
+            .from('profiles')
+            .insert([
+              {
+                id: user.id,
+                email: user.email,
+                full_name: user.user_metadata?.full_name,
+                avatar_url: user.user_metadata?.avatar_url,
+                provider: user.app_metadata?.provider,
+                provider_id: user.app_metadata?.provider_id,
+                updated_at: new Date(),
+              },
+            ])
+
+          if (insertError) throw insertError
+        } else {
+          // Update existing profile with provider metadata
+          const { error: updateError } = await supabase
+            .from('profiles')
+            .update({
+              full_name: user.user_metadata?.full_name,
+              avatar_url: user.user_metadata?.avatar_url,
+              provider: user.app_metadata?.provider,
+              provider_id: user.app_metadata?.provider_id,
+              updated_at: new Date(),
+            })
+            .eq('id', user.id)
+
+          if (updateError) throw updateError
+        }
+      }
+    } catch (error) {
+      console.error('Error handling OAuth callback:', error)
+      Alert.alert('Error', 'Failed to process authentication. Please try again.')
+    }
+  }
+
   return (
     <View style={styles.container}>
       <View style={[styles.verticallySpaced, styles.mt20]}>
@@ -194,6 +276,23 @@ export default function Auth() {
           <ButtonText>Sign up</ButtonText>
         </Button>
       </View>
+      <View style={[styles.verticallySpaced, styles.divider]}>
+        <View style={styles.dividerLine} />
+        <Text style={styles.dividerText}>or</Text>
+        <View style={styles.dividerLine} />
+      </View>
+      <View style={styles.verticallySpaced}>
+        <Button
+          size="md"
+          variant="outline"
+          action="secondary"
+          disabled={loading}
+          onPress={() => signInWithGoogle()}
+        >
+          <Google size={20} color="#000" style={styles.googleIcon} />
+          <ButtonText>Continue with Google</ButtonText>
+        </Button>
+      </View>
     </View>
   )
 }
@@ -223,5 +322,22 @@ const styles = StyleSheet.create({
     color: '#dc2626',
     fontSize: 14,
     marginTop: 4,
+  },
+  divider: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginVertical: 20,
+  },
+  dividerLine: {
+    flex: 1,
+    height: 1,
+    backgroundColor: '#e5e7eb',
+  },
+  dividerText: {
+    marginHorizontal: 10,
+    color: '#6b7280',
+  },
+  googleIcon: {
+    marginRight: 8,
   },
 })
