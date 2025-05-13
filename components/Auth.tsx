@@ -23,6 +23,36 @@ export default function Auth() {
   const [password, setPassword] = useState('')
   const [loading, setLoading] = useState(false)
   const [rememberMe, setRememberMe] = useState(false)
+  const [errors, setErrors] = useState<{ email?: string; password?: string }>({})
+
+  const validateEmail = (email: string): boolean => {
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/
+    return emailRegex.test(email)
+  }
+
+  const validatePassword = (password: string): boolean => {
+    // Password must be at least 8 characters long and contain at least one number
+    return password.length >= 8 && /\d/.test(password)
+  }
+
+  const validateForm = (): boolean => {
+    const newErrors: { email?: string; password?: string } = {}
+
+    if (!email.trim()) {
+      newErrors.email = 'Email is required'
+    } else if (!validateEmail(email)) {
+      newErrors.email = 'Please enter a valid email address'
+    }
+
+    if (!password) {
+      newErrors.password = 'Password is required'
+    } else if (!validatePassword(password)) {
+      newErrors.password = 'Password must be at least 8 characters and contain a number'
+    }
+
+    setErrors(newErrors)
+    return Object.keys(newErrors).length === 0
+  }
 
   useEffect(() => {
     // Configure session persistence based on remember me preference
@@ -40,10 +70,12 @@ export default function Auth() {
   }, [rememberMe])
 
   async function signInWithEmail() {
+    if (!validateForm()) return
+
     setLoading(true)
     try {
       const { error } = await supabase.auth.signInWithPassword({
-        email: email,
+        email: email.trim(),
         password: password,
       })
 
@@ -62,13 +94,15 @@ export default function Auth() {
   }
 
   async function signUpWithEmail() {
+    if (!validateForm()) return
+
     setLoading(true)
     try {
       const {
         data: { session },
         error,
       } = await supabase.auth.signUp({
-        email: email,
+        email: email.trim(),
         password: password,
       })
 
@@ -95,21 +129,40 @@ export default function Auth() {
           <InputField
             placeholder="email@address.com"
             value={email}
-            onChangeText={(text) => setEmail(text)}
+            onChangeText={(text) => {
+              setEmail(text)
+              if (errors.email) {
+                setErrors(prev => ({ ...prev, email: undefined }))
+              }
+            }}
             autoCapitalize="none"
+            keyboardType="email-address"
+            autoComplete="email"
           />
         </Input>
+        {errors.email && (
+          <Text style={styles.errorText}>{errors.email}</Text>
+        )}
       </View>
       <View style={styles.verticallySpaced}>
         <Input variant="outline" size="md">
           <InputField
             placeholder="Password"
             value={password}
-            onChangeText={(text) => setPassword(text)}
+            onChangeText={(text) => {
+              setPassword(text)
+              if (errors.password) {
+                setErrors(prev => ({ ...prev, password: undefined }))
+              }
+            }}
             secureTextEntry={true}
             autoCapitalize="none"
+            autoComplete="password"
           />
         </Input>
+        {errors.password && (
+          <Text style={styles.errorText}>{errors.password}</Text>
+        )}
       </View>
       <View style={[styles.verticallySpaced, styles.rememberMeContainer]}>
         <Checkbox
@@ -165,5 +218,10 @@ const styles = StyleSheet.create({
   },
   rememberMeText: {
     marginLeft: 8,
+  },
+  errorText: {
+    color: '#dc2626',
+    fontSize: 14,
+    marginTop: 4,
   },
 })
