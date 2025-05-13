@@ -1,6 +1,8 @@
 import { Button, ButtonText } from "@/components/ui/button";
+import { Checkbox } from "@/components/ui/checkbox";
 import { Input, InputField } from "@/components/ui/input";
-import React, { useState } from 'react';
+import { Text } from "@/components/ui/text";
+import React, { useEffect, useState } from 'react';
 import { Alert, AppState, StyleSheet, View } from 'react-native';
 import { supabase } from '../lib/supabase';
 
@@ -20,6 +22,22 @@ export default function Auth() {
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
   const [loading, setLoading] = useState(false)
+  const [rememberMe, setRememberMe] = useState(false)
+
+  useEffect(() => {
+    // Configure session persistence based on remember me preference
+    supabase.auth.onAuthStateChange((event, session) => {
+      if (event === 'SIGNED_IN') {
+        if (rememberMe) {
+          // Enable auto refresh for persistent sessions
+          supabase.auth.startAutoRefresh()
+        } else {
+          // Disable auto refresh for non-persistent sessions
+          supabase.auth.stopAutoRefresh()
+        }
+      }
+    })
+  }, [rememberMe])
 
   async function signInWithEmail() {
     setLoading(true)
@@ -93,6 +111,14 @@ export default function Auth() {
           />
         </Input>
       </View>
+      <View style={[styles.verticallySpaced, styles.rememberMeContainer]}>
+        <Checkbox
+          value={rememberMe}
+          onValueChange={setRememberMe}
+          aria-label="Remember me"
+        />
+        <Text style={styles.rememberMeText}>Remember me</Text>
+      </View>
       <View style={[styles.verticallySpaced, styles.mt20]}>
         <Button
           size="md" 
@@ -131,5 +157,13 @@ const styles = StyleSheet.create({
   },
   mt20: {
     marginTop: 20,
+  },
+  rememberMeContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginTop: 8,
+  },
+  rememberMeText: {
+    marginLeft: 8,
   },
 })
