@@ -1,8 +1,8 @@
-import React, { useState } from 'react'
-import { Alert, StyleSheet, View, AppState } from 'react-native'
-import { supabase } from '../lib/supabase'
-import { Button, ButtonText } from "@/components/ui/button"
+import { Button, ButtonText } from "@/components/ui/button";
 import { Input, InputField } from "@/components/ui/input";
+import React, { useState } from 'react';
+import { Alert, AppState, StyleSheet, View } from 'react-native';
+import { supabase } from '../lib/supabase';
 
 // Tells Supabase Auth to continuously refresh the session automatically if
 // the app is in the foreground. When this is added, you will continue to receive
@@ -23,28 +23,51 @@ export default function Auth() {
 
   async function signInWithEmail() {
     setLoading(true)
-    const { error } = await supabase.auth.signInWithPassword({
-      email: email,
-      password: password,
-    })
+    try {
+      const { error } = await supabase.auth.signInWithPassword({
+        email: email,
+        password: password,
+      })
 
-    if (error) Alert.alert(error.message)
-    setLoading(false)
+      if (error) {
+        if (error.message.includes('Invalid login credentials')) {
+          Alert.alert('Authentication Error', 'Invalid email or password. Please try again.')
+        } else {
+          Alert.alert('Error', error.message)
+        }
+      }
+    } catch (error) {
+      Alert.alert('Error', 'An unexpected error occurred. Please try again.')
+    } finally {
+      setLoading(false)
+    }
   }
 
   async function signUpWithEmail() {
     setLoading(true)
-    const {
-      data: { session },
-      error,
-    } = await supabase.auth.signUp({
-      email: email,
-      password: password,
-    })
+    try {
+      const {
+        data: { session },
+        error,
+      } = await supabase.auth.signUp({
+        email: email,
+        password: password,
+      })
 
-    if (error) Alert.alert(error.message)
-    if (!session) Alert.alert('Please check your inbox for email verification!')
-    setLoading(false)
+      if (error) {
+        if (error.message.includes('already registered')) {
+          Alert.alert('Registration Error', 'This email is already registered. Please sign in instead.')
+        } else {
+          Alert.alert('Error', error.message)
+        }
+      } else if (!session) {
+        Alert.alert('Verification Required', 'Please check your inbox for email verification!')
+      }
+    } catch (error) {
+      Alert.alert('Error', 'An unexpected error occurred. Please try again.')
+    } finally {
+      setLoading(false)
+    }
   }
 
   return (
