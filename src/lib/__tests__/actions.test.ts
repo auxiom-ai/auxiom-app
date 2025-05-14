@@ -54,16 +54,28 @@ describe('User Actions', () => {
     (supabase.auth.getUser as jest.Mock).mockResolvedValue({
       data: { user: { id: 1 } }
     });
+
+    // Setup default mock responses
+    const mockSelect = jest.fn().mockReturnThis();
+    const mockEq = jest.fn().mockReturnThis();
+    const mockSingle = jest.fn().mockResolvedValue({ data: mockUser });
+
+    (supabase.from as jest.Mock).mockReturnValue({
+      select: mockSelect,
+      eq: mockEq,
+      single: mockSingle,
+      insert: jest.fn().mockReturnThis(),
+      update: jest.fn().mockReturnThis()
+    });
   });
 
   describe('getUserProfile', () => {
     it('should return user profile data', async () => {
-      (supabase.from('users').select().eq().single as jest.Mock).mockResolvedValue({
-        data: mockUser
-      });
-
       const result = await getUserProfile();
       expect(result).toEqual(mockUser);
+      expect(supabase.from).toHaveBeenCalledWith('users');
+      expect(supabase.from('users').select).toHaveBeenCalled();
+      expect(supabase.from('users').select().eq).toHaveBeenCalledWith('id', 1);
     });
 
     it('should redirect if user is not authenticated', async () => {
@@ -83,6 +95,7 @@ describe('User Actions', () => {
 
       const result = await getUserKeywords();
       expect(result).toEqual(mockUser.keywords);
+      expect(supabase.from('users').select().eq).toHaveBeenCalledWith('id', 1);
     });
   });
 
@@ -94,6 +107,7 @@ describe('User Actions', () => {
 
       const result = await getUserDeliveryDay();
       expect(result).toBe(mockUser.delivery_day);
+      expect(supabase.from('users').select().eq).toHaveBeenCalledWith('id', 1);
     });
   });
 
@@ -106,6 +120,7 @@ describe('User Actions', () => {
 
       const result = await getUserDeliveryStatus();
       expect(result).toBe(true);
+      expect(supabase.from('users').select().eq).toHaveBeenCalledWith('id', 1);
     });
 
     it('should return false if user has no recent delivery', async () => {
@@ -116,6 +131,7 @@ describe('User Actions', () => {
 
       const result = await getUserDeliveryStatus();
       expect(result).toBe(false);
+      expect(supabase.from('users').select().eq).toHaveBeenCalledWith('id', 1);
     });
   });
 
@@ -127,6 +143,7 @@ describe('User Actions', () => {
 
       const result = await getUserAccountStatus();
       expect(result).toBe(mockUser.active);
+      expect(supabase.from('users').select().eq).toHaveBeenCalledWith('id', 1);
     });
   });
 
@@ -138,6 +155,7 @@ describe('User Actions', () => {
 
       const result = await getUserPlan();
       expect(result).toBe(mockUser.plan);
+      expect(supabase.from('users').select().eq).toHaveBeenCalledWith('id', 1);
     });
   });
 
@@ -154,6 +172,7 @@ describe('User Actions', () => {
 
       const result = await getUserPodcasts();
       expect(result).toEqual(mockPodcasts);
+      expect(supabase.from('podcasts').select().eq).toHaveBeenCalledWith('user_id', 1);
     });
   });
 
@@ -165,6 +184,8 @@ describe('User Actions', () => {
 
       const result = await updatePodcastListenedStatus(1);
       expect(result).toEqual({ success: 'Podcast marked as listened.' });
+      expect(supabase.from('podcasts').update).toHaveBeenCalledWith({ listened: true });
+      expect(supabase.from('podcasts').update().eq).toHaveBeenCalledWith('id', 1);
     });
 
     it('should return error if podcast not found', async () => {
@@ -185,6 +206,7 @@ describe('User Actions', () => {
 
       const result = await getNewsletterStatus();
       expect(result).toBe(true);
+      expect(supabase.from('emails').select().eq).toHaveBeenCalledWith('email', mockUser.email);
     });
 
     it('should return false if user is not subscribed', async () => {
@@ -205,6 +227,7 @@ describe('User Actions', () => {
 
       const result = await subscribeToNewsletter();
       expect(result).toEqual({ success: 'Successfully subscribed to newsletter.' });
+      expect(supabase.from('emails').insert).toHaveBeenCalledWith({ email: mockUser.email });
     });
 
     it('should handle subscription error', async () => {
@@ -225,6 +248,7 @@ describe('User Actions', () => {
 
       const result = await getVerificationStatus();
       expect(result).toBe(mockUser.verified);
+      expect(supabase.from('users').select().eq).toHaveBeenCalledWith('id', 1);
     });
   });
 
@@ -240,6 +264,7 @@ describe('User Actions', () => {
 
       const result = await getOnboardingStatus();
       expect(result).toBe(true);
+      expect(supabase.from('users').select().eq).toHaveBeenCalledWith('id', 1);
     });
 
     it('should return false if onboarding is incomplete', async () => {
