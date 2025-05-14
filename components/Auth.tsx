@@ -24,6 +24,7 @@ export default function Auth() {
   const [loading, setLoading] = useState(false)
   const [rememberMe, setRememberMe] = useState(false)
   const [errors, setErrors] = useState<{ email?: string; password?: string }>({})
+  const [isResetMode, setIsResetMode] = useState(false)
 
   const validateEmail = (email: string): boolean => {
     const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/
@@ -122,77 +123,130 @@ export default function Auth() {
     }
   }
 
+  async function handlePasswordReset() {
+    if (!email.trim()) {
+      setErrors({ email: 'Email is required' })
+      return
+    }
+
+    if (!validateEmail(email)) {
+      setErrors({ email: 'Please enter a valid email address' })
+      return
+    }
+
+    setLoading(true)
+    try {
+      const { error } = await supabase.auth.resetPasswordForEmail(email.trim(), {
+        redirectTo: 'auxiom://reset-password',
+      })
+
+      if (error) {
+        Alert.alert('Error', error.message)
+      } else {
+        Alert.alert(
+          'Password Reset Email Sent',
+          'Please check your email for the password reset link.',
+          [{ text: 'OK', onPress: () => setIsResetMode(false) }]
+        )
+      }
+    } catch (error) {
+      Alert.alert('Error', 'An unexpected error occurred. Please try again.')
+    } finally {
+      setLoading(false)
+    }
+  }
+
   return (
     <View style={styles.container}>
-      <View style={[styles.verticallySpaced, styles.mt20]}>
-        <Input variant="outline" size="md">
-          <InputField
-            placeholder="email@address.com"
-            value={email}
-            onChangeText={(text) => {
-              setEmail(text)
-              if (errors.email) {
-                setErrors(prev => ({ ...prev, email: undefined }))
-              }
-            }}
-            autoCapitalize="none"
-            keyboardType="email-address"
-            autoComplete="email"
-          />
-        </Input>
-        {errors.email && (
-          <Text style={styles.errorText}>{errors.email}</Text>
+      <View style={styles.formContainer}>
+        <View style={styles.inputContainer}>
+          <Input>
+            <InputField
+              placeholder="Email"
+              value={email}
+              onChangeText={setEmail}
+              autoCapitalize="none"
+              keyboardType="email-address"
+            />
+          </Input>
+          {errors.email && <Text style={styles.errorText}>{errors.email}</Text>}
+        </View>
+
+        {!isResetMode && (
+          <View style={styles.inputContainer}>
+            <Input>
+              <InputField
+                placeholder="Password"
+                value={password}
+                onChangeText={setPassword}
+                secureTextEntry
+              />
+            </Input>
+            {errors.password && <Text style={styles.errorText}>{errors.password}</Text>}
+          </View>
         )}
-      </View>
-      <View style={styles.verticallySpaced}>
-        <Input variant="outline" size="md">
-          <InputField
-            placeholder="Password"
-            value={password}
-            onChangeText={(text) => {
-              setPassword(text)
-              if (errors.password) {
-                setErrors(prev => ({ ...prev, password: undefined }))
-              }
-            }}
-            secureTextEntry={true}
-            autoCapitalize="none"
-            autoComplete="password"
-          />
-        </Input>
-        {errors.password && (
-          <Text style={styles.errorText}>{errors.password}</Text>
+
+        {!isResetMode && (
+          <View style={styles.checkboxContainer}>
+            <Checkbox
+              value={rememberMe}
+              onValueChange={setRememberMe}
+            />
+            <Text style={styles.checkboxLabel}>Remember me</Text>
+          </View>
         )}
-      </View>
-      <View style={[styles.verticallySpaced, styles.rememberMeContainer]}>
-        <Checkbox
-          value={rememberMe}
-          onValueChange={setRememberMe}
-          aria-label="Remember me"
-        />
-        <Text style={styles.rememberMeText}>Remember me</Text>
-      </View>
-      <View style={[styles.verticallySpaced, styles.mt20]}>
-        <Button
-          size="md" 
-          variant="solid" 
-          action="primary"
-          disabled={loading}
-          onPress={() => signInWithEmail()}
-        >
-          <ButtonText>Sign in</ButtonText>
-        </Button>
-      </View>
-      <View style={styles.verticallySpaced}>
-        <Button 
-          size="md" 
-          variant="solid" 
-          action="primary"
-          disabled={loading}
-          onPress={() => signUpWithEmail()}
-        >
-          <ButtonText>Sign up</ButtonText>
-        </Button>
+
+        <View style={styles.buttonContainer}>
+          {isResetMode ? (
+            <>
+              <Button
+                size="md"
+                variant="solid"
+                action="primary"
+                disabled={loading}
+                onPress={handlePasswordReset}
+              >
+                <ButtonText>{loading ? 'Sending...' : 'Reset Password'}</ButtonText>
+              </Button>
+              <Button
+                size="md"
+                variant="outline"
+                action="secondary"
+                onPress={() => setIsResetMode(false)}
+              >
+                <ButtonText>Back to Sign In</ButtonText>
+              </Button>
+            </>
+          ) : (
+            <>
+              <Button
+                size="md"
+                variant="solid"
+                action="primary"
+                disabled={loading}
+                onPress={signInWithEmail}
+              >
+                <ButtonText>{loading ? 'Signing in...' : 'Sign In'}</ButtonText>
+              </Button>
+              <Button
+                size="md"
+                variant="outline"
+                action="secondary"
+                onPress={() => setIsResetMode(true)}
+              >
+                <ButtonText>Forgot Password?</ButtonText>
+              </Button>
+              <Button
+                size="md"
+                variant="outline"
+                action="secondary"
+                onPress={signUpWithEmail}
+              >
+                <ButtonText>Sign Up</ButtonText>
+              </Button>
+            </>
+          )}
+        </View>
       </View>
     </View>
   )
@@ -200,28 +254,32 @@ export default function Auth() {
 
 const styles = StyleSheet.create({
   container: {
-    marginTop: 40,
-    padding: 12,
+    flex: 1,
+    padding: 20,
+    justifyContent: 'center',
   },
-  verticallySpaced: {
-    paddingTop: 4,
-    paddingBottom: 4,
-    alignSelf: 'stretch',
+  formContainer: {
+    width: '100%',
+    maxWidth: 400,
+    alignSelf: 'center',
   },
-  mt20: {
-    marginTop: 20,
-  },
-  rememberMeContainer: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    marginTop: 8,
-  },
-  rememberMeText: {
-    marginLeft: 8,
+  inputContainer: {
+    marginBottom: 16,
   },
   errorText: {
-    color: '#dc2626',
-    fontSize: 14,
+    color: 'red',
+    fontSize: 12,
     marginTop: 4,
+  },
+  checkboxContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginBottom: 16,
+  },
+  checkboxLabel: {
+    marginLeft: 8,
+  },
+  buttonContainer: {
+    gap: 12,
   },
 })
