@@ -1,105 +1,133 @@
 'use server';
 
-import { db } from '@/lib/db/drizzle';
-import { addEmailToNewsletter, getUser, updateListened } from '@/lib/db/queries';
-import {
-    emails,
-    podcasts,
-    User
-} from '@/lib/db/schema';
-import { eq } from 'drizzle-orm';
+import { supabase } from '@/lib/db/drizzle';
 import { redirect } from 'next/navigation';
 
 // Get user profile information
-export async function getUserProfile(): Promise<Partial<User> | null> {
-  const user = await getUser();
+export async function getUserProfile() {
+  const { data: { user } } = await supabase.auth.getUser();
   if (!user) {
     redirect('/sign-in');
   }
 
-  return {
-    id: user.id,
-    email: user.email,
-    name: user.name,
-    occupation: user.occupation,
-    industry: user.industry,
-    role: user.role,
-    plan: user.plan,
-    active: user.active,
-    verified: user.verified
-  };
+  const { data } = await supabase
+    .from('users')
+    .select('*')
+    .eq('id', user.id)
+    .single();
+
+  return data;
 }
 
 // Get user's keywords/interests
 export async function getUserKeywords(): Promise<string[]> {
-  const user = await getUser();
+  const { data: { user } } = await supabase.auth.getUser();
   if (!user) {
     redirect('/sign-in');
   }
 
-  return Array.isArray(user.keywords) ? user.keywords : [];
+  const { data } = await supabase
+    .from('users')
+    .select('keywords')
+    .eq('id', user.id)
+    .single();
+
+  return data?.keywords || [];
 }
 
 // Get user's delivery day preference
 export async function getUserDeliveryDay(): Promise<number> {
-  const user = await getUser();
+  const { data: { user } } = await supabase.auth.getUser();
   if (!user) {
     redirect('/sign-in');
   }
 
-  return user.deliveryDay;
+  const { data } = await supabase
+    .from('users')
+    .select('delivery_day')
+    .eq('id', user.id)
+    .single();
+
+  return data?.delivery_day || 0;
 }
 
 // Get user's delivery status
 export async function getUserDeliveryStatus(): Promise<boolean> {
-  const user = await getUser();
+  const { data: { user } } = await supabase.auth.getUser();
   if (!user) {
     redirect('/sign-in');
   }
+
+  const { data } = await supabase
+    .from('users')
+    .select('delivered')
+    .eq('id', user.id)
+    .single();
 
   const now = new Date();
   const lastSunday = new Date();
   lastSunday.setDate(now.getDate() - (now.getDay() + 1));
 
-  return user.delivered >= lastSunday;
+  return data?.delivered >= lastSunday;
 }
 
 // Get user's account status
 export async function getUserAccountStatus(): Promise<boolean> {
-  const user = await getUser();
+  const { data: { user } } = await supabase.auth.getUser();
   if (!user) {
     redirect('/sign-in');
   }
 
-  return user.active;
+  const { data } = await supabase
+    .from('users')
+    .select('active')
+    .eq('id', user.id)
+    .single();
+
+  return data?.active || false;
 }
 
 // Get user's current subscription plan
 export async function getUserPlan(): Promise<string> {
-  const user = await getUser();
+  const { data: { user } } = await supabase.auth.getUser();
   if (!user) {
     redirect('/sign-in');
   }
 
-  return user.plan;
+  const { data } = await supabase
+    .from('users')
+    .select('plan')
+    .eq('id', user.id)
+    .single();
+
+  return data?.plan || 'free';
 }
 
 // Get user's podcasts
 export async function getUserPodcasts() {
-  const user = await getUser();
+  const { data: { user } } = await supabase.auth.getUser();
   if (!user) {
     redirect('/sign-in');
   }
 
-  const userPodcasts = await db.select().from(podcasts).where(eq(podcasts.user_id, user.id));
-  return userPodcasts;
+  const { data } = await supabase
+    .from('podcasts')
+    .select('*')
+    .eq('user_id', user.id);
+
+  return data || [];
 }
 
 // Update user's listened status for a podcast
 export async function updatePodcastListenedStatus(podcastId: number) {
-  const res = await updateListened(podcastId);
+  const { data, error } = await supabase
+    .from('podcasts')
+    .update({ listened: true })
+    .eq('id', podcastId)
+    .select()
+    .single();
 
-  if (res.length === 0) {
+  if (error) {
     return { error: 'Podcast not found.' };
   } else {
     return { success: 'Podcast marked as listened.' };
@@ -108,24 +136,33 @@ export async function updatePodcastListenedStatus(podcastId: number) {
 
 // Get user's newsletter subscription status
 export async function getNewsletterStatus(): Promise<boolean> {
-  const user = await getUser();
+  const { data: { user } } = await supabase.auth.getUser();
   if (!user) {
     redirect('/sign-in');
   }
 
-  const emailRecord = await db.select().from(emails).where(eq(emails.email, user.email)).limit(1);
-  return emailRecord.length > 0;
+  const { data } = await supabase
+    .from('emails')
+    .select('*')
+    .eq('email', user.email)
+    .single();
+
+  return !!data;
 }
 
 // Add user to newsletter
 export async function subscribeToNewsletter() {
-  const user = await getUser();
+  const { data: { user } } = await supabase.auth.getUser();
   if (!user) {
     redirect('/sign-in');
   }
 
   try {
-    await addEmailToNewsletter(user.email);
+    const { error } = await supabase
+      .from('emails')
+      .insert({ email: user.email });
+
+    if (error) throw error;
     return { success: 'Successfully subscribed to newsletter.' };
   } catch (error) {
     console.error("Error subscribing to newsletter:", error);
@@ -135,20 +172,32 @@ export async function subscribeToNewsletter() {
 
 // Get user's verification status
 export async function getVerificationStatus(): Promise<boolean> {
-  const user = await getUser();
+  const { data: { user } } = await supabase.auth.getUser();
   if (!user) {
     redirect('/sign-in');
   }
 
-  return user.verified;
+  const { data } = await supabase
+    .from('users')
+    .select('verified')
+    .eq('id', user.id)
+    .single();
+
+  return data?.verified || false;
 }
 
 // Get user's onboarding completion status
 export async function getOnboardingStatus(): Promise<boolean> {
-  const user = await getUser();
+  const { data: { user } } = await supabase.auth.getUser();
   if (!user) {
     redirect('/sign-in');
   }
 
-  return !!(user.name && user.occupation && Array.isArray(user.keywords) && user.keywords.length >= 5);
+  const { data } = await supabase
+    .from('users')
+    .select('name, occupation, keywords')
+    .eq('id', user.id)
+    .single();
+
+  return !!(data?.name && data?.occupation && Array.isArray(data?.keywords) && data?.keywords.length >= 5);
 } 
