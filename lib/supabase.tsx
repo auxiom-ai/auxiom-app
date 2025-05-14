@@ -10,5 +10,16 @@ export const supabase = createClient(supabaseUrl, supabaseAnonKey, {
     autoRefreshToken: true,
     persistSession: true,
     detectSessionInUrl: false,
+    flowType: 'pkce',
+    debug: __DEV__,
+  }
+})
+
+// Set up refresh token handling
+supabase.auth.onAuthStateChange(async (event, session) => {
+  if (event === 'TOKEN_REFRESHED') {
+    console.log('Token refreshed successfully')
+  } else if (event === 'SIGNED_OUT') {
+    console.log('User signed out')
   }
 })

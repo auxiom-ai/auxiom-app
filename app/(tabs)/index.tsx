@@ -1,6 +1,7 @@
 import Account from '@/components/Account'
 import Auth from '@/components/Auth'
 import { supabase } from '@/lib/supabase'
+import { useRefreshToken } from '@/lib/useRefreshToken'
 import { useSessionTimeout } from '@/lib/useSessionTimeout'
 import { Session } from '@supabase/supabase-js'
 import { useEffect, useState } from 'react'
@@ -11,6 +12,9 @@ export default function App() {
   
   // Initialize session timeout
   useSessionTimeout()
+  
+  // Initialize refresh token handling
+  useRefreshToken()
 
   useEffect(() => {
     supabase.auth.getSession().then(({ data: { session } }) => {
