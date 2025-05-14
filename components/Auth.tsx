@@ -24,6 +24,8 @@ export default function Auth() {
   const [loading, setLoading] = useState(false)
   const [rememberMe, setRememberMe] = useState(false)
   const [errors, setErrors] = useState<{ email?: string; password?: string }>({})
+  const [isResetMode, setIsResetMode] = useState(false)
+  const [isSignUpMode, setIsSignUpMode] = useState(false)
 
   const validateEmail = (email: string): boolean => {
     const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/
@@ -122,77 +124,193 @@ export default function Auth() {
     }
   }
 
+  async function handlePasswordReset() {
+    if (!email.trim()) {
+      setErrors({ email: 'Email is required' })
+      return
+    }
+
+    if (!validateEmail(email)) {
+      setErrors({ email: 'Please enter a valid email address' })
+      return
+    }
+
+    setLoading(true)
+    try {
+      const { error } = await supabase.auth.resetPasswordForEmail(email.trim(), {
+        redirectTo: 'auxiom://reset-password',
+      })
+
+      if (error) {
+        Alert.alert('Error', error.message)
+      } else {
+        Alert.alert(
+          'Password Reset Email Sent',
+          'Please check your email for the password reset link.',
+          [{ text: 'OK', onPress: () => setIsResetMode(false) }]
+        )
+      }
+    } catch (error) {
+      Alert.alert('Error', 'An unexpected error occurred. Please try again.')
+    } finally {
+      setLoading(false)
+    }
+  }
+
+  // Reset modes when switching
+  function handleSwitchToSignUp() {
+    setIsSignUpMode(true);
+    setIsResetMode(false);
+    setErrors({});
+    setPassword('');
+  }
+  function handleSwitchToSignIn() {
+    setIsSignUpMode(false);
+    setIsResetMode(false);
+    setErrors({});
+    setPassword('');
+  }
+
   return (
     <View style={styles.container}>
-      <View style={[styles.verticallySpaced, styles.mt20]}>
-        <Input variant="outline" size="md">
-          <InputField
-            placeholder="email@address.com"
-            value={email}
-            onChangeText={(text) => {
-              setEmail(text)
-              if (errors.email) {
-                setErrors(prev => ({ ...prev, email: undefined }))
-              }
-            }}
-            autoCapitalize="none"
-            keyboardType="email-address"
-            autoComplete="email"
-          />
-        </Input>
-        {errors.email && (
-          <Text style={styles.errorText}>{errors.email}</Text>
+      <View style={styles.formContainer}>
+        <Text style={styles.title}>
+          {isResetMode
+            ? 'Reset Password'
+            : isSignUpMode
+              ? 'Create Account'
+              : 'Welcome Back'}
+        </Text>
+        <Text style={styles.subtitle}>
+          {isResetMode
+            ? 'Enter your email to receive a password reset link'
+            : isSignUpMode
+              ? 'Sign up to get started'
+              : 'Sign in to your account to continue'}
+        </Text>
+
+        <View style={styles.inputContainer}>
+          <Input>
+            <InputField
+              placeholder="Email"
+              value={email}
+              onChangeText={setEmail}
+              autoCapitalize="none"
+              keyboardType="email-address"
+            />
+          </Input>
+          {errors.email && <Text style={styles.errorText}>{errors.email}</Text>}
+        </View>
+
+        {!isResetMode && (
+          <>
+            <View style={styles.inputContainer}>
+              <Input>
+                <InputField
+                  placeholder="Password"
+                  value={password}
+                  onChangeText={setPassword}
+                  secureTextEntry
+                />
+              </Input>
+              {errors.password && <Text style={styles.errorText}>{errors.password}</Text>}
+            </View>
+
+            {!isSignUpMode && (
+              <View style={styles.checkboxContainer}>
+                <Checkbox
+                  value={rememberMe}
+                  onValueChange={setRememberMe}
+                />
+                <Text style={styles.checkboxLabel}>Remember me</Text>
+              </View>
+            )}
+          </>
         )}
-      </View>
-      <View style={styles.verticallySpaced}>
-        <Input variant="outline" size="md">
-          <InputField
-            placeholder="Password"
-            value={password}
-            onChangeText={(text) => {
-              setPassword(text)
-              if (errors.password) {
-                setErrors(prev => ({ ...prev, password: undefined }))
-              }
-            }}
-            secureTextEntry={true}
-            autoCapitalize="none"
-            autoComplete="password"
-          />
-        </Input>
-        {errors.password && (
-          <Text style={styles.errorText}>{errors.password}</Text>
-        )}
-      </View>
-      <View style={[styles.verticallySpaced, styles.rememberMeContainer]}>
-        <Checkbox
-          value={rememberMe}
-          onValueChange={setRememberMe}
-          aria-label="Remember me"
-        />
-        <Text style={styles.rememberMeText}>Remember me</Text>
-      </View>
-      <View style={[styles.verticallySpaced, styles.mt20]}>
-        <Button
-          size="md" 
-          variant="solid" 
-          action="primary"
-          disabled={loading}
-          onPress={() => signInWithEmail()}
-        >
-          <ButtonText>Sign in</ButtonText>
-        </Button>
-      </View>
-      <View style={styles.verticallySpaced}>
-        <Button 
-          size="md" 
-          variant="solid" 
-          action="primary"
-          disabled={loading}
-          onPress={() => signUpWithEmail()}
-        >
-          <ButtonText>Sign up</ButtonText>
-        </Button>
+
+        <View style={styles.buttonContainer}>
+          {isResetMode ? (
+            <>
+              <Button
+                size="md"
+                variant="solid"
+                action="primary"
+                disabled={loading}
+                onPress={handlePasswordReset}
+                style={styles.button}
+              >
+                <ButtonText>{loading ? 'Sending...' : 'Reset Password'}</ButtonText>
+              </Button>
+              <Button
+                size="md"
+                variant="outline"
+                action="secondary"
+                onPress={handleSwitchToSignIn}
+                style={styles.button}
+              >
+                <ButtonText>Back to Sign In</ButtonText>
+              </Button>
+            </>
+          ) : isSignUpMode ? (
+            <>
+              <Button
+                size="md"
+                variant="solid"
+                action="primary"
+                disabled={loading}
+                onPress={signUpWithEmail}
+                style={styles.button}
+              >
+                <ButtonText>{loading ? 'Creating...' : 'Create Account'}</ButtonText>
+              </Button>
+              <Button
+                size="md"
+                variant="outline"
+                action="secondary"
+                onPress={handleSwitchToSignIn}
+                style={styles.button}
+              >
+                <ButtonText>Back to Sign In</ButtonText>
+              </Button>
+            </>
+          ) : (
+            <>
+              <Button
+                size="md"
+                variant="solid"
+                action="primary"
+                disabled={loading}
+                onPress={signInWithEmail}
+                style={styles.button}
+              >
+                <ButtonText>{loading ? 'Signing in...' : 'Sign In'}</ButtonText>
+              </Button>
+              <Button
+                size="md"
+                variant="outline"
+                action="secondary"
+                onPress={() => setIsResetMode(true)}
+                style={styles.button}
+              >
+                <ButtonText>Forgot Password?</ButtonText>
+              </Button>
+              <View style={styles.divider}>
+                <View style={styles.dividerLine} />
+                <Text style={styles.dividerText}>or</Text>
+                <View style={styles.dividerLine} />
+              </View>
+              <Button
+                size="md"
+                variant="outline"
+                action="secondary"
+                onPress={handleSwitchToSignUp}
+                style={styles.button}
+              >
+                <ButtonText>Create Account</ButtonText>
+              </Button>
+            </>
+          )}
+        </View>
       </View>
     </View>
   )
@@ -200,28 +318,80 @@ export default function Auth() {
 
 const styles = StyleSheet.create({
   container: {
-    marginTop: 40,
-    padding: 12,
+    flex: 1,
+    padding: 24,
+    justifyContent: 'center',
+    backgroundColor: '#fafafa',
   },
-  verticallySpaced: {
-    paddingTop: 4,
-    paddingBottom: 4,
-    alignSelf: 'stretch',
+  formContainer: {
+    width: '100%',
+    maxWidth: 400,
+    alignSelf: 'center',
+    padding: 32,
+    borderRadius: 16,
+    backgroundColor: '#fff',
+    shadowColor: '#000',
+    shadowOffset: {
+      width: 0,
+      height: 4,
+    },
+    shadowOpacity: 0.12,
+    shadowRadius: 12,
+    elevation: 8,
+    marginVertical: 32,
   },
-  mt20: {
-    marginTop: 20,
+  title: {
+    fontSize: 30,
+    fontWeight: 'bold',
+    marginBottom: 10,
+    textAlign: 'center',
+    color: '#1a1a1a',
   },
-  rememberMeContainer: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    marginTop: 8,
+  subtitle: {
+    fontSize: 16,
+    color: '#666',
+    marginBottom: 32,
+    textAlign: 'center',
   },
-  rememberMeText: {
-    marginLeft: 8,
+  inputContainer: {
+    marginBottom: 24,
   },
   errorText: {
     color: '#dc2626',
-    fontSize: 14,
+    fontSize: 13,
     marginTop: 4,
+    marginLeft: 4,
+  },
+  checkboxContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginBottom: 32,
+  },
+  checkboxLabel: {
+    marginLeft: 8,
+    fontSize: 15,
+    color: '#4b5563',
+  },
+  buttonContainer: {
+    gap: 18,
+    marginTop: 8,
+  },
+  button: {
+    marginVertical: 4,
+  },
+  divider: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginVertical: 20,
+  },
+  dividerLine: {
+    flex: 1,
+    height: 1,
+    backgroundColor: '#e5e7eb',
+  },
+  dividerText: {
+    marginHorizontal: 12,
+    color: '#6b7280',
+    fontSize: 15,
   },
 })
