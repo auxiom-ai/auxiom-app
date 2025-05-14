@@ -20,13 +20,7 @@ jest.mock('../db/drizzle', () => ({
     auth: {
       getUser: jest.fn()
     },
-    from: jest.fn(() => ({
-      select: jest.fn().mockReturnThis(),
-      eq: jest.fn().mockReturnThis(),
-      single: jest.fn(),
-      insert: jest.fn().mockReturnThis(),
-      update: jest.fn().mockReturnThis()
-    }))
+    from: jest.fn()
   }
 }));
 
@@ -47,7 +41,6 @@ describe('User Actions', () => {
   };
 
   beforeEach(() => {
-    // Reset all mocks before each test
     jest.clearAllMocks();
     
     // Mock auth.getUser
@@ -56,17 +49,15 @@ describe('User Actions', () => {
     });
 
     // Setup default mock responses
-    const mockSelect = jest.fn().mockReturnThis();
-    const mockEq = jest.fn().mockReturnThis();
-    const mockSingle = jest.fn().mockResolvedValue({ data: mockUser });
-
-    (supabase.from as jest.Mock).mockReturnValue({
-      select: mockSelect,
-      eq: mockEq,
-      single: mockSingle,
+    const mockChain = {
+      select: jest.fn().mockReturnThis(),
+      eq: jest.fn().mockReturnThis(),
+      single: jest.fn().mockResolvedValue({ data: mockUser }),
       insert: jest.fn().mockReturnThis(),
       update: jest.fn().mockReturnThis()
-    });
+    };
+
+    (supabase.from as jest.Mock).mockReturnValue(mockChain);
   });
 
   describe('getUserProfile', () => {
@@ -89,9 +80,12 @@ describe('User Actions', () => {
 
   describe('getUserKeywords', () => {
     it('should return user keywords', async () => {
-      (supabase.from('users').select().eq().single as jest.Mock).mockResolvedValue({
-        data: { keywords: mockUser.keywords }
-      });
+      const mockChain = {
+        select: jest.fn().mockReturnThis(),
+        eq: jest.fn().mockReturnThis(),
+        single: jest.fn().mockResolvedValue({ data: { keywords: mockUser.keywords } })
+      };
+      (supabase.from as jest.Mock).mockReturnValue(mockChain);
 
       const result = await getUserKeywords();
       expect(result).toEqual(mockUser.keywords);
@@ -101,9 +95,12 @@ describe('User Actions', () => {
 
   describe('getUserDeliveryDay', () => {
     it('should return user delivery day', async () => {
-      (supabase.from('users').select().eq().single as jest.Mock).mockResolvedValue({
-        data: { delivery_day: mockUser.delivery_day }
-      });
+      const mockChain = {
+        select: jest.fn().mockReturnThis(),
+        eq: jest.fn().mockReturnThis(),
+        single: jest.fn().mockResolvedValue({ data: { delivery_day: mockUser.delivery_day } })
+      };
+      (supabase.from as jest.Mock).mockReturnValue(mockChain);
 
       const result = await getUserDeliveryDay();
       expect(result).toBe(mockUser.delivery_day);
@@ -114,9 +111,12 @@ describe('User Actions', () => {
   describe('getUserDeliveryStatus', () => {
     it('should return true if user has recent delivery', async () => {
       const recentDate = new Date().toISOString();
-      (supabase.from('users').select().eq().single as jest.Mock).mockResolvedValue({
-        data: { delivered: recentDate }
-      });
+      const mockChain = {
+        select: jest.fn().mockReturnThis(),
+        eq: jest.fn().mockReturnThis(),
+        single: jest.fn().mockResolvedValue({ data: { delivered: recentDate } })
+      };
+      (supabase.from as jest.Mock).mockReturnValue(mockChain);
 
       const result = await getUserDeliveryStatus();
       expect(result).toBe(true);
@@ -125,9 +125,12 @@ describe('User Actions', () => {
 
     it('should return false if user has no recent delivery', async () => {
       const oldDate = new Date(Date.now() - 7 * 24 * 60 * 60 * 1000).toISOString();
-      (supabase.from('users').select().eq().single as jest.Mock).mockResolvedValue({
-        data: { delivered: oldDate }
-      });
+      const mockChain = {
+        select: jest.fn().mockReturnThis(),
+        eq: jest.fn().mockReturnThis(),
+        single: jest.fn().mockResolvedValue({ data: { delivered: oldDate } })
+      };
+      (supabase.from as jest.Mock).mockReturnValue(mockChain);
 
       const result = await getUserDeliveryStatus();
       expect(result).toBe(false);
@@ -137,9 +140,12 @@ describe('User Actions', () => {
 
   describe('getUserAccountStatus', () => {
     it('should return user account status', async () => {
-      (supabase.from('users').select().eq().single as jest.Mock).mockResolvedValue({
-        data: { active: mockUser.active }
-      });
+      const mockChain = {
+        select: jest.fn().mockReturnThis(),
+        eq: jest.fn().mockReturnThis(),
+        single: jest.fn().mockResolvedValue({ data: { active: mockUser.active } })
+      };
+      (supabase.from as jest.Mock).mockReturnValue(mockChain);
 
       const result = await getUserAccountStatus();
       expect(result).toBe(mockUser.active);
@@ -149,9 +155,12 @@ describe('User Actions', () => {
 
   describe('getUserPlan', () => {
     it('should return user plan', async () => {
-      (supabase.from('users').select().eq().single as jest.Mock).mockResolvedValue({
-        data: { plan: mockUser.plan }
-      });
+      const mockChain = {
+        select: jest.fn().mockReturnThis(),
+        eq: jest.fn().mockReturnThis(),
+        single: jest.fn().mockResolvedValue({ data: { plan: mockUser.plan } })
+      };
+      (supabase.from as jest.Mock).mockReturnValue(mockChain);
 
       const result = await getUserPlan();
       expect(result).toBe(mockUser.plan);
@@ -166,9 +175,11 @@ describe('User Actions', () => {
         { id: 2, title: 'Podcast 2', user_id: 1 }
       ];
 
-      (supabase.from('podcasts').select().eq as jest.Mock).mockResolvedValue({
-        data: mockPodcasts
-      });
+      const mockChain = {
+        select: jest.fn().mockReturnThis(),
+        eq: jest.fn().mockResolvedValue({ data: mockPodcasts })
+      };
+      (supabase.from as jest.Mock).mockReturnValue(mockChain);
 
       const result = await getUserPodcasts();
       expect(result).toEqual(mockPodcasts);
@@ -178,20 +189,44 @@ describe('User Actions', () => {
 
   describe('updatePodcastListenedStatus', () => {
     it('should update podcast listened status', async () => {
-      (supabase.from('podcasts').update().eq().select().single as jest.Mock).mockResolvedValue({
-        data: { id: 1, listened: true }
-      });
+      const mockChain = {
+        update: jest.fn().mockImplementation((values: any) => {
+          expect(values).toEqual({ listened: true });
+          return {
+            eq: jest.fn().mockImplementation((column: string, value: any) => {
+              expect(column).toBe('id');
+              expect(value).toBe(1);
+              return {
+                select: jest.fn().mockReturnThis(),
+                single: jest.fn().mockResolvedValue({ data: { id: 1, listened: true } })
+              };
+            })
+          };
+        })
+      };
+      (supabase.from as jest.Mock).mockReturnValue(mockChain);
 
       const result = await updatePodcastListenedStatus(1);
       expect(result).toEqual({ success: 'Podcast marked as listened.' });
-      expect(supabase.from('podcasts').update).toHaveBeenCalledWith({ listened: true });
-      expect(supabase.from('podcasts').update().eq).toHaveBeenCalledWith('id', 1);
     });
 
     it('should return error if podcast not found', async () => {
-      (supabase.from('podcasts').update().eq().select().single as jest.Mock).mockResolvedValue({
-        error: new Error('Not found')
-      });
+      const mockChain = {
+        update: jest.fn().mockImplementation((values: any) => {
+          expect(values).toEqual({ listened: true });
+          return {
+            eq: jest.fn().mockImplementation((column: string, value: any) => {
+              expect(column).toBe('id');
+              expect(value).toBe(999);
+              return {
+                select: jest.fn().mockReturnThis(),
+                single: jest.fn().mockResolvedValue({ error: new Error('Not found') })
+              };
+            })
+          };
+        })
+      };
+      (supabase.from as jest.Mock).mockReturnValue(mockChain);
 
       const result = await updatePodcastListenedStatus(999);
       expect(result).toEqual({ error: 'Podcast not found.' });
@@ -200,9 +235,12 @@ describe('User Actions', () => {
 
   describe('getNewsletterStatus', () => {
     it('should return true if user is subscribed', async () => {
-      (supabase.from('emails').select().eq().single as jest.Mock).mockResolvedValue({
-        data: { email: mockUser.email }
-      });
+      const mockChain = {
+        select: jest.fn().mockReturnThis(),
+        eq: jest.fn().mockReturnThis(),
+        single: jest.fn().mockResolvedValue({ data: { email: mockUser.email } })
+      };
+      (supabase.from as jest.Mock).mockReturnValue(mockChain);
 
       const result = await getNewsletterStatus();
       expect(result).toBe(true);
@@ -210,9 +248,12 @@ describe('User Actions', () => {
     });
 
     it('should return false if user is not subscribed', async () => {
-      (supabase.from('emails').select().eq().single as jest.Mock).mockResolvedValue({
-        data: null
-      });
+      const mockChain = {
+        select: jest.fn().mockReturnThis(),
+        eq: jest.fn().mockReturnThis(),
+        single: jest.fn().mockResolvedValue({ data: null })
+      };
+      (supabase.from as jest.Mock).mockReturnValue(mockChain);
 
       const result = await getNewsletterStatus();
       expect(result).toBe(false);
@@ -221,9 +262,10 @@ describe('User Actions', () => {
 
   describe('subscribeToNewsletter', () => {
     it('should successfully subscribe user', async () => {
-      (supabase.from('emails').insert as jest.Mock).mockResolvedValue({
-        error: null
-      });
+      const mockChain = {
+        insert: jest.fn().mockResolvedValue({ error: null })
+      };
+      (supabase.from as jest.Mock).mockReturnValue(mockChain);
 
       const result = await subscribeToNewsletter();
       expect(result).toEqual({ success: 'Successfully subscribed to newsletter.' });
@@ -231,9 +273,10 @@ describe('User Actions', () => {
     });
 
     it('should handle subscription error', async () => {
-      (supabase.from('emails').insert as jest.Mock).mockResolvedValue({
-        error: new Error('Subscription failed')
-      });
+      const mockChain = {
+        insert: jest.fn().mockResolvedValue({ error: new Error('Subscription failed') })
+      };
+      (supabase.from as jest.Mock).mockReturnValue(mockChain);
 
       const result = await subscribeToNewsletter();
       expect(result).toEqual({ error: 'Failed to subscribe to newsletter.' });
@@ -242,9 +285,12 @@ describe('User Actions', () => {
 
   describe('getVerificationStatus', () => {
     it('should return user verification status', async () => {
-      (supabase.from('users').select().eq().single as jest.Mock).mockResolvedValue({
-        data: { verified: mockUser.verified }
-      });
+      const mockChain = {
+        select: jest.fn().mockReturnThis(),
+        eq: jest.fn().mockReturnThis(),
+        single: jest.fn().mockResolvedValue({ data: { verified: mockUser.verified } })
+      };
+      (supabase.from as jest.Mock).mockReturnValue(mockChain);
 
       const result = await getVerificationStatus();
       expect(result).toBe(mockUser.verified);
@@ -254,13 +300,18 @@ describe('User Actions', () => {
 
   describe('getOnboardingStatus', () => {
     it('should return true if onboarding is complete', async () => {
-      (supabase.from('users').select().eq().single as jest.Mock).mockResolvedValue({
-        data: {
-          name: mockUser.name,
-          occupation: mockUser.occupation,
-          keywords: mockUser.keywords
-        }
-      });
+      const mockChain = {
+        select: jest.fn().mockReturnThis(),
+        eq: jest.fn().mockReturnThis(),
+        single: jest.fn().mockResolvedValue({
+          data: {
+            name: mockUser.name,
+            occupation: mockUser.occupation,
+            keywords: mockUser.keywords
+          }
+        })
+      };
+      (supabase.from as jest.Mock).mockReturnValue(mockChain);
 
       const result = await getOnboardingStatus();
       expect(result).toBe(true);
@@ -268,13 +319,18 @@ describe('User Actions', () => {
     });
 
     it('should return false if onboarding is incomplete', async () => {
-      (supabase.from('users').select().eq().single as jest.Mock).mockResolvedValue({
-        data: {
-          name: '',
-          occupation: '',
-          keywords: []
-        }
-      });
+      const mockChain = {
+        select: jest.fn().mockReturnThis(),
+        eq: jest.fn().mockReturnThis(),
+        single: jest.fn().mockResolvedValue({
+          data: {
+            name: '',
+            occupation: '',
+            keywords: []
+          }
+        })
+      };
+      (supabase.from as jest.Mock).mockReturnValue(mockChain);
 
       const result = await getOnboardingStatus();
       expect(result).toBe(false);
