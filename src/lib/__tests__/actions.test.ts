@@ -43,9 +43,9 @@ describe('User Actions', () => {
   beforeEach(() => {
     jest.clearAllMocks();
     
-    // Mock auth.getUser
+    // Mock auth.getUser with email
     (supabase.auth.getUser as jest.Mock).mockResolvedValue({
-      data: { user: { id: 1 } }
+      data: { user: { id: 1, email: mockUser.email } }
     });
 
     // Setup default mock responses
@@ -110,21 +110,41 @@ describe('User Actions', () => {
 
   describe('getUserDeliveryStatus', () => {
     it('should return true if user has recent delivery', async () => {
-      const recentDate = new Date().toISOString();
+      // Mock the current date to be a Wednesday
+      const mockDate = new Date('2024-03-20T12:00:00Z');
+      jest.useFakeTimers();
+      jest.setSystemTime(mockDate);
+
+      // Set delivered date to be after last Sunday
+      const deliveredDate = new Date('2024-03-19T12:00:00Z').toISOString();
       const mockChain = {
         select: jest.fn().mockReturnThis(),
         eq: jest.fn().mockReturnThis(),
-        single: jest.fn().mockResolvedValue({ data: { delivered: recentDate } })
+        single: jest.fn().mockResolvedValue({ 
+          data: { 
+            delivered: deliveredDate,
+            id: 1 
+          } 
+        })
       };
       (supabase.from as jest.Mock).mockReturnValue(mockChain);
 
       const result = await getUserDeliveryStatus();
       expect(result).toBe(true);
       expect(supabase.from('users').select().eq).toHaveBeenCalledWith('id', 1);
+
+      // Clean up
+      jest.useRealTimers();
     });
 
     it('should return false if user has no recent delivery', async () => {
-      const oldDate = new Date(Date.now() - 7 * 24 * 60 * 60 * 1000).toISOString();
+      // Mock the current date to be a Wednesday
+      const mockDate = new Date('2024-03-20T12:00:00Z');
+      jest.useFakeTimers();
+      jest.setSystemTime(mockDate);
+
+      // Set delivered date to be before last Sunday
+      const oldDate = new Date('2024-03-10T12:00:00Z').toISOString();
       const mockChain = {
         select: jest.fn().mockReturnThis(),
         eq: jest.fn().mockReturnThis(),
@@ -135,6 +155,9 @@ describe('User Actions', () => {
       const result = await getUserDeliveryStatus();
       expect(result).toBe(false);
       expect(supabase.from('users').select().eq).toHaveBeenCalledWith('id', 1);
+
+      // Clean up
+      jest.useRealTimers();
     });
   });
 
@@ -238,7 +261,12 @@ describe('User Actions', () => {
       const mockChain = {
         select: jest.fn().mockReturnThis(),
         eq: jest.fn().mockReturnThis(),
-        single: jest.fn().mockResolvedValue({ data: { email: mockUser.email } })
+        single: jest.fn().mockResolvedValue({ 
+          data: { 
+            email: mockUser.email,
+            id: 1 
+          } 
+        })
       };
       (supabase.from as jest.Mock).mockReturnValue(mockChain);
 
@@ -263,7 +291,10 @@ describe('User Actions', () => {
   describe('subscribeToNewsletter', () => {
     it('should successfully subscribe user', async () => {
       const mockChain = {
-        insert: jest.fn().mockResolvedValue({ error: null })
+        insert: jest.fn().mockResolvedValue({ 
+          data: { email: mockUser.email },
+          error: null 
+        })
       };
       (supabase.from as jest.Mock).mockReturnValue(mockChain);
 
@@ -315,25 +346,4 @@ describe('User Actions', () => {
 
       const result = await getOnboardingStatus();
       expect(result).toBe(true);
-      expect(supabase.from('users').select().eq).toHaveBeenCalledWith('id', 1);
-    });
-
-    it('should return false if onboarding is incomplete', async () => {
-      const mockChain = {
-        select: jest.fn().mockReturnThis(),
-        eq: jest.fn().mockReturnThis(),
-        single: jest.fn().mockResolvedValue({
-          data: {
-            name: '',
-            occupation: '',
-            keywords: []
-          }
-        })
-      };
-      (supabase.from as jest.Mock).mockReturnValue(mockChain);
-
-      const result = await getOnboardingStatus();
-      expect(result).toBe(false);
-    });
-  });
-}); 
+      expect(supabase.from('users').select().eq).toHaveB
