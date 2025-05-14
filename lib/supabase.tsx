@@ -10,6 +10,7 @@ const storageAdapter = {
   getItem: async (key: string) => {
     try {
       const value = await AsyncStorage.getItem(key);
+      console.log('Storage getItem:', { key, value: value ? 'exists' : 'null' });
       return value;
     } catch (error) {
       console.error('Error reading from storage:', error);
@@ -18,6 +19,7 @@ const storageAdapter = {
   },
   setItem: async (key: string, value: string) => {
     try {
+      console.log('Storage setItem:', { key, valueLength: value.length });
       await AsyncStorage.setItem(key, value);
     } catch (error) {
       console.error('Error writing to storage:', error);
@@ -25,6 +27,7 @@ const storageAdapter = {
   },
   removeItem: async (key: string) => {
     try {
+      console.log('Storage removeItem:', { key });
       await AsyncStorage.removeItem(key);
     } catch (error) {
       console.error('Error removing from storage:', error);
@@ -45,6 +48,7 @@ export const supabase = createClient(supabaseUrl, supabaseAnonKey, {
 
 // Set up refresh token handling
 supabase.auth.onAuthStateChange(async (event, session) => {
+  console.log('Auth state changed:', { event, hasSession: !!session });
   if (event === 'TOKEN_REFRESHED') {
     console.log('Token refreshed successfully')
   } else if (event === 'SIGNED_OUT') {
