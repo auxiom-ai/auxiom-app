@@ -25,6 +25,7 @@ export default function Auth() {
   const [rememberMe, setRememberMe] = useState(false)
   const [errors, setErrors] = useState<{ email?: string; password?: string }>({})
   const [isResetMode, setIsResetMode] = useState(false)
+  const [isSignUpMode, setIsSignUpMode] = useState(false)
 
   const validateEmail = (email: string): boolean => {
     const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/
@@ -156,15 +157,36 @@ export default function Auth() {
     }
   }
 
+  // Reset modes when switching
+  function handleSwitchToSignUp() {
+    setIsSignUpMode(true);
+    setIsResetMode(false);
+    setErrors({});
+    setPassword('');
+  }
+  function handleSwitchToSignIn() {
+    setIsSignUpMode(false);
+    setIsResetMode(false);
+    setErrors({});
+    setPassword('');
+  }
+
   return (
     <View style={styles.container}>
       <View style={styles.formContainer}>
-        <Text style={styles.title}>{isResetMode ? 'Reset Password' : 'Welcome Back'}</Text>
+        <Text style={styles.title}>
+          {isResetMode
+            ? 'Reset Password'
+            : isSignUpMode
+              ? 'Create Account'
+              : 'Welcome Back'}
+        </Text>
         <Text style={styles.subtitle}>
-          {isResetMode 
+          {isResetMode
             ? 'Enter your email to receive a password reset link'
-            : 'Sign in to your account to continue'
-          }
+            : isSignUpMode
+              ? 'Sign up to get started'
+              : 'Sign in to your account to continue'}
         </Text>
 
         <View style={styles.inputContainer}>
@@ -194,13 +216,15 @@ export default function Auth() {
               {errors.password && <Text style={styles.errorText}>{errors.password}</Text>}
             </View>
 
-            <View style={styles.checkboxContainer}>
-              <Checkbox
-                value={rememberMe}
-                onValueChange={setRememberMe}
-              />
-              <Text style={styles.checkboxLabel}>Remember me</Text>
-            </View>
+            {!isSignUpMode && (
+              <View style={styles.checkboxContainer}>
+                <Checkbox
+                  value={rememberMe}
+                  onValueChange={setRememberMe}
+                />
+                <Text style={styles.checkboxLabel}>Remember me</Text>
+              </View>
+            )}
           </>
         )}
 
@@ -213,6 +237,7 @@ export default function Auth() {
                 action="primary"
                 disabled={loading}
                 onPress={handlePasswordReset}
+                style={styles.button}
               >
                 <ButtonText>{loading ? 'Sending...' : 'Reset Password'}</ButtonText>
               </Button>
@@ -220,7 +245,30 @@ export default function Auth() {
                 size="md"
                 variant="outline"
                 action="secondary"
-                onPress={() => setIsResetMode(false)}
+                onPress={handleSwitchToSignIn}
+                style={styles.button}
+              >
+                <ButtonText>Back to Sign In</ButtonText>
+              </Button>
+            </>
+          ) : isSignUpMode ? (
+            <>
+              <Button
+                size="md"
+                variant="solid"
+                action="primary"
+                disabled={loading}
+                onPress={signUpWithEmail}
+                style={styles.button}
+              >
+                <ButtonText>{loading ? 'Creating...' : 'Create Account'}</ButtonText>
+              </Button>
+              <Button
+                size="md"
+                variant="outline"
+                action="secondary"
+                onPress={handleSwitchToSignIn}
+                style={styles.button}
               >
                 <ButtonText>Back to Sign In</ButtonText>
               </Button>
@@ -233,6 +281,7 @@ export default function Auth() {
                 action="primary"
                 disabled={loading}
                 onPress={signInWithEmail}
+                style={styles.button}
               >
                 <ButtonText>{loading ? 'Signing in...' : 'Sign In'}</ButtonText>
               </Button>
@@ -241,6 +290,7 @@ export default function Auth() {
                 variant="outline"
                 action="secondary"
                 onPress={() => setIsResetMode(true)}
+                style={styles.button}
               >
                 <ButtonText>Forgot Password?</ButtonText>
               </Button>
@@ -253,7 +303,8 @@ export default function Auth() {
                 size="md"
                 variant="outline"
                 action="secondary"
-                onPress={signUpWithEmail}
+                onPress={handleSwitchToSignUp}
+                style={styles.button}
               >
                 <ButtonText>Create Account</ButtonText>
               </Button>
@@ -270,63 +321,68 @@ const styles = StyleSheet.create({
     flex: 1,
     padding: 24,
     justifyContent: 'center',
-    backgroundColor: '#fff',
+    backgroundColor: '#fafafa',
   },
   formContainer: {
     width: '100%',
     maxWidth: 400,
     alignSelf: 'center',
-    padding: 20,
-    borderRadius: 12,
+    padding: 32,
+    borderRadius: 16,
     backgroundColor: '#fff',
     shadowColor: '#000',
     shadowOffset: {
       width: 0,
-      height: 2,
+      height: 4,
     },
-    shadowOpacity: 0.1,
-    shadowRadius: 8,
-    elevation: 5,
+    shadowOpacity: 0.12,
+    shadowRadius: 12,
+    elevation: 8,
+    marginVertical: 32,
   },
   title: {
-    fontSize: 28,
+    fontSize: 30,
     fontWeight: 'bold',
-    marginBottom: 8,
+    marginBottom: 10,
     textAlign: 'center',
     color: '#1a1a1a',
   },
   subtitle: {
     fontSize: 16,
     color: '#666',
-    marginBottom: 24,
+    marginBottom: 32,
     textAlign: 'center',
   },
   inputContainer: {
-    marginBottom: 16,
+    marginBottom: 24,
   },
   errorText: {
     color: '#dc2626',
-    fontSize: 12,
+    fontSize: 13,
     marginTop: 4,
     marginLeft: 4,
   },
   checkboxContainer: {
     flexDirection: 'row',
     alignItems: 'center',
-    marginBottom: 24,
+    marginBottom: 32,
   },
   checkboxLabel: {
     marginLeft: 8,
-    fontSize: 14,
+    fontSize: 15,
     color: '#4b5563',
   },
   buttonContainer: {
-    gap: 12,
+    gap: 18,
+    marginTop: 8,
+  },
+  button: {
+    marginVertical: 4,
   },
   divider: {
     flexDirection: 'row',
     alignItems: 'center',
-    marginVertical: 16,
+    marginVertical: 20,
   },
   dividerLine: {
     flex: 1,
@@ -336,6 +392,6 @@ const styles = StyleSheet.create({
   dividerText: {
     marginHorizontal: 12,
     color: '#6b7280',
-    fontSize: 14,
+    fontSize: 15,
   },
 })
