@@ -346,4 +346,25 @@ describe('User Actions', () => {
 
       const result = await getOnboardingStatus();
       expect(result).toBe(true);
-      expect(supabase.from('users').select().eq).toHaveB
+      expect(supabase.from('users').select().eq).toHaveBeenCalledWith('id', 1);
+    });
+
+    it('should return false if onboarding is incomplete', async () => {
+      const mockChain = {
+        select: jest.fn().mockReturnThis(),
+        eq: jest.fn().mockReturnThis(),
+        single: jest.fn().mockResolvedValue({
+          data: {
+            name: '',
+            occupation: '',
+            keywords: []
+          }
+        })
+      };
+      (supabase.from as jest.Mock).mockReturnValue(mockChain);
+
+      const result = await getOnboardingStatus();
+      expect(result).toBe(false);
+    });
+  });
+}); 
