@@ -38,6 +38,20 @@ export default function ResetPassword() {
     return Object.keys(newErrors).length === 0
   }
 
+  async function sendPasswordResetConfirmationEmail(email: string) {
+    try {
+      const { error } = await supabase.functions.invoke('send-password-reset-confirmation', {
+        body: { email }
+      })
+
+      if (error) {
+        console.error('Error sending confirmation email:', error)
+      }
+    } catch (error) {
+      console.error('Error invoking confirmation email function:', error)
+    }
+  }
+
   async function handlePasswordReset() {
     if (!validateForm()) return
     if (!token) {
@@ -47,29 +61,42 @@ export default function ResetPassword() {
 
     setLoading(true)
     try {
-      const { error } = await supabase.auth.updateUser({
+      // First, get the user's email from the session
+      const { data: { user }, error: userError } = await supabase.auth.getUser()
+      
+      if (userError) {
+        throw userError
+      }
+
+      // Update the password
+      const { error: updateError } = await supabase.auth.updateUser({
         password: newPassword
       })
 
-      if (error) {
-        Alert.alert('Error', error.message)
-      } else {
-        Alert.alert(
-          'Success',
-          'Your password has been reset successfully.',
-          [
-            {
-              text: 'OK',
-              onPress: () => {
-                // Navigate back to the auth screen
-                router.replace('/')
-              }
-            }
-          ]
-        )
+      if (updateError) {
+        throw updateError
       }
+
+      // Send confirmation email
+      if (user?.email) {
+        await sendPasswordResetConfirmationEmail(user.email)
+      }
+
+      Alert.alert(
+        'Success',
+        'Your password has been reset successfully. A confirmation email has been sent to your email address.',
+        [
+          {
+            text: 'OK',
+            onPress: () => {
+              // Navigate back to the auth screen
+              router.replace('/')
+            }
+          }
+        ]
+      )
     } catch (error) {
-      Alert.alert('Error', 'An unexpected error occurred. Please try again.')
+      Alert.alert('Error', error instanceof Error ? error.message : 'An unexpected error occurred. Please try again.')
     } finally {
       setLoading(false)
     }
