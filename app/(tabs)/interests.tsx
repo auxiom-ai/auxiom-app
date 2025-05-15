@@ -3,6 +3,7 @@ import Fuse from 'fuse.js';
 import React, { useLayoutEffect, useMemo, useRef, useState } from 'react';
 import { Alert, FlatList, Platform, SafeAreaView, ScrollView, StatusBar, StyleSheet, TouchableOpacity, View } from 'react-native';
 import { Button, Chip, DefaultTheme, Provider as PaperProvider, Surface, Text, TextInput } from 'react-native-paper';
+const map = require('./policy-subject-map-119.json') as Record<string, string[]>;
 
 // Sample interests data
 const SUGGESTED_INTERESTS = [

@@ -1,0 +1,153 @@
+<?xml version="1.0" encoding="utf-8" standalone="no"?>
+<billStatus>
+  <version>3.0.0</version>
+  <bill>
+    <number>318</number>
+    <updateDate>2025-04-01T16:58:57Z</updateDate>
+    <updateDateIncludingText>2025-04-01T16:58:57Z</updateDateIncludingText>
+    <originChamber>Senate</originChamber>
+    <originChamberCode>S</originChamberCode>
+    <type>S</type>
+    <introducedDate>2025-01-29</introducedDate>
+    <congress>119</congress>
+    <committees>
+      <item>
+        <systemCode>sscm00</systemCode>
+        <name>Commerce, Science, and Transportation Committee</name>
+        <chamber>Senate</chamber>
+        <type>Standing</type>
+        <activities>
+          <item>
+            <name>Referred To</name>
+            <date>2025-01-29T22:38:26Z</date>
+          </item>
+        </activities>
+      </item>
+    </committees>
+    <actions>
+      <item>
+        <actionDate>2025-01-29</actionDate>
+        <committees>
+          <item>
+            <systemCode>sscm00</systemCode>
+            <name>Commerce, Science, and Transportation Committee</name>
+          </item>
+        </committees>
+        <sourceSystem>
+          <name>Senate</name>
+        </sourceSystem>
+        <text>Read twice and referred to the Committee on Commerce, Science, and Transportation.</text>
+        <type>IntroReferral</type>
+      </item>
+      <item>
+        <actionDate>2025-01-29</actionDate>
+        <text>Introduced in Senate</text>
+        <type>IntroReferral</type>
+        <actionCode>10000</actionCode>
+        <sourceSystem>
+          <code>9</code>
+          <name>Library of Congress</name>
+        </sourceSystem>
+      </item>
+    </actions>
+    <sponsors>
+      <item>
+        <bioguideId>P000145</bioguideId>
+        <fullName>Sen. Padilla, Alex [D-CA]</fullName>
+        <firstName>Alex</firstName>
+        <lastName>Padilla</lastName>
+        <party>D</party>
+        <state>CA</state>
+        <isByRequest>N</isByRequest>
+      </item>
+    </sponsors>
+    <cosponsors>
+      <item>
+        <bioguideId>S001198</bioguideId>
+        <fullName>Sen. Sullivan, Dan [R-AK]</fullName>
+        <firstName>Dan</firstName>
+        <lastName>Sullivan</lastName>
+        <party>R</party>
+        <state>AK</state>
+        <sponsorshipDate>2025-01-29</sponsorshipDate>
+        <isOriginalCosponsor>True</isOriginalCosponsor>
+      </item>
+    </cosponsors>
+    <policyArea>
+      <name>Science, Technology, Communications</name>
+    </policyArea>
+    <subjects>
+      <legislativeSubjects/>
+      <policyArea>
+        <name>Science, Technology, Communications</name>
+        <updateDate>2025-03-06T16:17:21Z</updateDate>
+      </policyArea>
+    </subjects>
+    <summaries>
+      <summary>
+        <versionCode>00</versionCode>
+        <actionDate>2025-01-29</actionDate>
+        <actionDesc>Introduced in Senate</actionDesc>
+        <updateDate>2025-04-01T16:56:25Z</updateDate>
+        <cdata>
+          <text>&lt;p&gt;&lt;strong&gt;Accelerating Networking, Cyberinfrastructure, and Hardware for Oceanic Research Act or the ANCHOR Act&amp;nbsp;&lt;/strong&gt;&lt;/p&gt;&lt;p&gt;This bill requires the National Science Foundation (NSF) to develop a plan to improve the cybersecurity and telecommunications capabilities of the U.S. Academic Research Fleet (ARF).&lt;/p&gt;&lt;p&gt;ARF is comprised of U.S.-flagged vessels that provide at-sea laboratories where oceanographic scientists, educators, and students research and learn about marine science.&amp;nbsp;&lt;/p&gt;&lt;p&gt;The bill requires the plan to include assessments of&lt;/p&gt;&lt;ul&gt;&lt;li&gt;telecommunications and networking needs of ARF, consistent with typical scientific missions;&lt;/li&gt;&lt;li&gt;cybersecurity needs appropriate for the ownership of ARF vessels and their typical research functions;&lt;/li&gt;&lt;li&gt;the costs necessary to meet these needs; and&lt;/li&gt;&lt;li&gt;the time required to implement necessary upgrades.&lt;/li&gt;&lt;/ul&gt;&lt;p&gt;The plan must also include (1) a spending plan for the NSF, the Office of Naval Research, nonfederal&amp;nbsp;owners of ARF vessels,&amp;nbsp;and users of the vessels to cover identified costs; and (2) a proposal regarding the adoption of common solutions or&amp;nbsp;consortial licensing agreements, or the centralization of cybersecurity, telecommunications, or data management at a single facility.&amp;nbsp;&lt;/p&gt;&lt;p&gt;Among other factors specified in the bill, the&amp;nbsp;NSF must consider the network capabilities necessary to meet mission needs (e.g., to upload data to shoreside servers), international standards and guidance for information security, and requirements for controlled unclassified or classified information.&amp;nbsp;&lt;/p&gt;&lt;p&gt;The plan must be provided to Congress within one year of the bill's enactment.&lt;/p&gt;</text>
+        </cdata>
+      </summary>
+    </summaries>
+    <title>ANCHOR Act</title>
+    <titles>
+      <item>
+        <titleType>Display Title</titleType>
+        <titleTypeCode>45</titleTypeCode>
+        <title>ANCHOR Act</title>
+        <updateDate>2025-03-04T12:53:21Z</updateDate>
+      </item>
+      <item>
+        <titleType>Short Title(s) as Introduced</titleType>
+        <titleTypeCode>101</titleTypeCode>
+        <title>ANCHOR Act</title>
+        <updateDate>2025-03-04T12:53:19Z</updateDate>
+        <billTextVersionName>Introduced in Senate</billTextVersionName>
+        <billTextVersionCode>IS</billTextVersionCode>
+      </item>
+      <item>
+        <titleType>Short Title(s) as Introduced</titleType>
+        <titleTypeCode>101</titleTypeCode>
+        <title>Accelerating Networking, Cyberinfrastructure, and Hardware for Oceanic Research Act</title>
+        <updateDate>2025-03-04T12:53:19Z</updateDate>
+        <billTextVersionName>Introduced in Senate</billTextVersionName>
+        <billTextVersionCode>IS</billTextVersionCode>
+      </item>
+      <item>
+        <titleType>Official Title as Introduced</titleType>
+        <titleTypeCode>6</titleTypeCode>
+        <title>A bill to require a plan to improve the cybersecurity and telecommunications of the U.S. Academic Research Fleet, and for other purposes.</title>
+        <updateDate>2025-03-04T12:48:26Z</updateDate>
+        <billTextVersionName>Introduced in Senate</billTextVersionName>
+        <billTextVersionCode>IS</billTextVersionCode>
+      </item>
+    </titles>
+    <textVersions>
+      <item>
+        <type>Introduced in Senate</type>
+        <date>2025-01-29T05:00:00Z</date>
+        <formats>
+          <item>
+            <url>https://www.govinfo.gov/content/pkg/BILLS-119s318is/xml/BILLS-119s318is.xml</url>
+          </item>
+        </formats>
+      </item>
+    </textVersions>
+    <latestAction>
+      <actionDate>2025-01-29</actionDate>
+      <text>Read twice and referred to the Committee on Commerce, Science, and Transportation.</text>
+    </latestAction>
+  </bill>
+  <dublinCore xmlns:dc="http://purl.org/dc/elements/1.1/">
+    <dc:format>text/xml</dc:format>
+    <dc:language>EN</dc:language>
+    <dc:rights>Pursuant to Title 17 Section 105 of the United States Code, this file is not subject to copyright protection and is in the public domain.</dc:rights>
+    <dc:contributor>Congressional Research Service, Library of Congress</dc:contributor>
+    <dc:description>This file contains bill summaries and statuses for federal legislation. A bill summary describes the most significant provisions of a piece of legislation and details the effects the legislative text may have on current law and federal programs. Bill summaries are authored by the Congressional Research Service (CRS) of the Library of Congress. As stated in Public Law 91-510 (2 USC 166 (d)(6)), one of the duties of CRS is "to prepare summaries and digests of bills and resolutions of a public general nature introduced in the Senate or House of Representatives". For more information, refer to the User Guide that accompanies this file.</dc:description>
+  </dublinCore>
+</billStatus>

@@ -9,7 +9,8 @@
     "ios": "DARK_MODE=media expo start --ios",
     "web": "DARK_MODE=media expo start --web",
     "lint": "expo lint",
-    "postinstall": "patch-package"
+    "postinstall": "patch-package",
+    "sync-interests": "curl -L https://www.govinfo.gov/bulkdata/BILLSTATUS/119/BILLSTATUS-119.zip -o billstatus-119.zip && unzip -oq billstatus-119.zip -d ./billstatus-119 && node build-map.js"
   },
   "dependencies": {
     "@expo/vector-icons": "^14.1.0",
@@ -41,6 +42,7 @@
     "fuse.js": "^7.1.0",
     "lucide-react-native": "^0.509.0",
     "nativewind": "^4.1.23",
+    "node-fetch": "^3.3.2",
     "react": "19.0.0",
     "react-dom": "19.0.0",
     "react-native": "0.79.2",
@@ -61,8 +63,12 @@
     "@types/react": "~19.0.10",
     "eslint": "^9.25.0",
     "eslint-config-expo": "~9.2.0",
+    "fast-xml-parser": "^5.2.3",
+    "glob": "^11.0.2",
     "jscodeshift": "^0.15.2",
+    "ts-node": "^10.9.2",
     "typescript": "~5.8.3"
   },
-  "private": true
+  "private": true,
+  "type": "module"
 }
