@@ -25,8 +25,6 @@ export default function RootLayout() {
 
         <Stack>
           <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
-          
-          
           {/* Error screen */}
           <Stack.Screen name="+not-found" />
         </Stack>
@@ -43,6 +41,7 @@ export default function RootLayout() {
         </AuthGate>
 
         <StatusBar style="auto" />
-      </ThemeProvider></GluestackUIProvider>
+      </ThemeProvider>
+    </GluestackUIProvider>
   );
 }
