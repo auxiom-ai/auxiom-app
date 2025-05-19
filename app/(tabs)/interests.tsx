@@ -2,7 +2,7 @@
 
 import { useNavigation } from "@react-navigation/native"
 import Fuse from "fuse.js"
-import { useLayoutEffect, useMemo, useRef, useState } from "react"
+import { useLayoutEffect, useEffect, useMemo, useRef, useState } from "react"
 import { Alert, FlatList, Platform, SafeAreaView, StatusBar, StyleSheet, TouchableOpacity, View } from "react-native"
 import { Button, Chip, DefaultTheme, Provider as PaperProvider, Surface, Text, TextInput } from "react-native-paper"
 
@@ -98,6 +98,12 @@ export default function InterestsScreen() {
   const [inputValue, setInputValue] = useState("")
   const [suggestions, setSuggestions] = useState<string[]>([])
   const [activeTab, setActiveTab] = useState("suggested")
+  const [displayedAreas, setDisplayedAreas] = useState<Record<string, string[]>>({})
+  const [lastSelectedArea, setLastSelectedArea] = useState<string | null>(null)
+  const [newlyAddedAreas, setNewlyAddedAreas] = useState<Record<string, string[]>>({})
+  const [allSuggestedAreas, setAllSuggestedAreas] = useState<string[]>([])
+  const [selectedAreaPolicies, setSelectedAreaPolicies] = useState<Record<string, string>>({})
+  const [forceRefresh, setForceRefresh] = useState(0) // Used to force re-render when needed
   const inputRef = useRef<any>(null)
 
   // ---- fuzzy search over ALL_SUBJECT_TERMS -----------------------------
@@ -118,6 +124,12 @@ export default function InterestsScreen() {
 
   // Find which policy area a legislative area belongs to
   const findPolicyForLegislativeArea = (area: string): string | null => {
+    // If this area was selected under a specific policy, return that policy
+    if (selectedAreaPolicies[area]) {
+      return selectedAreaPolicies[area]
+    }
+
+    // Otherwise, find the first policy that contains this area
     for (const [policy, areas] of Object.entries(policyMap)) {
       if (areas.includes(area)) {
         return policy
@@ -126,12 +138,25 @@ export default function InterestsScreen() {
     return null
   }
 
+  // Get all policy areas that contain a legislative area
+  const getAllPoliciesForLegislativeArea = (area: string): string[] => {
+    return POLICY_AREAS.filter((policy) => policyMap[policy]?.includes(area))
+  }
+
   // Get the most semantically similar legislative areas for a policy
   const getSimilarLegislativeAreas = (policy: string, count = 3, selectedAreas: string[] = []) => {
     if (!policyMap[policy]) return []
 
     // Get all legislative areas for this policy that aren't already selected
-    const areas = policyMap[policy].filter((area) => !selectedAreas.includes(area))
+    // and aren't already suggested elsewhere
+    let areas = policyMap[policy].filter(
+      (area) => !selectedAreas.includes(area) && !allSuggestedAreas.includes(area) && !keywords.includes(area),
+    )
+
+    // If we don't have enough areas after filtering, relax the constraint about already suggested areas
+    if (areas.length < count) {
+      areas = policyMap[policy].filter((area) => !selectedAreas.includes(area) && !keywords.includes(area))
+    }
 
     // If we have keywords, sort by similarity to them
     if (keywords.length > 0) {
@@ -146,7 +171,7 @@ export default function InterestsScreen() {
     }
 
     // Otherwise just return the first few
-    return areas.slice(0, count)
+    return areas.slice(0, Math.min(count, areas.length))
   }
 
   // Get additional similar legislative areas when a legislative area is selected
@@ -155,24 +180,46 @@ export default function InterestsScreen() {
     const parentPolicy = findPolicyForLegislativeArea(selectedArea)
     if (!parentPolicy) return []
 
-    // Get all areas from this policy except the selected one
-    const otherAreas = policyMap[parentPolicy].filter((area) => area !== selectedArea && !keywords.includes(area))
+    // Get all areas from this policy except:
+    // - the selected one
+    // - already selected areas
+    // - areas already suggested elsewhere
+    let otherAreas = policyMap[parentPolicy].filter(
+      (area) => area !== selectedArea && !keywords.includes(area) && !allSuggestedAreas.includes(area),
+    )
+
+    // If we don't have enough areas after filtering, relax the constraint about already suggested areas
+    if (otherAreas.length < count) {
+      otherAreas = policyMap[parentPolicy].filter((area) => area !== selectedArea && !keywords.includes(area))
+    }
+
+    // If we still don't have enough areas, we'll just return what we have
+    if (otherAreas.length === 0) {
+      return []
+    }
 
     // Sort by similarity to the selected area
-    return [...otherAreas]
+    const sortedAreas = [...otherAreas]
       .map((area) => ({
         area,
         score: calculateSimilarity(selectedArea, area),
       }))
       .sort((a, b) => b.score - a.score)
-      .slice(0, count)
       .map((item) => item.area)
+
+    // Return up to 'count' areas, but don't exceed what we have
+    return sortedAreas.slice(0, Math.min(count, sortedAreas.length))
   }
 
   // Get all selected legislative areas for a policy
   const getSelectedLegislativeAreas = (policy: string): string[] => {
     if (!policyMap[policy]) return []
-    return policyMap[policy].filter((area) => keywords.includes(area))
+
+    // Get all areas from this policy that are in keywords
+    // and areas that were specifically selected under this policy
+    return policyMap[policy].filter(
+      (area) => keywords.includes(area) && (!selectedAreaPolicies[area] || selectedAreaPolicies[area] === policy),
+    )
   }
 
   // Check if any legislative areas are selected for a policy
@@ -180,33 +227,157 @@ export default function InterestsScreen() {
     return getSelectedLegislativeAreas(policy).length > 0
   }
 
-  // Get all legislative areas to display for a policy
-  const getAreasToDisplay = (policy: string): { area: string; isSimilar: boolean }[] => {
-    // Get areas that are already selected
-    const selectedAreas = getSelectedLegislativeAreas(policy)
+  // Initialize or update displayed areas for a policy
+  const updateDisplayedAreasForPolicy = (policy: string) => {
+    // If we already have displayed areas for this policy, keep them
+    if (displayedAreas[policy] && displayedAreas[policy].length > 0) {
+      // Get selected areas that might not be in the displayed list yet
+      const selectedAreas = getSelectedLegislativeAreas(policy)
+      const currentDisplayed = [...displayedAreas[policy]]
 
-    // If no areas are selected, show the 3 most similar
-    if (selectedAreas.length === 0) {
-      return getSimilarLegislativeAreas(policy, 3).map((area) => ({ area, isSimilar: true }))
-    }
-
-    // Start with selected areas (these are not marked as "similar")
-    const areasToShow = selectedAreas.map((area) => ({ area, isSimilar: false }))
-
-    // For each selected area, add exactly 3 similar areas (these are marked as "similar")
-    selectedAreas.forEach((area) => {
-      // Only get 3 similar areas per selected area
-      const additionalSimilar = getAdditionalSimilarAreas(area, 3)
-
-      // Add them to our result if they're not already included
-      additionalSimilar.forEach((similar) => {
-        if (!areasToShow.some((item) => item.area === similar)) {
-          areasToShow.push({ area: similar, isSimilar: true })
+      // Add any selected areas that aren't already displayed
+      selectedAreas.forEach((area) => {
+        if (!currentDisplayed.includes(area)) {
+          currentDisplayed.push(area)
         }
       })
-    })
 
-    return areasToShow
+      // If we have a newly selected area, add similar areas right after it
+      if (lastSelectedArea) {
+        const parentPolicy = findPolicyForLegislativeArea(lastSelectedArea)
+        if (parentPolicy === policy) {
+          const similarAreas = getAdditionalSimilarAreas(lastSelectedArea, 3)
+          const lastSelectedIndex = currentDisplayed.indexOf(lastSelectedArea)
+
+          if (lastSelectedIndex !== -1) {
+            // Insert similar areas right after the last selected area
+            // but only if they're not already in the list
+            let insertCount = 0
+            const newAreas: string[] = []
+
+            similarAreas.forEach((similar) => {
+              if (!currentDisplayed.includes(similar)) {
+                currentDisplayed.splice(lastSelectedIndex + 1 + insertCount, 0, similar)
+                newAreas.push(similar)
+                insertCount++
+              }
+            })
+
+            // Track newly added areas for styling
+            if (newAreas.length > 0) {
+              setNewlyAddedAreas((prev) => ({
+                ...prev,
+                [policy]: [...(prev[policy] || []), ...newAreas],
+              }))
+
+              // Add to global list of suggested areas
+              setAllSuggestedAreas((prev) => [...prev, ...newAreas])
+            }
+          }
+        }
+      }
+
+      // Update the displayed areas
+      setDisplayedAreas((prev) => ({
+        ...prev,
+        [policy]: currentDisplayed,
+      }))
+    } else {
+      // If no displayed areas yet, initialize with selected areas + similar
+      const selectedAreas = getSelectedLegislativeAreas(policy)
+
+      if (selectedAreas.length > 0) {
+        // Start with selected areas
+        const areasToShow = [...selectedAreas]
+        const newAreas: string[] = []
+
+        // Add similar areas for each selected area
+        selectedAreas.forEach((area) => {
+          const similarAreas = getAdditionalSimilarAreas(area, 3)
+          similarAreas.forEach((similar) => {
+            if (!areasToShow.includes(similar)) {
+              areasToShow.push(similar)
+              newAreas.push(similar)
+            }
+          })
+        })
+
+        // Track newly added areas for styling
+        if (newAreas.length > 0) {
+          setNewlyAddedAreas((prev) => ({
+            ...prev,
+            [policy]: [...(prev[policy] || []), ...newAreas],
+          }))
+
+          // Add to global list of suggested areas
+          setAllSuggestedAreas((prev) => [...prev, ...newAreas])
+        }
+
+        setDisplayedAreas((prev) => ({
+          ...prev,
+          [policy]: areasToShow,
+        }))
+      } else {
+        // If no selected areas, show the 3 most similar
+        const similarAreas = getSimilarLegislativeAreas(policy, 3)
+
+        // All areas are newly added in this case
+        setNewlyAddedAreas((prev) => ({
+          ...prev,
+          [policy]: similarAreas,
+        }))
+
+        // Add to global list of suggested areas
+        setAllSuggestedAreas((prev) => [...prev, ...similarAreas])
+
+        setDisplayedAreas((prev) => ({
+          ...prev,
+          [policy]: similarAreas,
+        }))
+      }
+    }
+
+    // Reset the last selected area after processing
+    setLastSelectedArea(null)
+  }
+
+  // Effect to update displayed areas when keywords change
+  useEffect(() => {
+    // Update displayed areas for all policies that are selected or have selected legislative areas
+    POLICY_AREAS.forEach((policy) => {
+      if (keywords.includes(policy) || hasSelectedLegislativeAreas(policy)) {
+        updateDisplayedAreasForPolicy(policy)
+      }
+    })
+  }, [keywords, lastSelectedArea, allSuggestedAreas, forceRefresh])
+
+  // When a keyword is removed, we need to remove it from allSuggestedAreas
+  useEffect(() => {
+    // For each policy area, check if any displayed areas are no longer in the keywords
+    // and remove them from allSuggestedAreas
+    const allDisplayedAreas = Object.values(displayedAreas).flat()
+
+    // Filter out any areas that are no longer displayed
+    setAllSuggestedAreas((prev) => prev.filter((area) => allDisplayedAreas.includes(area) && !keywords.includes(area)))
+  }, [displayedAreas, keywords])
+
+  // Check if an area is similar (not selected and should have purple styling)
+  const isAreaSimilar = (policy: string, area: string): boolean => {
+    // If the area is selected, it's not considered "similar" for styling purposes
+    if (keywords.includes(area)) return false
+
+    // Check if this is a newly added area (should be purple)
+    if (newlyAddedAreas[policy] && newlyAddedAreas[policy].includes(area)) {
+      return true
+    }
+
+    // If no selected areas in this policy yet, all displayed areas are "similar"
+    const selectedAreas = getSelectedLegislativeAreas(policy)
+    if (selectedAreas.length === 0 && !keywords.includes(policy)) {
+      return true
+    }
+
+    return false
   }
 
   const handleTextChange = (text: string) => {
@@ -222,22 +393,72 @@ export default function InterestsScreen() {
     }
   }
 
-  const addInterest = (interest: string) => {
+  const addInterest = (interest: string, fromPolicy?: string) => {
     if (interest.trim() && !keywords.includes(interest)) {
-      setKeywords([...keywords, interest])
+      setKeywords((prev) => [...prev, interest])
+      setLastSelectedArea(interest)
       setInputValue("")
       setSuggestions([])
-      // Removed the focus call to prevent search bar from opening after adding interest
+
+      // If this is a legislative area, make sure its policy is expanded
+      const parentPolicy = fromPolicy || findPolicyForLegislativeArea(interest)
+      if (parentPolicy) {
+        // Remember which policy this area was selected under
+        if (policyMap[parentPolicy]?.includes(interest)) {
+          setSelectedAreaPolicies((prev) => ({
+            ...prev,
+            [interest]: parentPolicy,
+          }))
+        }
+
+        // Add the parent policy too if not already selected
+        if (!keywords.includes(parentPolicy)) {
+          setKeywords((prev) => [...prev, parentPolicy])
+        }
+      }
+
+      // Remove this interest from allSuggestedAreas if it was there
+      setAllSuggestedAreas((prev) => prev.filter((area) => area !== interest))
+
+      // Force a refresh to ensure new suggestions are generated
+      setForceRefresh((prev) => prev + 1)
     }
   }
 
-  const removeInterest = (interest: string) => setKeywords(keywords.filter((i) => i !== interest))
+  const removeInterest = (interest: string) => {
+    setKeywords(keywords.filter((i) => i !== interest))
 
-  const toggleInterest = (interest: string) => {
+    // Remove from selectedAreaPolicies if it's there
+    if (selectedAreaPolicies[interest]) {
+      setSelectedAreaPolicies((prev) => {
+        const updated = { ...prev }
+        delete updated[interest]
+        return updated
+      })
+    }
+
+    // Also remove any newly added areas associated with this interest
+    const parentPolicy = findPolicyForLegislativeArea(interest)
+    if (parentPolicy && newlyAddedAreas[parentPolicy]) {
+      // Remove this interest's suggestions from newly added areas
+      setNewlyAddedAreas((prev) => {
+        const updated = { ...prev }
+        if (updated[parentPolicy]) {
+          updated[parentPolicy] = updated[parentPolicy].filter((area) => area !== interest)
+        }
+        return updated
+      })
+    }
+
+    // Force a refresh to ensure the UI updates correctly
+    setForceRefresh((prev) => prev + 1)
+  }
+
+  const toggleInterest = (interest: string, policy?: string) => {
     if (keywords.includes(interest)) {
       removeInterest(interest)
     } else {
-      addInterest(interest)
+      addInterest(interest, policy)
     }
   }
 
@@ -308,43 +529,83 @@ export default function InterestsScreen() {
                 </View>
 
                 <Surface style={styles.tagsContainer}>
-                  <View style={styles.policyTagsContainer}>
-                    {filteredPolicies.map((policy) => {
-                      const isSelected = keywords.includes(policy)
-                      const hasSelectedAreas = hasSelectedLegislativeAreas(policy)
-                      const shouldShowAreas = isSelected
-                      const areasToDisplay = shouldShowAreas ? getAreasToDisplay(policy) : []
+                  {activeTab === "suggested" ? (
+                    <View style={styles.policyTagsContainer}>
+                      {filteredPolicies.map((policy) => {
+                        const isSelected = keywords.includes(policy)
+                        const hasSelectedAreas = hasSelectedLegislativeAreas(policy)
+                        const shouldShowAreas = isSelected
 
-                      return (
-                        <View
-                          key={policy}
-                          style={[
-                            styles.policyTagWrapper,
-                            hasSelectedAreas && styles.policyTagWrapperWithSelectedArea,
-                            isSelected && styles.selectedPolicyWrapper,
-                          ]}
-                        >
-                          <PolicyTag tag={policy} isSelected={isSelected} onToggle={() => toggleInterest(policy)} />
+                        // If this policy should show areas, make sure we have them
+                        if (shouldShowAreas && (!displayedAreas[policy] || displayedAreas[policy].length === 0)) {
+                          updateDisplayedAreasForPolicy(policy)
+                        }
 
-                          {/* Expanded legislative areas - only show when policy is selected */}
-                          {shouldShowAreas && areasToDisplay.length > 0 && (
-                            <View style={styles.legislativeAreasContainer}>
-                              {areasToDisplay.map(({ area, isSimilar }) => (
-                                <PolicyTag
-                                  key={`${policy}-${area}`}
-                                  tag={area}
-                                  isSelected={keywords.includes(area)}
-                                  onToggle={() => toggleInterest(area)}
-                                  isSubTag
-                                  isSimilar={isSimilar}
-                                />
-                              ))}
-                            </View>
-                          )}
+                        const areasToDisplay = shouldShowAreas && displayedAreas[policy] ? displayedAreas[policy] : []
+
+                        return (
+                          <View
+                            key={policy}
+                            style={[
+                              styles.policyTagWrapper,
+                              hasSelectedAreas && styles.policyTagWrapperWithSelectedArea,
+                              isSelected && styles.selectedPolicyWrapper,
+                            ]}
+                          >
+                            <PolicyTag tag={policy} isSelected={isSelected} onToggle={() => toggleInterest(policy)} />
+
+                            {/* Expanded legislative areas - only show when policy is selected */}
+                            {shouldShowAreas && areasToDisplay.length > 0 && (
+                              <View style={styles.legislativeAreasContainer}>
+                                {areasToDisplay.map((area) => (
+                                  <PolicyTag
+                                    key={`${policy}-${area}`}
+                                    tag={area}
+                                    isSelected={keywords.includes(area)}
+                                    onToggle={() => toggleInterest(area, policy)}
+                                    isSubTag
+                                    isSimilar={isAreaSimilar(policy, area)}
+                                  />
+                                ))}
+                              </View>
+                            )}
+                          </View>
+                        )
+                      })}
+                    </View>
+                  ) : (
+                    <View style={styles.myTagsContainer}>
+                      {/* Show only selected policy areas */}
+                      {POLICY_AREAS.filter((policy) => keywords.includes(policy)).map((policy) => (
+                        <View key={policy} style={styles.selectedTagItem}>
+                          <PolicyTag tag={policy} isSelected={true} onToggle={() => toggleInterest(policy)} />
                         </View>
-                      )
-                    })}
-                  </View>
+                      ))}
+
+                      {/* Show selected legislative areas */}
+                      {ALL_SUBJECT_TERMS.filter((term) => keywords.includes(term)).map((term) => {
+                        const parentPolicy = findPolicyForLegislativeArea(term)
+                        return (
+                          <View key={term} style={styles.selectedTagItem}>
+                            <PolicyTag
+                              tag={term}
+                              isSelected={true}
+                              onToggle={() => toggleInterest(term)}
+                              isSubTag={true}
+                            />
+                            {parentPolicy && <Text style={styles.parentPolicyText}>{parentPolicy}</Text>}
+                          </View>
+                        )
+                      })}
+
+                      {keywords.length === 0 && (
+                        <View style={styles.emptyStateContainer}>
+                          <Text style={styles.emptyStateText}>No tags selected yet</Text>
+                          <Text style={styles.emptyStateSubText}>Select tags from the Suggested tab</Text>
+                        </View>
+                      )}
+                    </View>
+                  )}
                 </Surface>
 
                 {suggestions.length > 0 && (
@@ -495,7 +756,7 @@ const styles = StyleSheet.create({
     color: "#fff", // White text on dark chips
   },
   selectedSubTagText: {
-    color: "#fff", // Ensure text is white on dark background for selected sub tags
+    color: "#333", // Ensure text is white on dark background for selected sub tags
   },
   similarIndicator: {
     width: 8,
@@ -542,5 +803,34 @@ const styles = StyleSheet.create({
   buttonLabel: {
     color: "#fff", // White text on dark button
     fontWeight: "600",
+  },
+  myTagsContainer: {
+    flexDirection: "column",
+    marginBottom: 16,
+  },
+  selectedTagItem: {
+    marginBottom: 8,
+    padding: 4,
+  },
+  parentPolicyText: {
+    fontSize: 12,
+    color: "#666",
+    marginLeft: 12,
+    marginTop: 2,
+  },
+  emptyStateContainer: {
+    alignItems: "center",
+    justifyContent: "center",
+    padding: 32,
+  },
+  emptyStateText: {
+    fontSize: 18,
+    fontWeight: "500",
+    color: "#333",
+    marginBottom: 8,
+  },
+  emptyStateSubText: {
+    fontSize: 14,
+    color: "#666",
   },
 })
