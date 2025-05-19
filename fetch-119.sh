@@ -1,4 +1,4 @@
-#!/usr/bin/env bash
+#!/usr/bin/env bash testing egd8eg
 # fetch-119.sh  – downloads every BILLSTATUS XML that exists for the 119th Congress
 set -euo pipefail
 CONGRESS=119
