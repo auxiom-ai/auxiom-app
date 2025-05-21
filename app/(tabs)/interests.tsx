@@ -3,17 +3,7 @@
 import { useNavigation } from "@react-navigation/native"
 import Fuse from "fuse.js"
 import { useLayoutEffect, useEffect, useMemo, useRef, useState } from "react"
-import {
-  Alert,
-  FlatList,
-  Platform,
-  SafeAreaView,
-  ScrollView,
-  StatusBar,
-  StyleSheet,
-  TouchableOpacity,
-  View,
-} from "react-native"
+import { Alert, Platform, SafeAreaView, ScrollView, StatusBar, StyleSheet, TouchableOpacity, View } from "react-native"
 import { Button, DefaultTheme, Provider as PaperProvider, Text, TextInput } from "react-native-paper"
 import { Feather } from "@expo/vector-icons"
 
@@ -25,6 +15,10 @@ const POLICY_AREAS = Object.keys(policyMap)
 
 // Flatten every subject term into one master array (deduped + sorted)
 const ALL_SUBJECT_TERMS: string[] = Array.from(new Set(Object.values(policyMap).flat() as string[])).sort()
+
+// All searchable terms (policy areas + legislative areas)
+// Ensure uniqueness by using a Set
+const ALL_SEARCHABLE_TERMS = Array.from(new Set([...POLICY_AREAS, ...ALL_SUBJECT_TERMS]))
 
 // ---- similarity helper (unchanged) -------------------------------------
 function calculateSimilarity(str1: string, str2: string): number {
@@ -93,6 +87,23 @@ const Tag = ({ tag, isSelected, onToggle, isSuggested = false }: TagProps) => {
   )
 }
 
+// Search Result component
+type SearchResultProps = {
+  result: string
+  isSelected: boolean
+  onAdd: () => void
+  index: number // Add index to ensure unique keys
+}
+
+const SearchResult = ({ result, isSelected, onAdd, index }: SearchResultProps) => {
+  return (
+    <TouchableOpacity style={styles.searchResult} onPress={onAdd}>
+      <Text style={styles.searchResultText}>{result}</Text>
+      <Feather name={isSelected ? "check" : "plus"} size={18} color={isSelected ? "#4A6FA5" : "#4A6FA5"} />
+    </TouchableOpacity>
+  )
+}
+
 // Type for tag with suggestion info
 type TagWithSuggestions = {
   id: string // Unique identifier
@@ -112,14 +123,24 @@ export default function InterestsScreen() {
   const [keywords, setKeywords] = useState<string[]>([])
   const [mostRecentKeyword, setMostRecentKeyword] = useState<string | null>(null)
   const [inputValue, setInputValue] = useState("")
-  const [suggestions, setSuggestions] = useState<string[]>([])
+  const [searchResults, setSearchResults] = useState<string[]>([])
   const [activeTab, setActiveTab] = useState("suggested")
   const [allTags, setAllTags] = useState<TagWithSuggestions[]>([])
   const [selectedSuggestions, setSelectedSuggestions] = useState<Set<string>>(new Set())
+  const [isSearching, setIsSearching] = useState(false)
   const inputRef = useRef<any>(null)
 
   // ---- fuzzy search over ALL_SUBJECT_TERMS -----------------------------
-  const fuse = useMemo(() => new Fuse([...POLICY_AREAS, ...ALL_SUBJECT_TERMS], { threshold: 0.4, distance: 100 }), [])
+  const fuse = useMemo(
+    () =>
+      new Fuse(ALL_SEARCHABLE_TERMS, {
+        threshold: 0.4,
+        distance: 100,
+        includeScore: true,
+        ignoreLocation: true,
+      }),
+    [],
+  )
 
   // Find which policy area a legislative area belongs to
   const findPolicyForLegislativeArea = (area: string): string | null => {
@@ -271,14 +292,28 @@ export default function InterestsScreen() {
 
   const handleTextChange = (text: string) => {
     setInputValue(text)
+
     if (text.trim()) {
-      const filtered = fuse
-        .search(text)
-        .map((res) => res.item)
-        .filter((i) => !keywords.includes(i))
-      setSuggestions(filtered.slice(0, 5))
+      setIsSearching(true)
+
+      // Perform fuzzy search
+      const results = fuse.search(text)
+
+      // Extract and sort results
+      const filteredResults = results
+        .filter((result) => result.score && result.score < 0.4) // Only include good matches
+        .map((result) => result.item)
+        .slice(0, 8) // Limit to 8 results
+
+      // Ensure uniqueness in search results
+      const uniqueResults = Array.from(new Set(filteredResults))
+
+      // Don't filter out already selected items in search results
+      // This allows users to see and select items they've already chosen
+      setSearchResults(uniqueResults)
     } else {
-      setSuggestions([])
+      setIsSearching(false)
+      setSearchResults([])
     }
   }
 
@@ -299,15 +334,17 @@ export default function InterestsScreen() {
         })
       }
 
+      // Clear search after adding
       setInputValue("")
-      setSuggestions([])
+      setSearchResults([])
+      setIsSearching(false)
 
-      // If this is a legislative area, add its parent policy too
-      const parentPolicy = findPolicyForLegislativeArea(interest)
-      if (parentPolicy && !newKeywords.includes(parentPolicy)) {
-        setKeywords([...newKeywords, parentPolicy])
-        // Don't update most recent keyword here, as the legislative area is more specific
-      }
+      // Set active tab to "suggested" to show the suggestions
+      setActiveTab("suggested")
+
+      // If this is a legislative area, we DON'T automatically add its parent policy
+      // This ensures legislative areas selected from search appear as their own cards
+      // with their own suggestions
     }
   }
 
@@ -371,6 +408,11 @@ export default function InterestsScreen() {
 
   // Filter tags based on search and active tab
   const filteredTags = useMemo(() => {
+    // If we're actively searching, don't show the tag grid
+    if (isSearching) {
+      return []
+    }
+
     // Determine which tag list to use based on the active tab
     const tagsToFilter = activeTab === "suggested" ? allTags : myTags
 
@@ -390,7 +432,14 @@ export default function InterestsScreen() {
       }
     })
     return results
-  }, [inputValue, activeTab, allTags, myTags])
+  }, [inputValue, activeTab, allTags, myTags, isSearching])
+
+  // Clear search and return to normal view
+  const clearSearch = () => {
+    setInputValue("")
+    setSearchResults([])
+    setIsSearching(false)
+  }
 
   return (
     <PaperProvider theme={theme}>
@@ -413,62 +462,68 @@ export default function InterestsScreen() {
                 placeholderTextColor="#999999"
                 theme={{ colors: { text: "#333333" } }}
               />
+              {inputValue.length > 0 && (
+                <TouchableOpacity onPress={clearSearch} style={styles.clearButton}>
+                  <Feather name="x" size={18} color="#777" />
+                </TouchableOpacity>
+              )}
             </View>
           </View>
 
-          <View style={styles.tabContainer}>
-            <TouchableOpacity
-              style={[styles.tab, activeTab === "suggested" && styles.activeTab]}
-              onPress={() => setActiveTab("suggested")}
-            >
-              <Text style={[styles.tabText, activeTab === "suggested" && styles.activeTabText]}>Suggested</Text>
-            </TouchableOpacity>
-            <TouchableOpacity
-              style={[styles.tab, activeTab === "my-tags" && styles.activeTab]}
-              onPress={() => setActiveTab("my-tags")}
-            >
-              <Text style={[styles.tabText, activeTab === "my-tags" && styles.activeTabText]}>My interests</Text>
-            </TouchableOpacity>
-          </View>
-
-          <ScrollView style={styles.scrollContainer} contentContainerStyle={styles.tagsContainer}>
-            {filteredTags.length > 0 ? (
-              filteredTags.map((item) => (
-                <Tag
-                  key={item.id}
-                  tag={item.tag}
-                  isSelected={item.isSelected}
-                  onToggle={() => toggleInterest(item.tag)}
-                  isSuggested={item.isSuggested}
+          {isSearching && searchResults.length > 0 ? (
+            <View style={styles.searchResultsContainer}>
+              {searchResults.map((result, index) => (
+                <SearchResult
+                  key={`${result}-${index}`} // Use both result and index for a unique key
+                  result={result}
+                  isSelected={keywords.includes(result)}
+                  onAdd={() => addInterest(result)}
+                  index={index}
                 />
-              ))
-            ) : (
-              <View style={styles.emptyState}>
-                <Text style={styles.emptyStateText}>
-                  {activeTab === "suggested" ? "No matching interests found" : "No interests selected yet"}
-                </Text>
-                <Text style={styles.emptyStateSubtext}>
-                  {activeTab === "suggested"
-                    ? "Try a different search term"
-                    : "Select interests from the Suggested tab"}
-                </Text>
-              </View>
-            )}
-          </ScrollView>
-
-          {suggestions.length > 0 && (
-            <View style={styles.suggestionsContainer}>
-              <FlatList
-                data={suggestions}
-                keyExtractor={(item) => item}
-                renderItem={({ item }) => (
-                  <TouchableOpacity style={styles.suggestionItem} onPress={() => addInterest(item)}>
-                    <Text style={styles.suggestionText}>{item}</Text>
-                  </TouchableOpacity>
-                )}
-                style={styles.suggestionsList}
-              />
+              ))}
             </View>
+          ) : (
+            <>
+              <View style={styles.tabContainer}>
+                <TouchableOpacity
+                  style={[styles.tab, activeTab === "suggested" && styles.activeTab]}
+                  onPress={() => setActiveTab("suggested")}
+                >
+                  <Text style={[styles.tabText, activeTab === "suggested" && styles.activeTabText]}>Suggested</Text>
+                </TouchableOpacity>
+                <TouchableOpacity
+                  style={[styles.tab, activeTab === "my-tags" && styles.activeTab]}
+                  onPress={() => setActiveTab("my-tags")}
+                >
+                  <Text style={[styles.tabText, activeTab === "my-tags" && styles.activeTabText]}>My interests</Text>
+                </TouchableOpacity>
+              </View>
+
+              <ScrollView style={styles.scrollContainer} contentContainerStyle={styles.tagsContainer}>
+                {filteredTags.length > 0 ? (
+                  filteredTags.map((item) => (
+                    <Tag
+                      key={item.id}
+                      tag={item.tag}
+                      isSelected={item.isSelected}
+                      onToggle={() => toggleInterest(item.tag)}
+                      isSuggested={item.isSuggested}
+                    />
+                  ))
+                ) : (
+                  <View style={styles.emptyState}>
+                    <Text style={styles.emptyStateText}>
+                      {activeTab === "suggested" ? "No matching interests found" : "No interests selected yet"}
+                    </Text>
+                    <Text style={styles.emptyStateSubtext}>
+                      {activeTab === "suggested"
+                        ? "Try a different search term"
+                        : "Select interests from the Suggested tab"}
+                    </Text>
+                  </View>
+                )}
+              </ScrollView>
+            </>
           )}
 
           <View style={styles.buttonContainer}>
@@ -524,6 +579,29 @@ const styles = StyleSheet.create({
     height: 48,
     padding: 0,
     margin: 0,
+  },
+  clearButton: {
+    padding: 8,
+  },
+  searchResultsContainer: {
+    backgroundColor: "#FFFFFF",
+    borderRadius: 12,
+    marginBottom: 16,
+    overflow: "hidden",
+    borderWidth: 1,
+    borderColor: "#E5E5E5",
+  },
+  searchResult: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "space-between",
+    padding: 16,
+    borderBottomWidth: 1,
+    borderBottomColor: "#E5E5E5",
+  },
+  searchResultText: {
+    fontSize: 16,
+    color: "#333333",
   },
   tabContainer: {
     flexDirection: "row",
