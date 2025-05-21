@@ -110,10 +110,12 @@ export default function InterestsScreen() {
   }, [navigation])
 
   const [keywords, setKeywords] = useState<string[]>([])
+  const [mostRecentKeyword, setMostRecentKeyword] = useState<string | null>(null)
   const [inputValue, setInputValue] = useState("")
   const [suggestions, setSuggestions] = useState<string[]>([])
   const [activeTab, setActiveTab] = useState("suggested")
   const [allTags, setAllTags] = useState<TagWithSuggestions[]>([])
+  const [selectedSuggestions, setSelectedSuggestions] = useState<Set<string>>(new Set())
   const inputRef = useRef<any>(null)
 
   // ---- fuzzy search over ALL_SUBJECT_TERMS -----------------------------
@@ -136,7 +138,13 @@ export default function InterestsScreen() {
     if (POLICY_AREAS.includes(tag)) {
       // If it's a policy area, suggest legislative areas from that policy
       const areas = policyMap[tag].filter((area) => !excludeTags.includes(area))
-      similarTags = areas.slice(0, count)
+
+      // Sort by similarity to the tag
+      similarTags = areas
+        .map((area) => ({ area, score: calculateSimilarity(tag, area) }))
+        .sort((a, b) => b.score - a.score)
+        .slice(0, count)
+        .map((item) => item.area)
     } else {
       // If it's a legislative area, find semantically similar areas
       const parentPolicy = findPolicyForLegislativeArea(tag)
@@ -194,24 +202,39 @@ export default function InterestsScreen() {
     setAllTags(initialTags)
   }, [])
 
-  // Update tags when keywords change
+  // Update tags when keywords or most recent keyword changes
   useEffect(() => {
     if (allTags.length === 0) return
 
-    // Start with a fresh copy of the base tags (non-suggested)
-    const baseTags = allTags
-      .filter((tag) => !tag.isSuggested)
-      .map((tag) => ({
-        ...tag,
-        isSelected: keywords.includes(tag.tag),
-      }))
+    // Get all base tags and selected suggestions
+    const baseTags = allTags.filter((tag) => !tag.isSuggested || selectedSuggestions.has(tag.tag))
+
+    // Update selection state
+    const updatedBaseTags = baseTags.map((tag) => ({
+      ...tag,
+      isSelected: keywords.includes(tag.tag),
+    }))
 
     // Create a new array for all tags including suggestions
-    const newAllTags: TagWithSuggestions[] = [...baseTags]
-    const processedTags = new Set<string>(baseTags.map((tag) => tag.tag))
+    const newAllTags: TagWithSuggestions[] = []
+    const processedTags = new Set<string>()
+
+    // Add all base tags and selected suggestions to the processed set
+    updatedBaseTags.forEach((tag) => {
+      processedTags.add(tag.tag)
+      newAllTags.push(tag)
+    })
+
+    // Prioritize the most recent keyword for suggestions
+    const keywordsToProcess = [...keywords]
+    if (mostRecentKeyword && keywords.includes(mostRecentKeyword)) {
+      // Move the most recent keyword to the end so it's processed last
+      keywordsToProcess.splice(keywordsToProcess.indexOf(mostRecentKeyword), 1)
+      keywordsToProcess.push(mostRecentKeyword)
+    }
 
     // For each selected tag, add its suggestions
-    keywords.forEach((keyword) => {
+    keywordsToProcess.forEach((keyword) => {
       // Find the tag in our list
       const tagIndex = newAllTags.findIndex((t) => t.tag === keyword)
       if (tagIndex !== -1) {
@@ -244,7 +267,7 @@ export default function InterestsScreen() {
     })
 
     setAllTags(newAllTags)
-  }, [keywords])
+  }, [keywords, mostRecentKeyword, selectedSuggestions])
 
   const handleTextChange = (text: string) => {
     setInputValue(text)
@@ -264,6 +287,18 @@ export default function InterestsScreen() {
       // Add the interest
       const newKeywords = [...keywords, interest]
       setKeywords(newKeywords)
+      setMostRecentKeyword(interest) // Track the most recently added keyword
+
+      // If this is a suggested interest, add it to selectedSuggestions
+      const isSuggested = allTags.some((tag) => tag.tag === interest && tag.isSuggested)
+      if (isSuggested) {
+        setSelectedSuggestions((prev) => {
+          const newSet = new Set(prev)
+          newSet.add(interest)
+          return newSet
+        })
+      }
+
       setInputValue("")
       setSuggestions([])
 
@@ -271,12 +306,27 @@ export default function InterestsScreen() {
       const parentPolicy = findPolicyForLegislativeArea(interest)
       if (parentPolicy && !newKeywords.includes(parentPolicy)) {
         setKeywords([...newKeywords, parentPolicy])
+        // Don't update most recent keyword here, as the legislative area is more specific
       }
     }
   }
 
   const removeInterest = (interest: string) => {
     setKeywords(keywords.filter((i) => i !== interest))
+
+    // If we're removing a selected suggestion, remove it from selectedSuggestions
+    if (selectedSuggestions.has(interest)) {
+      setSelectedSuggestions((prev) => {
+        const newSet = new Set(prev)
+        newSet.delete(interest)
+        return newSet
+      })
+    }
+
+    // If we're removing the most recent keyword, clear it
+    if (mostRecentKeyword === interest) {
+      setMostRecentKeyword(keywords.length > 1 ? keywords[keywords.length - 2] : null)
+    }
   }
 
   const toggleInterest = (interest: string) => {
@@ -291,37 +341,56 @@ export default function InterestsScreen() {
     Alert.alert("Interests Updated", `Submitted interests: ${keywords.join(", ")}`)
   }
 
+  // Create a list of tags for the "My tags" tab
+  const myTags = useMemo(() => {
+    // Create a map of all tags for quick lookup
+    const tagMap = new Map<string, TagWithSuggestions>()
+    allTags.forEach((tag) => {
+      tagMap.set(tag.tag, tag)
+    })
+
+    // Create tags for all selected keywords
+    return keywords.map((keyword) => {
+      const existingTag = tagMap.get(keyword)
+      if (existingTag) {
+        return {
+          ...existingTag,
+          isSelected: true,
+        }
+      } else {
+        // Create a new tag if it doesn't exist in allTags
+        return {
+          id: `mytag-${keyword}`,
+          tag: keyword,
+          isSuggested: false,
+          isSelected: true,
+        }
+      }
+    })
+  }, [keywords, allTags])
+
   // Filter tags based on search and active tab
   const filteredTags = useMemo(() => {
+    // Determine which tag list to use based on the active tab
+    const tagsToFilter = activeTab === "suggested" ? allTags : myTags
+
     if (!inputValue.trim()) {
-      if (activeTab === "suggested") {
-        return allTags
-      } else {
-        // In "My tags" tab, show only selected tags
-        return allTags.filter((tag) => tag.isSelected)
-      }
+      return tagsToFilter
     }
 
     const query = inputValue.toLowerCase()
     const processedTags = new Set<string>() // Track tags we've already included
     const results: TagWithSuggestions[] = []
 
-    if (activeTab === "suggested") {
-      // Filter all tags and ensure no duplicates
-      allTags.forEach((item) => {
-        if (item.tag.toLowerCase().includes(query) && !processedTags.has(item.tag)) {
-          results.push(item)
-          processedTags.add(item.tag)
-        }
-      })
-      return results
-    } else {
-      // Filter selected tags
-      return allTags.filter(
-        (tag) => tag.isSelected && tag.tag.toLowerCase().includes(query) && !processedTags.has(tag.tag),
-      )
-    }
-  }, [inputValue, activeTab, allTags, keywords])
+    // Filter tags and ensure no duplicates
+    tagsToFilter.forEach((item) => {
+      if (item.tag.toLowerCase().includes(query) && !processedTags.has(item.tag)) {
+        results.push(item)
+        processedTags.add(item.tag)
+      }
+    })
+    return results
+  }, [inputValue, activeTab, allTags, myTags])
 
   return (
     <PaperProvider theme={theme}>
@@ -329,7 +398,7 @@ export default function InterestsScreen() {
         <StatusBar barStyle="dark-content" backgroundColor="#FAF8EC" />
         <View style={styles.content}>
           <View style={styles.header}>
-            <Text style={styles.title}>Tags</Text>
+            <Text style={styles.title}>Political Interests</Text>
           </View>
 
           <View style={styles.searchContainer}>
@@ -339,7 +408,7 @@ export default function InterestsScreen() {
                 ref={inputRef}
                 value={inputValue}
                 onChangeText={handleTextChange}
-                placeholder="Search tags"
+                placeholder="Search interests"
                 style={styles.searchInput}
                 placeholderTextColor="#999999"
                 theme={{ colors: { text: "#333333" } }}
@@ -358,7 +427,7 @@ export default function InterestsScreen() {
               style={[styles.tab, activeTab === "my-tags" && styles.activeTab]}
               onPress={() => setActiveTab("my-tags")}
             >
-              <Text style={[styles.tabText, activeTab === "my-tags" && styles.activeTabText]}>My tags</Text>
+              <Text style={[styles.tabText, activeTab === "my-tags" && styles.activeTabText]}>My interests</Text>
             </TouchableOpacity>
           </View>
 
@@ -376,10 +445,12 @@ export default function InterestsScreen() {
             ) : (
               <View style={styles.emptyState}>
                 <Text style={styles.emptyStateText}>
-                  {activeTab === "suggested" ? "No matching tags found" : "No tags selected yet"}
+                  {activeTab === "suggested" ? "No matching interests found" : "No interests selected yet"}
                 </Text>
                 <Text style={styles.emptyStateSubtext}>
-                  {activeTab === "suggested" ? "Try a different search term" : "Select tags from the Suggested tab"}
+                  {activeTab === "suggested"
+                    ? "Try a different search term"
+                    : "Select interests from the Suggested tab"}
                 </Text>
               </View>
             )}

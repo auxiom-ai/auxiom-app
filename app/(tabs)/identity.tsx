@@ -59,8 +59,8 @@ export default function IdentityScreen() {
 
           {/* Main Content */}
           <View style={styles.mainContent}>
-            <ThemedText type="title" style={styles.title}>What brings you to Auxiom?</ThemedText>
-            <ThemedText style={styles.subtitle}>Select as many as apply.</ThemedText>
+            <ThemedText type="title" style={[styles.title, { color: '#000' }]}>What brings you to Auxiom?</ThemedText>
+            <ThemedText style={[styles.subtitle, { color: '#000' }]}>Select as many as apply.</ThemedText>
             
             {/* Identity Options */}
             <View style={styles.optionsContainer}>
