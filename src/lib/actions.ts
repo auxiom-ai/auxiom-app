@@ -1,7 +1,7 @@
 'use server';
 
-import { redirect } from 'next/navigation';
 import { supabase } from '../lib/db/drizzle';
+import { redirect } from 'next/navigation';
 
 // Get user profile information
 export async function getUserProfile() {
