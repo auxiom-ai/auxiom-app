@@ -1,96 +1,108 @@
 import { router } from 'expo-router';
 import React, { useState } from 'react';
-import { Platform, ScrollView, StatusBar, StyleSheet, TouchableOpacity, View } from 'react-native';
+import { Platform, ScrollView, StatusBar, StyleSheet, TouchableOpacity, View, Alert } from 'react-native';
 // import { Image } from 'expo-image'; // Commented out for now
 import { ThemedText } from '@/components/ThemedText';
 import { ThemedView } from '@/components/ThemedView';
 import { Button } from 'react-native-paper';
+import { supabase } from '../lib/supabaseClient';  // <-- Import your Supabase client
 
-// Identity options
-const IDENTITY_OPTIONS = [
-  "Student",
-  "Researcher",
-  "Clinician",
-  "Educator",
-  "Professional",
-  "Other"
+// Role options (previously identities)
+type Role = string;
+const ROLE_OPTIONS: Role[] = [
+  'Student',
+  'Researcher',
+  'Clinician',
+  'Educator',
+  'Professional',
+  'Other',
 ];
 
 export default function IdentityScreen() {
-  const [selectedIdentities, setSelectedIdentities] = useState<string[]>([]);
+  const [selectedRoles, setSelectedRoles] = useState<Role[]>([]);
+  const [loading, setLoading] = useState<boolean>(false);
 
-  const toggleIdentity = (identity: string) => {
-    if (selectedIdentities.includes(identity)) {
-      setSelectedIdentities(selectedIdentities.filter(item => item !== identity));
-    } else {
-      setSelectedIdentities([...selectedIdentities, identity]);
-    }
+  const toggleRole = (role: Role) => {
+    setSelectedRoles(prev =>
+      prev.includes(role)
+        ? prev.filter(item => item !== role)
+        : [...prev, role]
+    );
   };
 
-  const handleSubmit = () => {
-    console.log('Selected identities:', selectedIdentities);
-    
-    // Fix: Use the correct path to your interests page
-    // Option 1: If your interests page is at app/onboarding/interests.tsx
-    router.push('/interests');
-    
-    // Option 2: If your interests page is elsewhere, use the full path
-    // For example, if it's at app/interests.tsx:
-    // router.push('/interests');
-    
-    // Debug log
-    console.log('Navigating to interests page...');
+  const handleSubmit = async (): Promise<void> => {
+    if (selectedRoles.length === 0) {
+      Alert.alert('Please select at least one role.');
+      return;
+    }
+
+    setLoading(true);
+    try {
+      const userId = 30; // hardcoded for testing
+      const { data, error } = await supabase
+        .from('users')
+        .update({ role: selectedRoles.join(', ') })  // `role` is a varchar column
+        .eq('id', userId)
+        .select();
+
+      if (error) {
+        console.error('Error updating role:', error);
+        Alert.alert('Error saving role', error.message);
+      } else {
+        Alert.alert('Success', 'Your role has been saved.');
+        console.log('Updated role:', data);
+        // Navigate to the next onboarding screen
+        router.push('/interests');
+      }
+    } catch (err) {
+      console.error('Unexpected error in handleSubmit:', err);
+      Alert.alert('Error', 'An unexpected error occurred.');
+    } finally {
+      setLoading(false);
+    }
   };
 
   return (
     <ThemedView style={styles.safeArea}>
       <StatusBar barStyle="dark-content" backgroundColor="#f8f5e6" />
-      <ScrollView style={styles.container}>
-        <View style={styles.content}>
-          {/* Logo and Header - Logo commented out as requested */}
-          <View style={styles.logoContainer}>
-            {/* Brain logo image commented out
-            <Image 
-              source={require('@/assets/images/partial-react-logo.png')} 
-              style={styles.logo}
-              contentFit="contain"
-            /> */}
+      <ScrollView style={styles.container} contentContainerStyle={styles.content}>
+        {/* Logo and Header - Logo commented out */}
+        <View style={styles.logoContainer} />
+
+        {/* Main Content */}
+        <View style={styles.mainContent}>
+          <ThemedText type="title" style={[styles.title, { color: '#000' }]}>What brings you to Auxiom?</ThemedText>
+          <ThemedText style={[styles.subtitle, { color: '#000' }]}>Select as many as apply.</ThemedText>
+
+          {/* Role Options */}
+          <View style={styles.optionsContainer}>
+            {ROLE_OPTIONS.map(role => (
+              <TouchableOpacity
+                key={role}
+                style={[
+                  styles.identityButton,
+                  selectedRoles.includes(role) && styles.selectedButton,
+                ]}
+                onPress={() => toggleRole(role)}
+                activeOpacity={0.8}
+              >
+                <ThemedText style={styles.buttonText}>{role}</ThemedText>
+              </TouchableOpacity>
+            ))}
           </View>
 
-          {/* Main Content */}
-          <View style={styles.mainContent}>
-            <ThemedText type="title" style={[styles.title, { color: '#000' }]}>What brings you to Auxiom?</ThemedText>
-            <ThemedText style={[styles.subtitle, { color: '#000' }]}>Select as many as apply.</ThemedText>
-            
-            {/* Identity Options */}
-            <View style={styles.optionsContainer}>
-              {IDENTITY_OPTIONS.map((identity) => (
-                <TouchableOpacity
-                  key={identity}
-                  style={[
-                    styles.identityButton,
-                    selectedIdentities.includes(identity) && styles.selectedButton
-                  ]}
-                  onPress={() => toggleIdentity(identity)}
-                  activeOpacity={0.8}
-                >
-                  <ThemedText style={styles.buttonText}>{identity}</ThemedText>
-                </TouchableOpacity>
-              ))}
-            </View>
-            
-            {/* Submit Button */}
-            <View style={styles.buttonContainer}>
-              <Button 
-                mode="contained" 
-                onPress={handleSubmit}
-                style={styles.submitButton}
-                labelStyle={styles.buttonLabel}
-                disabled={selectedIdentities.length === 0}
-              >
-                Submit
-              </Button>
-            </View>
+          {/* Submit Button */}
+          <View style={styles.buttonContainer}>
+            <Button
+              mode="contained"
+              onPress={handleSubmit}
+              style={styles.submitButton}
+              labelStyle={styles.buttonLabel}
+              loading={loading}
+              disabled={loading || selectedRoles.length === 0}
+            >
+              Submit
+            </Button>
           </View>
         </View>
       </ScrollView>
@@ -110,17 +122,12 @@ const styles = StyleSheet.create({
   content: {
     padding: 16,
     paddingTop: 24,
-    flex: 1,
   },
   logoContainer: {
     flexDirection: 'row',
     alignItems: 'center',
     marginBottom: 40,
     paddingTop: 16,
-  },
-  logo: {
-    width: 40,
-    height: 40,
   },
   mainContent: {
     flex: 1,
@@ -141,17 +148,17 @@ const styles = StyleSheet.create({
     marginBottom: 40,
   },
   identityButton: {
-    backgroundColor: '#1f2937', // Dark blue/black
+    backgroundColor: '#1f2937',
     paddingVertical: 12,
     paddingHorizontal: 24,
-    borderRadius: 50, // Pill shape
+    borderRadius: 50,
     marginRight: 12,
     marginBottom: 12,
     minWidth: 120,
     alignItems: 'center',
   },
   selectedButton: {
-    backgroundColor: '#374151', // Slightly lighter when selected
+    backgroundColor: '#374151',
   },
   buttonText: {
     color: 'white',
@@ -166,7 +173,7 @@ const styles = StyleSheet.create({
   submitButton: {
     borderRadius: 24,
     paddingHorizontal: 16,
-    backgroundColor: '#1f2937', // Dark blue/black
+    backgroundColor: '#1f2937',
   },
   buttonLabel: {
     color: '#fff',

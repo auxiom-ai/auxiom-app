@@ -1,11 +1,12 @@
 "use client"
 
+import { Feather } from "@expo/vector-icons"
 import { useNavigation } from "@react-navigation/native"
 import Fuse from "fuse.js"
-import { useLayoutEffect, useEffect, useMemo, useRef, useState } from "react"
+import { useEffect, useLayoutEffect, useMemo, useRef, useState } from "react"
 import { Alert, Platform, SafeAreaView, ScrollView, StatusBar, StyleSheet, TouchableOpacity, View } from "react-native"
 import { Button, DefaultTheme, Provider as PaperProvider, Text, TextInput } from "react-native-paper"
-import { Feather } from "@expo/vector-icons"
+import { supabase } from "../lib/supabaseClient"
 
 // Import the policy map
 const policyMap: Record<string, string[]> = require("./policy-subject-map-116-119.json")
@@ -374,9 +375,24 @@ export default function InterestsScreen() {
     }
   }
 
-  const handleSubmit = () => {
-    Alert.alert("Interests Updated", `Submitted interests: ${keywords.join(", ")}`)
+const handleSubmit = async (): Promise<void> => {
+  const userId = 30
+  const { data, error } = await supabase
+    .from('users')
+    .update({ keywords })   // pass the array directly
+    .eq('id', userId)       // ← matches int4 PK
+    .select()
+
+console.log('update returned:', { data, error })
+
+  if (error) {
+    console.error(error)
+    Alert.alert("Error saving interests", error.message)
+  } else {
+    Alert.alert("Success", "Your interests have been saved.")
   }
+}
+
 
   // Create a list of tags for the "My tags" tab
   const myTags = useMemo(() => {
