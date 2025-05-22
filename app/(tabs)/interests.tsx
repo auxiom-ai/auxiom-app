@@ -205,24 +205,15 @@ export default function InterestsScreen() {
 
   // Initialize all tags
   useEffect(() => {
-    // Create the initial tags
-    const initialTags: TagWithSuggestions[] = [
-      ...POLICY_AREAS.map((tag) => ({
-        id: `base-${tag}`,
-        tag,
-        isSuggested: false,
-        isSelected: false,
-      })),
-      ...ALL_SUBJECT_TERMS.slice(0, 20).map((tag) => ({
-        id: `base-${tag}`,
-        tag,
-        isSuggested: false,
-        isSelected: false,
-      })),
-    ]
+  const initialTags: TagWithSuggestions[] = POLICY_AREAS.map((tag) => ({
+    id: `base-${tag}`,
+    tag,
+    isSuggested: false,
+    isSelected: false,
+  }))
 
-    setAllTags(initialTags)
-  }, [])
+  setAllTags(initialTags)
+}, [])
 
   // Update tags when keywords or most recent keyword changes
   useEffect(() => {
