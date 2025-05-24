@@ -4,7 +4,7 @@ import { Feather } from "@expo/vector-icons"
 import { useNavigation } from "@react-navigation/native"
 import Fuse from "fuse.js"
 import { useEffect, useLayoutEffect, useMemo, useRef, useState } from "react"
-import { Alert, Platform, SafeAreaView, ScrollView, StatusBar, StyleSheet, TouchableOpacity, View } from "react-native"
+import { Alert, Image, Platform, SafeAreaView, ScrollView, StatusBar, StyleSheet, TouchableOpacity, View } from "react-native"
 import { Button, DefaultTheme, Provider as PaperProvider, Text, TextInput } from "react-native-paper"
 import { supabase } from "../lib/supabaseClient"
 
@@ -452,9 +452,18 @@ console.log('update returned:', { data, error })
     <PaperProvider theme={theme}>
       <SafeAreaView style={styles.safeArea}>
         <StatusBar barStyle="dark-content" backgroundColor="#FAF8EC" />
+        <View style={styles.header}>
+          <View style={styles.logoContainer}>
+            <View style={styles.brainIcon}>
+              <Image source={require("../../assets/auxiom-logo.png")} style={styles.logoImage} resizeMode="contain" />
+            </View>
+            <Text style={styles.logoText}>Onboarding</Text>
+          </View>
+        </View>
         <View style={styles.content}>
           <View style={styles.header}>
             <Text style={styles.title}>Political Interests</Text>
+            <Text style={styles.subtitle}>Select 5+ topics to stay informed about</Text>
           </View>
 
           <View style={styles.searchContainer}>
@@ -562,6 +571,13 @@ const styles = StyleSheet.create({
     fontWeight: "bold",
     color: "#333333",
     marginBottom: 8,
+  },
+  subtitle: {
+    fontSize: 16,
+    color: "#666666",
+    marginTop: 0,
+    marginBottom: 0,
+    fontWeight: '400',
   },
   searchContainer: {
     marginVertical: 16,
@@ -722,5 +738,30 @@ const styles = StyleSheet.create({
   buttonLabel: {
     color: "#FFFFFF",
     fontWeight: "600",
+  },
+  logoContainer: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "center",
+    marginTop: 32,
+    marginBottom: 8,
+  },
+  brainIcon: {
+    width: 40,
+    height: 40,
+    borderRadius: 20,
+    justifyContent: "center",
+    alignItems: "center",
+    marginRight: 16,
+    overflow: "hidden",
+  },
+  logoImage: {
+    width: 36,
+    height: 36,
+  },
+  logoText: {
+    fontSize: 30,
+    fontWeight: "700",
+    color: "#1F2937",
   },
 })

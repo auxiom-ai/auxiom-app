@@ -214,6 +214,7 @@ const styles = StyleSheet.create({
   header: {
     marginBottom: 20, // Reduced bottom margin for tighter spacing
     marginTop: 40, // Add top margin to push header down
+    alignItems: "center",
   },
   logoContainer: {
     flexDirection: "row",
