@@ -65,10 +65,10 @@ export async function getUserDeliveryStatus(): Promise<boolean> {
     .single();
 
   const now = new Date();
-  const lastSunday = new Date();
-  lastSunday.setDate(now.getDate() - (now.getDay() + 1));
+  const lastSunday = new Date(now);
+  lastSunday.setDate(now.getDate() - now.getDay());
 
-  return data?.delivered >= lastSunday;
+  return data?.delivered >= lastSunday.toISOString();
 }
 
 // Get user's account status
