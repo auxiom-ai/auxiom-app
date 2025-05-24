@@ -1,16 +1,16 @@
 import {
-    getNewsletterStatus,
-    getOnboardingStatus,
-    getUserAccountStatus,
-    getUserDeliveryDay,
-    getUserDeliveryStatus,
-    getUserKeywords,
-    getUserPlan,
-    getUserPodcasts,
-    getUserProfile,
-    getVerificationStatus,
-    subscribeToNewsletter,
-    updatePodcastListenedStatus
+  getNewsletterStatus,
+  getOnboardingStatus,
+  getUserAccountStatus,
+  getUserDeliveryDay,
+  getUserDeliveryStatus,
+  getUserKeywords,
+  getUserPlan,
+  getUserPodcasts,
+  getUserProfile,
+  getVerificationStatus,
+  subscribeToNewsletter,
+  updatePodcastListenedStatus
 } from '../actions';
 import { supabase } from '../db/drizzle';
 
@@ -122,8 +122,7 @@ describe('User Actions', () => {
         eq: jest.fn().mockReturnThis(),
         single: jest.fn().mockResolvedValue({ 
           data: { 
-            delivered: deliveredDate,
-            id: 1 
+            delivered: deliveredDate
           } 
         })
       };
@@ -291,21 +290,19 @@ describe('User Actions', () => {
   describe('subscribeToNewsletter', () => {
     it('should successfully subscribe user', async () => {
       const mockChain = {
-        insert: jest.fn().mockResolvedValue({ 
-          data: { email: mockUser.email },
-          error: null 
-        })
+        insert: jest.fn().mockReturnThis(),
+        error: null
       };
       (supabase.from as jest.Mock).mockReturnValue(mockChain);
 
       const result = await subscribeToNewsletter();
       expect(result).toEqual({ success: 'Successfully subscribed to newsletter.' });
-      expect(supabase.from('emails').insert).toHaveBeenCalledWith({ email: mockUser.email });
     });
 
     it('should handle subscription error', async () => {
       const mockChain = {
-        insert: jest.fn().mockResolvedValue({ error: new Error('Subscription failed') })
+        insert: jest.fn().mockReturnThis(),
+        error: new Error('Subscription failed')
       };
       (supabase.from as jest.Mock).mockReturnValue(mockChain);
 

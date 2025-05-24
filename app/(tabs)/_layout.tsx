@@ -41,6 +41,7 @@ export default function TabLayout() {
         }}
       />
       <Tabs.Screen
+
         name="identity"
         options={{
           title: 'Onboarding',
@@ -51,6 +52,11 @@ export default function TabLayout() {
         name="interests"
         options={{
           tabBarButton: () => null, // Hides the interests tab
+        name="settings"
+        options={{
+          title: 'Settings',
+          tabBarIcon: ({ color }) => <IconSymbol size={28} name="gearshape.fill" color={color} />,
+
         }}
       />
     </Tabs>
