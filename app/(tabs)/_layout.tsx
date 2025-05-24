@@ -26,7 +26,7 @@ export default function TabLayout() {
           default: {},
         }),
       }}>
-      <Tabs.Screen
+     <Tabs.Screen
         name="index"
         options={{
           title: 'Home',
@@ -41,12 +41,19 @@ export default function TabLayout() {
         }}
       />
       <Tabs.Screen
-        name="settings"
+        name="occupation"
         options={{
-          title: 'Settings',
-          tabBarIcon: ({ color }) => <IconSymbol size={28} name="gearshape.fill" color={color} />,
+          title: 'Onboarding',
+          tabBarIcon: ({ color }) => <IconSymbol size={28} name="person.fill" color={color} />,
+        }}
+      />
+      <Tabs.Screen
+        name="interests"
+        options={{
+          tabBarButton: () => null, // Hides the interests tab
         }}
       />
     </Tabs>
   );
+    
 }
