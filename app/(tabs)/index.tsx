@@ -29,7 +29,7 @@ export default function HomeScreen() {
         <ThemedText>
           Begin the onboarding process to customize your experience.
         </ThemedText>
-        <Link href="/identity" asChild>
+        <Link href="/occupation" asChild>
           <Button mode="contained" style={styles.onboardingButton}>
             Start Onboarding
           </Button>

@@ -41,7 +41,7 @@ export default function TabLayout() {
         }}
       />
       <Tabs.Screen
-        name="identity"
+        name="occupation"
         options={{
           title: 'Onboarding',
           tabBarIcon: ({ color }) => <IconSymbol size={28} name="person.fill" color={color} />,
