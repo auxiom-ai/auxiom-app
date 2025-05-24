@@ -9,7 +9,7 @@ import { Button, DefaultTheme, Provider as PaperProvider, Text, TextInput } from
 import { supabase } from "../lib/supabaseClient"
 
 // Import the policy map
-const policyMap: Record<string, string[]> = require("./policy-subject-map-116-119.json")
+const policyMap: Record<string, string[]> = require("@/assets/policy-subject-map-116-119.json")
 
 // Get all policy areas (top-level categories)
 const POLICY_AREAS = Object.keys(policyMap)
