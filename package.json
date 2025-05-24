@@ -4,13 +4,11 @@
   "version": "1.0.0",
   "scripts": {
     "start": "expo start",
-    "reset-project": "node ./scripts/reset-project.js",
     "android": "DARK_MODE=media expo start --android",
     "ios": "DARK_MODE=media expo start --ios",
     "web": "DARK_MODE=media expo start --web",
     "lint": "expo lint",
     "postinstall": "patch-package",
-    "sync-interests": "curl -L https://www.govinfo.gov/bulkdata/BILLSTATUS/119/BILLSTATUS-119.zip -o billstatus-119.zip && unzip -oq billstatus-119.zip -d ./billstatus-119 && node build-map.js",
     "test": "jest",
     "test:watch": "jest --watch",
     "test:coverage": "jest --coverage"
@@ -39,7 +37,6 @@
     "ajv": "^8.17.1",
     "ajv-keywords": "^5.1.0",
     "babel-plugin-module-resolver": "^5.0.2",
-    "drizzle-orm": "^0.43.1",
     "expo": "^53.0.9",
     "expo-blur": "~14.1.4",
     "expo-constants": "~17.1.6",
