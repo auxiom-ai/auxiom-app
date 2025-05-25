@@ -26,7 +26,7 @@ export default function TabLayout() {
           default: {},
         }),
       }}>
-     <Tabs.Screen
+      <Tabs.Screen
         name="index"
         options={{
           title: 'Home',
@@ -49,6 +49,12 @@ export default function TabLayout() {
       />
       <Tabs.Screen
         name="interests"
+        options={{
+          tabBarButton: () => null, // Hides the interests tab
+        }}
+      />
+      <Tabs.Screen
+        name="day"
         options={{
           tabBarButton: () => null, // Hides the interests tab
         }}
