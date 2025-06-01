@@ -6,15 +6,16 @@ import { supabase } from "@/lib/supabase"
 import { useState } from "react"
 import {
   Alert,
+  Animated,
+  Easing,
   Image,
+  Platform,
+  SafeAreaView,
   ScrollView,
   StatusBar,
   StyleSheet,
   TouchableOpacity,
-  View,
-  SafeAreaView,
-  Animated,
-  Easing,
+  View
 } from "react-native"
 import { Button } from "react-native-paper"
 
@@ -124,19 +125,18 @@ export default function DayScreen() {
 
   return (
     <SafeAreaView style={styles.safeArea}>
-      <ThemedView style={styles.innerContainer}>
-        <StatusBar barStyle="dark-content" backgroundColor="#f8f5e6" />
-        <ScrollView style={styles.container} contentContainerStyle={styles.content}>
-          {/* Header */}
-          <View style={styles.header}>
-            <View style={styles.logoContainer}>
-              <View style={styles.brainIcon}>
-                <Image source={require("../../assets/auxiom-logo.png")} style={styles.logoImage} resizeMode="contain" />
-              </View>
-              <ThemedText style={styles.logoText}>Onboarding</ThemedText>
+      <ThemedView style={styles.safeArea}>
+      <StatusBar barStyle="dark-content" backgroundColor="#f8f5e6" />
+      <ScrollView style={styles.container} contentContainerStyle={styles.content}>
+        {/* Header */}
+        <View style={styles.header}>
+          <View style={styles.logoContainer}>
+            <View style={styles.brainIcon}>
+              <Image source={require("../../assets/auxiom-logo.png")} style={styles.logoImage} resizeMode="contain" />
             </View>
+            <ThemedText style={styles.logoText}>Onboarding</ThemedText>
           </View>
-
+        </View>
           {/* Main Content */}
           <View style={styles.mainContent}>
             <ThemedText style={styles.title}>When would you like your podcast delivered?</ThemedText>
@@ -144,7 +144,6 @@ export default function DayScreen() {
               Our free plan offers one short podcast per week. Upgrade your plan to get a longer podcast and access to
               more features.
             </ThemedText>
-
             {/* Day Selector Carousel */}
             <View style={styles.carouselContainer}>
               {/* Previous Day Button */}
@@ -154,7 +153,6 @@ export default function DayScreen() {
                 </View>
                 <ThemedText style={styles.sideCardText}>{getPreviousDay()}</ThemedText>
               </TouchableOpacity>
-
               {/* Selected Day Card */}
               <Animated.View
                 style={[
@@ -167,7 +165,6 @@ export default function DayScreen() {
               >
                 <ThemedText style={styles.selectedDayText}>{DAYS_OF_WEEK[selectedDayIndex]}</ThemedText>
               </Animated.View>
-
               {/* Next Day Button */}
               <TouchableOpacity style={styles.sideCard} onPress={handleNextDay}>
                 <ThemedText style={styles.sideCardText}>{getNextDay()}</ThemedText>
@@ -177,7 +174,6 @@ export default function DayScreen() {
               </TouchableOpacity>
             </View>
           </View>
-
           {/* Submit Button */}
           <View style={styles.submitContainer}>
             <Button
@@ -201,10 +197,7 @@ const styles = StyleSheet.create({
   safeArea: {
     flex: 1,
     backgroundColor: "#f8f5e6",
-  },
-  innerContainer: {
-    flex: 1,
-    backgroundColor: "#f8f5e6",
+    paddingTop: Platform.OS === "android" ? StatusBar.currentHeight : 0,
   },
   container: {
     flex: 1,
@@ -212,39 +205,49 @@ const styles = StyleSheet.create({
   content: {
     flexGrow: 1,
     padding: 24,
-    paddingTop: 24, // Reset to normal padding
-    paddingBottom: 8,
+    paddingTop: 20, // Lower top padding for ScrollView content
+    paddingBottom: 8, // Keep bottom padding small
   },
   header: {
-    marginBottom: 24,
-    marginTop: 16, // Reduced margin
+    marginBottom: 20, // Reduced bottom margin for tighter spacing
+    marginTop: 20, // Add top margin to push header down
+    alignItems: "center",
   },
   logoContainer: {
     flexDirection: "row",
     alignItems: "center",
-    justifyContent: "center",
-    marginBottom: 8,
+    marginBottom: 0, // Add a bit of space below logo+title
   },
   brainIcon: {
-    width: 40,
-    height: 40,
+    width: 40, // Increased size
+    height: 40, // Increased size
     borderRadius: 20,
     justifyContent: "center",
     alignItems: "center",
-    marginRight: 16,
+    marginRight: 16, // Slightly more space
   },
   logoImage: {
-    width: 36,
-    height: 36,
+    width: 36, // Increased size
+    height: 36, // Increased size
   },
   logoText: {
-    fontSize: 30,
+    fontSize: 30, // Increased size
     fontWeight: "700",
     color: "#1F2937",
+    paddingTop: 10,
   },
-  mainContent: {
+  formContainer: {
     flex: 1,
-    paddingHorizontal: 8,
+    justifyContent: "center",
+    alignItems: "center",
+  },
+  formContent: {
+    backgroundColor: "#E5E7EB",
+    borderRadius: 19,
+    padding: 32,
+    paddingTop: 10,
+    width: "100%",
+    maxWidth: 400,
   },
   title: {
     fontSize: 45,
