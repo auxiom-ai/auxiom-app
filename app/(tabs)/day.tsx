@@ -88,14 +88,21 @@ export default function DayScreen() {
   const handleSubmit = async (): Promise<void> => {
     setLoading(true)
     try {
-      const userId = 30 // hardcoded for testing
+      // Get the current signed-in user
+      const { data: { user }, error: userError } = await supabase.auth.getUser();
+      if (userError) throw userError;
+      if (!user) {
+        Alert.alert("Error", "No authenticated user found");
+        setLoading(false);
+        return;
+      }
 
       const { data, error } = await supabase
         .from("users")
         .update({
           delivery_day: selectedDayIndex, // Use the index directly (0-6)
         })
-        .eq("id", userId)
+        .eq("email", user.email)
         .select()
 
       if (error) {
@@ -345,5 +352,9 @@ const styles = StyleSheet.create({
     },
     shadowOpacity: 0.25,
     shadowRadius: 3.84,
+  },
+  mainContent: {
+    flex: 1,
+    paddingHorizontal: 8,
   },
 })

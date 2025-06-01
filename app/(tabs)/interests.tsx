@@ -369,14 +369,21 @@ export default function InterestsScreen() {
   }
 
 const handleSubmit = async (): Promise<void> => {
-  const userId = 30
+  // Get the current signed-in user
+  const { data: { user }, error: userError } = await supabase.auth.getUser();
+  if (userError) throw userError;
+  if (!user) {
+    Alert.alert("Error", "No authenticated user found");
+    return;
+  }
+  const userId = user.id;
   const { data, error } = await supabase
     .from('users')
     .update({ keywords })   // pass the array directly
-    .eq('id', userId)       // ← matches int4 PK
+    .eq('email', user.email) // match by email instead of id
     .select()
 
-console.log('update returned:', { data, error })
+  console.log('update returned:', { data, error })
 
   if (error) {
     console.error(error)
