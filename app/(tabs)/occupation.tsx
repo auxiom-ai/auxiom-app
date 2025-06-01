@@ -57,7 +57,14 @@ export default function IdentityScreen() {
 
     setLoading(true)
     try {
-      const userId = 30 // hardcoded for testing
+      // Get the current signed-in user
+      const { data: { user }, error: userError } = await supabase.auth.getUser();
+      if (userError) throw userError;
+      if (!user) {
+        Alert.alert("Error", "No authenticated user found");
+        setLoading(false);
+        return;
+      }
       const { data, error } = await supabase
         .from("users")
         .update({
@@ -65,7 +72,7 @@ export default function IdentityScreen() {
           occupation: occupation,
           industry: industry,
         })
-        .eq("id", userId)
+        .eq("email", user.email)
         .select()
 
       if (error) {
