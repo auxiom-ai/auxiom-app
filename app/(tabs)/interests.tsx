@@ -3,6 +3,7 @@
 import { supabase } from "@/lib/supabase"
 import { Feather } from "@expo/vector-icons"
 import { useNavigation } from "@react-navigation/native"
+import { useRouter } from "expo-router"
 import Fuse from "fuse.js"
 import React, { useEffect, useLayoutEffect, useMemo, useRef, useState } from "react"
 import { Alert, Image, Platform, SafeAreaView, ScrollView, StatusBar, StyleSheet, TouchableOpacity, View } from "react-native"
@@ -117,6 +118,7 @@ type TagWithSuggestions = {
 export default function InterestsScreen() {
   // hide this tab
   const navigation = useNavigation()
+  const router = useRouter()
   useLayoutEffect(() => {
     navigation.setOptions({ tabBarButton: () => null })
   }, [navigation])
@@ -380,7 +382,7 @@ console.log('update returned:', { data, error })
     console.error(error)
     Alert.alert("Error saving interests", error.message)
   } else {
-    Alert.alert("Success", "Your interests have been saved.")
+    router.push("/day")
   }
 }
 
@@ -544,7 +546,7 @@ console.log('update returned:', { data, error })
 
           <View style={styles.buttonContainer}>
             <Button mode="contained" onPress={handleSubmit} style={styles.submitButton} labelStyle={styles.buttonLabel}>
-              Submit
+              Next
             </Button>
           </View>
         </View>
@@ -564,7 +566,8 @@ const styles = StyleSheet.create({
     padding: 16,
   },
   header: {
-    marginBottom: 16,
+    marginBottom: 10,
+    marginTop: 10,
   },
   title: {
     fontSize: 28,
@@ -743,7 +746,7 @@ const styles = StyleSheet.create({
     flexDirection: "row",
     alignItems: "center",
     justifyContent: "center",
-    marginTop: 32,
+    marginTop: 30,
     marginBottom: 8,
   },
   brainIcon: {
@@ -763,5 +766,6 @@ const styles = StyleSheet.create({
     fontSize: 30,
     fontWeight: "700",
     color: "#1F2937",
+ 
   },
 })

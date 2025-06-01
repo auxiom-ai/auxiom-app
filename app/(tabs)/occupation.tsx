@@ -2,6 +2,7 @@
 
 import { ThemedText } from "@/components/ThemedText"
 import { ThemedView } from "@/components/ThemedView"
+import { supabase } from "@/lib/supabase"
 import { router } from "expo-router"
 import { useState } from "react"
 import {
@@ -17,7 +18,6 @@ import {
   View,
 } from "react-native"
 import { Button } from "react-native-paper"
-import { supabase } from "@/lib/supabase"
 
 // Industry options for the dropdown
 const INDUSTRY_OPTIONS = [
