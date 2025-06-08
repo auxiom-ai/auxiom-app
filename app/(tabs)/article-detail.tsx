@@ -56,7 +56,6 @@ export default function ArticleDetailScreen() {
           <TouchableOpacity style={styles.backButton} onPress={handleBackPress}>
             <Ionicons name="arrow-back" size={24} color="#1F2937" />
           </TouchableOpacity>
-          <ThemedText style={styles.headerTitle}>Article</ThemedText>
           <View style={styles.placeholder} />
         </View>
 

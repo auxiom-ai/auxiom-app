@@ -2,8 +2,11 @@
 
 import { ThemedText } from "@/components/ThemedText"
 import { ThemedView } from "@/components/ThemedView"
+import { supabase } from "@/lib/supabase"
+import { Ionicons } from "@expo/vector-icons"
 import { router } from "expo-router"
-import { ScrollView, StatusBar, StyleSheet, TouchableOpacity, View, SafeAreaView } from "react-native"
+import { useEffect, useState } from "react"
+import { Image, SafeAreaView, ScrollView, StatusBar, StyleSheet, TouchableOpacity, View } from "react-native"
 
 // Sample data for the feed
 const feedData = [
@@ -122,6 +125,31 @@ const feedData = [
 ]
 
 export default function FeedScreen() {
+  const [userName, setUserName] = useState<string>("")
+
+  useEffect(() => {
+    const fetchUserName = async () => {
+      try {
+        const userId = 30 // hardcoded for testing, same as other pages
+        const { data, error } = await supabase.from("users").select("name").eq("id", userId).single()
+
+        if (error) {
+          console.error("Error fetching user name:", error)
+          setUserName("User") // fallback name
+        } else if (data?.name) {
+          setUserName(data.name)
+        } else {
+          setUserName("User") // fallback if no name found
+        }
+      } catch (err) {
+        console.error("Unexpected error fetching user name:", err)
+        setUserName("User") // fallback name
+      }
+    }
+
+    fetchUserName()
+  }, [])
+
   const handleCardPress = (article: (typeof feedData)[0]) => {
     // Navigate to article detail page with article data
     router.push({
@@ -139,7 +167,12 @@ export default function FeedScreen() {
 
         {/* Header */}
         <View style={styles.header}>
-          <ThemedText style={styles.headerTitle}>Feed</ThemedText>
+          <View style={styles.logoContainer}>
+            <View style={styles.brainIcon}>
+              <Image source={require("../../assets/auxiom-logo.png")} style={styles.logoImage} resizeMode="contain" />
+            </View>
+            <ThemedText style={styles.logoText}>Hello, {userName || "User"}</ThemedText>
+          </View>
         </View>
 
         {/* Feed Content */}
@@ -161,6 +194,26 @@ export default function FeedScreen() {
             </TouchableOpacity>
           ))}
         </ScrollView>
+
+        {/* Bottom Navigation */}
+        <View style={styles.bottomNav}>
+          <TouchableOpacity style={styles.navItem}>
+            <Ionicons name="radio" size={24} color="#1F2937" />
+            <ThemedText style={styles.activeNavText}>News</ThemedText>
+          </TouchableOpacity>
+          <TouchableOpacity style={styles.navItem}>
+            <Ionicons name="compass-outline" size={24} color="#9CA3AF" />
+            <ThemedText style={styles.navText}>Explore</ThemedText>
+          </TouchableOpacity>
+          <TouchableOpacity style={styles.navItem}>
+            <Ionicons name="search-outline" size={24} color="#9CA3AF" />
+            <ThemedText style={styles.navText}>Search</ThemedText>
+          </TouchableOpacity>
+          <TouchableOpacity style={styles.navItem}>
+            <Ionicons name="person-outline" size={24} color="#9CA3AF" />
+            <ThemedText style={styles.navText}>Profile</ThemedText>
+          </TouchableOpacity>
+        </View>
       </ThemedView>
     </SafeAreaView>
   )
@@ -180,9 +233,27 @@ const styles = StyleSheet.create({
     paddingVertical: 16,
     borderBottomWidth: 1,
     borderBottomColor: "#E5E7EB",
-    marginTop: 16,
+    marginTop: 40,
   },
-  headerTitle: {
+  logoContainer: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "center",
+    marginBottom: 8,
+  },
+  brainIcon: {
+    width: 40,
+    height: 40,
+    borderRadius: 20,
+    justifyContent: "center",
+    alignItems: "center",
+    marginRight: 16,
+  },
+  logoImage: {
+    width: 36,
+    height: 36,
+  },
+  logoText: {
     fontSize: 30,
     fontWeight: "700",
     color: "#1F2937",
@@ -226,5 +297,29 @@ const styles = StyleSheet.create({
     color: "#4B5563",
     fontSize: 16,
     lineHeight: 24,
+  },
+  bottomNav: {
+    flexDirection: "row",
+    borderTopWidth: 1,
+    borderTopColor: "#E5E7EB",
+    backgroundColor: "#FFFFFF",
+    paddingVertical: 8,
+  },
+  navItem: {
+    flex: 1,
+    alignItems: "center",
+    paddingVertical: 8,
+  },
+  activeNavText: {
+    color: "#1F2937",
+    fontSize: 12,
+    fontWeight: "600",
+    marginTop: 4,
+  },
+  navText: {
+    color: "#9CA3AF",
+    fontSize: 12,
+    fontWeight: "500",
+    marginTop: 4,
   },
 })
