@@ -129,8 +129,19 @@ export default function FeedScreen() {
   useEffect(() => {
     const fetchUserName = async () => {
       try {
-        const userId = 30 // hardcoded for testing, same as other pages
-        const { data, error } = await supabase.from("users").select("name").eq("id", userId).single()
+        // Get the current signed-in user (same as occupation.tsx)
+        const { data: { user }, error: userError } = await supabase.auth.getUser()
+        if (userError) throw userError
+        if (!user) {
+          setUserName("User")
+          return
+        }
+        // Fetch user info by email
+        const { data, error } = await supabase
+          .from("users")
+          .select("name")
+          .eq("email", user.email)
+          .single()
 
         if (error) {
           console.error("Error fetching user name:", error)
