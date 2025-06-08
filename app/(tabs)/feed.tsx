@@ -3,7 +3,6 @@
 import { ThemedText } from "@/components/ThemedText"
 import { ThemedView } from "@/components/ThemedView"
 import { supabase } from "@/lib/supabase"
-import { Ionicons } from "@expo/vector-icons"
 import { router } from "expo-router"
 import { useEffect, useState } from "react"
 import { Image, SafeAreaView, ScrollView, StatusBar, StyleSheet, TouchableOpacity, View } from "react-native"
@@ -194,26 +193,6 @@ export default function FeedScreen() {
             </TouchableOpacity>
           ))}
         </ScrollView>
-
-        {/* Bottom Navigation */}
-        <View style={styles.bottomNav}>
-          <TouchableOpacity style={styles.navItem}>
-            <Ionicons name="radio" size={24} color="#1F2937" />
-            <ThemedText style={styles.activeNavText}>News</ThemedText>
-          </TouchableOpacity>
-          <TouchableOpacity style={styles.navItem}>
-            <Ionicons name="compass-outline" size={24} color="#9CA3AF" />
-            <ThemedText style={styles.navText}>Explore</ThemedText>
-          </TouchableOpacity>
-          <TouchableOpacity style={styles.navItem}>
-            <Ionicons name="search-outline" size={24} color="#9CA3AF" />
-            <ThemedText style={styles.navText}>Search</ThemedText>
-          </TouchableOpacity>
-          <TouchableOpacity style={styles.navItem}>
-            <Ionicons name="person-outline" size={24} color="#9CA3AF" />
-            <ThemedText style={styles.navText}>Profile</ThemedText>
-          </TouchableOpacity>
-        </View>
       </ThemedView>
     </SafeAreaView>
   )
@@ -233,30 +212,26 @@ const styles = StyleSheet.create({
     paddingVertical: 16,
     borderBottomWidth: 1,
     borderBottomColor: "#E5E7EB",
-    marginTop: 40,
+    marginTop: 20,
   },
   logoContainer: {
     flexDirection: "row",
-    alignItems: "center",
-    justifyContent: "center",
-    marginBottom: 8,
   },
   brainIcon: {
     width: 40,
     height: 40,
     borderRadius: 20,
-    justifyContent: "center",
-    alignItems: "center",
-    marginRight: 16,
+    marginRight: 10,
   },
   logoImage: {
     width: 36,
     height: 36,
   },
   logoText: {
-    fontSize: 30,
+    fontSize: 30, // Increased size
     fontWeight: "700",
     color: "#1F2937",
+    paddingTop: 10,
   },
   scrollView: {
     flex: 1,
@@ -297,29 +272,5 @@ const styles = StyleSheet.create({
     color: "#4B5563",
     fontSize: 16,
     lineHeight: 24,
-  },
-  bottomNav: {
-    flexDirection: "row",
-    borderTopWidth: 1,
-    borderTopColor: "#E5E7EB",
-    backgroundColor: "#FFFFFF",
-    paddingVertical: 8,
-  },
-  navItem: {
-    flex: 1,
-    alignItems: "center",
-    paddingVertical: 8,
-  },
-  activeNavText: {
-    color: "#1F2937",
-    fontSize: 12,
-    fontWeight: "600",
-    marginTop: 4,
-  },
-  navText: {
-    color: "#9CA3AF",
-    fontSize: 12,
-    fontWeight: "500",
-    marginTop: 4,
   },
 })
