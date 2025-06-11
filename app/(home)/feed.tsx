@@ -128,33 +128,7 @@ export default function FeedScreen() {
 
   useEffect(() => {
     const fetchUserName = async () => {
-      try {
-        // Get the current signed-in user (same as occupation.tsx)
-        const { data: { user }, error: userError } = await supabase.auth.getUser()
-        if (userError) throw userError
-        if (!user) {
-          setUserName("User")
-          return
-        }
-        // Fetch user info by email
-        const { data, error } = await supabase
-          .from("users")
-          .select("name")
-          .eq("email", user.email)
-          .single()
-
-        if (error) {
-          console.error("Error fetching user name:", error)
-          setUserName("User") // fallback name
-        } else if (data?.name) {
-          setUserName(data.name)
-        } else {
-          setUserName("User") // fallback if no name found
-        }
-      } catch (err) {
-        console.error("Unexpected error fetching user name:", err)
-        setUserName("User") // fallback name
-      }
+      setUserName("User...") // Set initial loading state
     }
 
     fetchUserName()
@@ -179,7 +153,7 @@ export default function FeedScreen() {
         <View style={styles.header}>
           <View style={styles.logoContainer}>
             <View style={styles.brainIcon}>
-              <Image source={require("../../assets/auxiom-logo.png")} style={styles.logoImage} resizeMode="contain" />
+              <Image source={require("@/assets/auxiom-logo.png")} style={styles.logoImage} resizeMode="contain" />
             </View>
             <ThemedText style={styles.logoText}>Hello, {userName || "User"}</ThemedText>
           </View>

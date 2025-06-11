@@ -1,19 +1,41 @@
-import { AuthGate } from '@/components/AuthGate';
-import { GluestackUIProvider } from "@/components/ui/gluestack-ui-provider";
+import AuthGuard from '@/components/AuthGuard'
+import { GluestackUIProvider } from "@/components/ui/gluestack-ui-provider"
 import "@/global.css";
-import { DarkTheme, DefaultTheme, ThemeProvider } from '@react-navigation/native';
-import { useFonts } from 'expo-font';
-import { Stack } from 'expo-router';
-import { StatusBar } from 'expo-status-bar';
-import 'react-native-reanimated';
+import { DarkTheme, DefaultTheme, ThemeProvider } from '@react-navigation/native'
+import { useFonts } from 'expo-font'
+import { Stack } from 'expo-router'
+import { StatusBar } from 'expo-status-bar'
+import { useRefreshToken } from '@/lib/useRefreshToken'
+import { useSessionTimeout } from '@/lib/useSessionTimeout'
+import 'react-native-reanimated'
+import { supabase } from '@/lib/supabase'
+import { useEffect, useState } from 'react'
+import { Session } from '@supabase/supabase-js'
 
-import { useColorScheme } from '@/hooks/useColorScheme';
+import { useColorScheme } from '@/hooks/useColorScheme'
 
 export default function RootLayout() {
   const colorScheme = useColorScheme();
   const [loaded] = useFonts({
     SpaceMono: require('../assets/fonts/SpaceMono-Regular.ttf'),
   });
+  const [session, setSession] = useState<Session | null>(null)
+
+  // Initialize session timeout
+  useSessionTimeout()
+  
+  // Initialize refresh token handling
+  useRefreshToken()
+
+  useEffect(() => {
+    supabase.auth.getSession().then(({ data: { session } }) => {
+      setSession(session)
+    })
+
+    supabase.auth.onAuthStateChange((_event, session) => {
+      setSession(session)
+    })
+  }, [])
 
   if (!loaded) {
     // Async font loading only occurs in development.
@@ -22,9 +44,9 @@ export default function RootLayout() {
 
   return (
     <GluestackUIProvider mode="light"><ThemeProvider value={colorScheme === 'dark' ? DarkTheme : DefaultTheme}>
-        <AuthGate>
+        <AuthGuard>
           <Stack>
-            <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
+            <Stack.Screen name="(home)" options={{ headerShown: false }} />
             <Stack.Screen name="sign-in" options={{ headerShown: false }} />
             <Stack.Screen name="sign-up" options={{ headerShown: false }} />
             <Stack.Screen name="reset-password" options={{ headerShown: false }} />
@@ -32,7 +54,7 @@ export default function RootLayout() {
             <Stack.Screen name="email-confirmation" options={{ headerShown: false }} />
             <Stack.Screen name="+not-found" />
           </Stack>
-        </AuthGate>
+        </AuthGuard>
         <StatusBar style="auto" />
       </ThemeProvider></GluestackUIProvider>
   );
