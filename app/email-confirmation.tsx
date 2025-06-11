@@ -8,8 +8,8 @@ export default function EmailConfirmationScreen() {
       <Text style={styles.subtitle}>
         We've sent you a confirmation email. Please check your inbox and confirm your email address.
       </Text>
-      <TouchableOpacity style={styles.button} onPress={() => router.replace('/sign-in')}>
-        <Text style={styles.buttonText}>Back to Sign In</Text>
+      <TouchableOpacity style={styles.button} onPress={() => router.replace('/occupation' as any)}>
+        <Text style={styles.buttonText}>Continue to Occupation</Text>
       </TouchableOpacity>
     </View>
   );

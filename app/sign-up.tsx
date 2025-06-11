@@ -2,7 +2,6 @@ import { supabase } from '@/lib/supabase';
 import { useRouter } from 'expo-router';
 import { useState } from 'react';
 import { StyleSheet, Text, TextInput, TouchableOpacity, View } from 'react-native';
-import Toast from 'react-native-toast-message';
 
 export default function SignUpScreen() {
   const [email, setEmail] = useState('');
@@ -16,14 +15,15 @@ export default function SignUpScreen() {
     if (error) {
       setError(error.message);
     } else {
-      // Insert blank user in users table
-      const { error: dbError } = await supabase.from('users').insert([{ email, verified: false, active: false }]);
-      if (dbError) {
-        Toast.show({ type: 'error', text1: 'Database Error', text2: dbError.message });
+      // Check if the user is already confirmed
+      const { data: userData, error: userError } = await supabase.auth.getUser();
+      if (userError) {
+        setError(userError.message);
+      } else if (userData?.user?.email_confirmed_at) {
+        router.replace('/onboarding' as any);
       } else {
-        Toast.show({ type: 'success', text1: 'Check your email', text2: 'Please verify your email to continue.' });
+        router.replace('/email-confirmation');
       }
-      router.replace('/email-confirmation');
     }
   };
 

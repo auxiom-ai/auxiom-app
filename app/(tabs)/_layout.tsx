@@ -20,19 +20,12 @@ export default function TabLayout() {
         tabBarBackground: TabBarBackground,
         tabBarStyle: Platform.select({
           ios: {
-            // Use a transparent background on iOS to show the blur effect
-            position: 'absolute',
+            // Remove absolute positioning to ensure the tab bar is visible
+            // position: 'absolute',
           },
           default: {},
         }),
       }}>
-      <Tabs.Screen
-        name="index"
-        options={{
-          title: 'Home',
-          tabBarIcon: ({ color }) => <IconSymbol size={28} name="house.fill" color={color} />,
-        }}
-      />
       <Tabs.Screen
         name="explore"
         options={{
@@ -57,6 +50,13 @@ export default function TabLayout() {
         name="day"
         options={{
           tabBarButton: () => null, // Hides the interests tab
+        }}
+      />
+      <Tabs.Screen
+        name="settings"
+        options={{
+          title: 'Settings',
+          tabBarIcon: ({ color }) => <IconSymbol size={28} name="gearshape.fill" color={color} />,
         }}
       />
     </Tabs>
