@@ -1,38 +1,37 @@
-import { supabase } from '@/lib/supabase'
-import { Session } from '@supabase/supabase-js'
-import { useRouter } from 'expo-router'
-import { useEffect, useState } from 'react'
-import { View } from 'react-native'
+import { supabase } from '@/lib/supabase';
+import { usePathname, useRouter } from 'expo-router';
+import React, { useEffect, useState } from 'react';
 
-export default function AuthGuard({ children }: { children: React.ReactNode }) {
-  const [session, setSession] = useState<Session | null>(null)
-  const [loading, setLoading] = useState(true)
-  const router = useRouter()
+export default function AuthGaurd({ children }: { children: React.ReactNode }) {
+  const [loading, setLoading] = useState(true);
+  const [authenticated, setAuthenticated] = useState(false);
+  const router = useRouter();
+  const pathname = usePathname();
 
   useEffect(() => {
-    // Check current session
     supabase.auth.getSession().then(({ data: { session } }) => {
-      setSession(session)
-      setLoading(false)
-      if (!session) {
-        router.replace('/sign-in')
+      setAuthenticated(!!session);
+      setLoading(false);
+      if (!session && pathname !== '/sign-in' && pathname !== '/sign-up') {
+        router.replace('/sign-in' as any);
       }
-    })
-
-    // Listen for auth changes
-    const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
-      setSession(session)
-      if (!session) {
-        router.replace('/sign-in')
+    });
+    // Listen for auth state changes
+    const { data: listener } = supabase.auth.onAuthStateChange((_event, session) => {
+      setAuthenticated(!!session);
+      if (!session && pathname !== '/sign-in' && pathname !== '/sign-up') {
+        router.replace('/sign-in' as any);
       }
-    })
+      if (session && (pathname === '/sign-in' || pathname === '/sign-up')) {
+        router.replace('/' as any);
+      }
+    });
+    return () => {
+      listener.subscription.unsubscribe();
+    };
+  }, [pathname]);
 
-    return () => subscription.unsubscribe()
-  }, [])
+  if (loading) return null; // or a splash screen
 
-  if (loading) {
-    return <View />
-  }
-
-  return session ? <>{children}</> : null
-}
+  return <>{children}</>;
+} 
