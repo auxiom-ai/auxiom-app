@@ -23,7 +23,7 @@ export default function AuthGaurd({ children }: { children: React.ReactNode }) {
         router.replace('/sign-in' as any);
       }
       if (session && (pathname === '/sign-in' || pathname === '/sign-up')) {
-        router.replace('/' as any);
+        router.replace('/(dashboard)' as any);
       }
     });
     return () => {

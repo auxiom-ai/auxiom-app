@@ -45,8 +45,8 @@ export default function RootLayout() {
   return (
     <GluestackUIProvider mode="light"><ThemeProvider value={colorScheme === 'dark' ? DarkTheme : DefaultTheme}>
         <AuthGuard>
-          <Stack>
-            <Stack.Screen name="(home)" options={{ headerShown: false }} />
+          <Stack initialRouteName='(dashboard)'>
+            <Stack.Screen name="(dashboard)" options={{ headerShown: false }} />
             <Stack.Screen name="sign-in" options={{ headerShown: false }} />
             <Stack.Screen name="sign-up" options={{ headerShown: false }} />
             <Stack.Screen name="reset-password" options={{ headerShown: false }} />

@@ -15,7 +15,7 @@ export default function SignInScreen() {
     if (error) {
       setError(error.message);
     } else {
-      router.replace('/occupation' as any);
+      router.replace('/feed' as any);
     }
   };
 
