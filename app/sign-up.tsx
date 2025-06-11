@@ -23,7 +23,7 @@ export default function SignUpScreen() {
       } else {
         Toast.show({ type: 'success', text1: 'Check your email', text2: 'Please verify your email to continue.' });
       }
-      router.replace('/');
+      router.replace('/email-confirmation');
     }
   };
 

@@ -29,6 +29,7 @@ export default function RootLayout() {
             <Stack.Screen name="sign-up" options={{ headerShown: false }} />
             <Stack.Screen name="reset-password" options={{ headerShown: false }} />
             <Stack.Screen name="forgot-password" options={{ headerShown: false }} />
+            <Stack.Screen name="email-confirmation" options={{ headerShown: false }} />
             <Stack.Screen name="+not-found" />
           </Stack>
         </AuthGate>
