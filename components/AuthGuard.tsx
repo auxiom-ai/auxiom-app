@@ -2,7 +2,7 @@ import { supabase } from '@/lib/supabase';
 import { usePathname, useRouter } from 'expo-router';
 import React, { useEffect, useState } from 'react';
 
-export function AuthGate({ children }: { children: React.ReactNode }) {
+export default function AuthGaurd({ children }: { children: React.ReactNode }) {
   const [loading, setLoading] = useState(true);
   const [authenticated, setAuthenticated] = useState(false);
   const router = useRouter();
@@ -23,7 +23,7 @@ export function AuthGate({ children }: { children: React.ReactNode }) {
         router.replace('/sign-in' as any);
       }
       if (session && (pathname === '/sign-in' || pathname === '/sign-up')) {
-        router.replace('/' as any);
+        router.replace('/(dashboard)' as any);
       }
     });
     return () => {

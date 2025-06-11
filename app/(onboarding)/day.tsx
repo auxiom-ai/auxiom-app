@@ -3,6 +3,7 @@
 import { ThemedText } from "@/components/ThemedText"
 import { ThemedView } from "@/components/ThemedView"
 import { supabase } from "@/lib/supabase"
+import { router } from "expo-router"
 import { useState } from "react"
 import {
   Alert,
@@ -118,6 +119,8 @@ export default function DayScreen() {
     } finally {
       setLoading(false)
     }
+
+    router.replace("/feed" as any) // Navigate to the feed screen after submission
   }
 
   const getPreviousDay = () => {

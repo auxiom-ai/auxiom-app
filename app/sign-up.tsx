@@ -2,7 +2,6 @@ import { supabase } from '@/lib/supabase';
 import { useRouter } from 'expo-router';
 import { useState } from 'react';
 import { StyleSheet, Text, TextInput, TouchableOpacity, View } from 'react-native';
-import Toast from 'react-native-toast-message';
 
 export default function SignUpScreen() {
   const [email, setEmail] = useState('');
@@ -16,14 +15,46 @@ export default function SignUpScreen() {
     if (error) {
       setError(error.message);
     } else {
-      // Insert blank user in users table
-      const { error: dbError } = await supabase.from('users').insert([{ email, verified: false, active: false }]);
-      if (dbError) {
-        Toast.show({ type: 'error', text1: 'Database Error', text2: dbError.message });
+      // Set the session explicitly
+      const { data: sessionData, error: sessionError } = await supabase.auth.getSession();
+      if (sessionError) {
+        setError(sessionError.message);
       } else {
-        Toast.show({ type: 'success', text1: 'Check your email', text2: 'Please verify your email to continue.' });
+        // Insert user data into the users table
+        const { error: dbError } = await supabase.from('users').insert([
+          {
+            email,
+            password_hash: password, // Note: In production, use a proper hash
+            name: null,
+            delivery_day: 1,
+            delivered: '1970-01-01 00:00:00',
+            active: false,
+            keywords: '{}',
+            role: 'Other',
+            occupation: null,
+            industry: null,
+            stripe_customer_id: null,
+            stripe_subscription_id: null,
+            stripe_product_id: null,
+            plan: 'free',
+            episode: 1,
+            verified: false,
+          },
+        ]);
+        if (dbError) {
+          setError(dbError.message);
+        } else {
+          // Check if the user is already confirmed
+          const { data: userData, error: userError } = await supabase.auth.getUser();
+          if (userError) {
+            setError(userError.message);
+          } else if (userData?.user?.email_confirmed_at) {
+            router.replace('/onboarding' as any);
+          } else {
+            router.replace('/email-confirmation');
+          }
+        }
       }
-      router.replace('/');
     }
   };
 
