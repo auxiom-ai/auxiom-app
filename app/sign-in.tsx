@@ -1,129 +1,104 @@
-import { supabase } from '@/lib/supabase';
-import { useRouter } from 'expo-router';
-import { useState } from 'react';
-import { Image, StyleSheet, Text, TextInput, TouchableOpacity, View } from 'react-native';
+import { actions } from "@/lib/db/actions"
+import { supabase } from "@/lib/supabase"
+import { router } from "expo-router"
+import { useState } from "react"
+import { Alert, StyleSheet, TextInput, TouchableOpacity, View } from "react-native"
+import { Text } from "react-native-paper"
 
-export default function SignInScreen() {
-  const [email, setEmail] = useState('');
-  const [password, setPassword] = useState('');
-  const [error, setError] = useState('');
-  const router = useRouter();
+export default function SignIn() {
+  const [email, setEmail] = useState("")
+  const [password, setPassword] = useState("")
+  const [loading, setLoading] = useState(false)
 
-  const handleSignIn = async () => {
-    setError('');
-    const { error } = await supabase.auth.signInWithPassword({ email, password });
-    if (error) {
-      setError(error.message);
-    } else {
-      router.replace('/feed' as any);
+  async function signInWithEmail() {
+    setLoading(true)
+    try {
+      const { error } = await supabase.auth.signInWithPassword({ email, password })
+      if (error) throw error
+
+      // Get user profile to check onboarding status
+      const userProfile = await actions.getUserProfile()
+      
+      if (userProfile.preferences.onboarding_completed) {
+        router.replace("/settings")
+      } else {
+        router.replace("/onboarding/day")
+      }
+    } catch (error) {
+      Alert.alert("Error", error instanceof Error ? error.message : "An error occurred during sign in")
+    } finally {
+      setLoading(false)
     }
-  };
+  }
 
   return (
     <View style={styles.container}>
-      <Image
-        source={require('../assets/auxiom-logo.png')}
-        style={{ width: 80, height: 80, marginBottom: 16 }}
-        resizeMode="contain"
-      />
-      <Text style={styles.title}>Sign in to your account</Text>
-      <TextInput
-        style={styles.input}
-        placeholder="Enter your email"
-        value={email}
-        onChangeText={setEmail}
-        autoCapitalize="none"
-        keyboardType="email-address"
-      />
-      <TextInput
-        style={styles.input}
-        placeholder="Enter your password"
-        value={password}
-        onChangeText={setPassword}
-        secureTextEntry
-      />
-      {error ? <Text style={styles.error}>{error}</Text> : null}
-      <TouchableOpacity style={styles.button} onPress={handleSignIn}>
-        <Text style={styles.buttonText}>Sign in</Text>
-      </TouchableOpacity>
-      <Text style={styles.linkText}>New to our platform?</Text>
-      <TouchableOpacity style={styles.secondaryButton} onPress={() => router.push('/sign-up' as any)}>
-        <Text style={styles.secondaryButtonText}>Create an account</Text>
-      </TouchableOpacity>
-      <TouchableOpacity onPress={() => router.push('/reset-password')}>
-        <Text style={styles.forgotText}>Forgot your password?</Text>
-      </TouchableOpacity>
+      <View style={styles.formContainer}>
+        <Text style={styles.title}>Sign In</Text>
+        <TextInput
+          style={styles.input}
+          placeholder="Email"
+          value={email}
+          onChangeText={setEmail}
+          autoCapitalize="none"
+        />
+        <TextInput
+          style={styles.input}
+          placeholder="Password"
+          value={password}
+          onChangeText={setPassword}
+          secureTextEntry
+        />
+        <TouchableOpacity style={styles.button} onPress={signInWithEmail} disabled={loading}>
+          <Text style={styles.buttonText}>{loading ? "Signing in..." : "Sign In"}</Text>
+        </TouchableOpacity>
+        <TouchableOpacity onPress={() => router.push("/sign-up")}>
+          <Text style={styles.link}>Don't have an account? Sign Up</Text>
+        </TouchableOpacity>
+      </View>
     </View>
-  );
+  )
 }
 
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#FAF7E6',
-    alignItems: 'center',
-    justifyContent: 'center',
-    padding: 24,
+    backgroundColor: "#FAF8EC",
+    padding: 20,
   },
-  logo: {
-    fontSize: 80,
-    marginBottom: 16,
+  formContainer: {
+    flex: 1,
+    justifyContent: "center",
+    maxWidth: 400,
+    width: "100%",
+    alignSelf: "center",
   },
   title: {
-    fontSize: 28,
-    fontWeight: 'bold',
-    marginBottom: 32,
-    textAlign: 'center',
+    fontSize: 24,
+    fontWeight: "bold",
+    marginBottom: 20,
+    textAlign: "center",
   },
   input: {
-    width: '100%',
-    maxWidth: 500,
-    backgroundColor: '#D3D7DF',
-    borderRadius: 20,
-    padding: 16,
-    marginBottom: 16,
-    fontSize: 16,
+    backgroundColor: "white",
+    padding: 15,
+    borderRadius: 10,
+    marginBottom: 10,
   },
   button: {
-    width: '100%',
-    maxWidth: 500,
-    backgroundColor: '#AEB4BE',
-    borderRadius: 20,
-    padding: 16,
-    alignItems: 'center',
-    marginBottom: 16,
+    backgroundColor: "#4A6FA5",
+    padding: 15,
+    borderRadius: 10,
+    marginTop: 10,
   },
   buttonText: {
-    color: '#222',
-    fontWeight: 'bold',
-    fontSize: 18,
+    color: "white",
+    textAlign: "center",
+    fontWeight: "bold",
   },
-  secondaryButton: {
-    width: '100%',
-    maxWidth: 500,
-    backgroundColor: '#222831',
-    borderRadius: 20,
-    padding: 16,
-    alignItems: 'center',
-    marginBottom: 16,
+  link: {
+    color: "#4A6FA5",
+    textAlign: "center",
+    marginTop: 15,
   },
-  secondaryButtonText: {
-    color: '#fff',
-    fontWeight: 'bold',
-    fontSize: 18,
-  },
-  linkText: {
-    marginBottom: 8,
-    color: '#222',
-    fontSize: 16,
-  },
-  forgotText: {
-    color: '#222',
-    fontSize: 14,
-    textDecorationLine: 'underline',
-  },
-  error: {
-    color: 'red',
-    marginBottom: 8,
-  },
-});
+})
