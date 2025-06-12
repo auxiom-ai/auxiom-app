@@ -1,48 +1,31 @@
-import { queries } from "@/lib/db/queries"
+import { actions } from "@/lib/db/actions"
 import { supabase } from "@/lib/supabase"
 import { router } from "expo-router"
 import { useState } from "react"
 import { Alert, StyleSheet, TextInput, TouchableOpacity, View } from "react-native"
 import { Text } from "react-native-paper"
 
-export default function SignUp() {
+export default function SignIn() {
   const [email, setEmail] = useState("")
   const [password, setPassword] = useState("")
   const [loading, setLoading] = useState(false)
 
-  async function signUpWithEmail() {
+  async function signInWithEmail() {
     setLoading(true)
     try {
-      // Sign up with Supabase Auth
-      const { data, error } = await supabase.auth.signUp({ email, password })
+      const { error } = await supabase.auth.signInWithPassword({ email, password })
       if (error) throw error
 
-      // Get the session
-      const { data: sessionData, error: sessionError } = await supabase.auth.getSession()
-      if (sessionError) throw sessionError
-
-      // Create user profile in database
-      const { error: dbError } = await queries.createUserProfile({
-        id: data.user?.id,
-        email: email,
-        preferences: {
-          keywords: [],
-          occupation: "",
-          days: [],
-          onboarding_completed: false
-        }
-      })
-      if (dbError) throw dbError
-
-      // Get user data to verify
-      const { data: userData, error: userError } = await queries.getCurrentUser()
-      if (userError) throw userError
-
-      if (userData) {
-        router.replace("/onboarding/day")
+      // Get user profile to check onboarding status
+      const userProfile = await actions.getUserProfile()
+      
+      if (userProfile.preferences.onboarding_completed) {
+        router.replace("/settings" as any)
+      } else {
+        router.replace("/day" as any)
       }
     } catch (error) {
-      Alert.alert("Error", error instanceof Error ? error.message : "An error occurred during sign up")
+      Alert.alert("Error", error instanceof Error ? error.message : "An error occurred during sign in")
     } finally {
       setLoading(false)
     }
@@ -51,7 +34,7 @@ export default function SignUp() {
   return (
     <View style={styles.container}>
       <View style={styles.formContainer}>
-        <Text style={styles.title}>Create Account</Text>
+        <Text style={styles.title}>Sign In</Text>
         <TextInput
           style={styles.input}
           placeholder="Email"
@@ -66,11 +49,11 @@ export default function SignUp() {
           onChangeText={setPassword}
           secureTextEntry
         />
-        <TouchableOpacity style={styles.button} onPress={signUpWithEmail} disabled={loading}>
-          <Text style={styles.buttonText}>{loading ? "Creating account..." : "Sign Up"}</Text>
+        <TouchableOpacity style={styles.button} onPress={signInWithEmail} disabled={loading}>
+          <Text style={styles.buttonText}>{loading ? "Signing in..." : "Sign In"}</Text>
         </TouchableOpacity>
-        <TouchableOpacity onPress={() => router.push("/sign-in")}>
-          <Text style={styles.link}>Already have an account? Sign In</Text>
+        <TouchableOpacity onPress={() => router.replace("/sign-up" as any)}>
+          <Text style={styles.link}>Don't have an account? Sign Up</Text>
         </TouchableOpacity>
       </View>
     </View>

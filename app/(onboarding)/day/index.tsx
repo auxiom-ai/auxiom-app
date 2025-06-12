@@ -89,7 +89,7 @@ export default function DayScreen() {
   const handleSubmit = async (): Promise<void> => {
     try {
       await actions.updateUserDays([DAYS_OF_WEEK[selectedDayIndex]])
-      router.replace("/onboarding/interests" as any)
+      router.replace("/feed" as any)
     } catch (error) {
       console.error(error)
       Alert.alert("Error saving days", error instanceof Error ? error.message : "An unknown error occurred")

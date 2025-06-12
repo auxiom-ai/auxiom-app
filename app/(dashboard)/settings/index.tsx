@@ -69,12 +69,12 @@ export default function SettingsScreen() {
     setError('');
     await supabase.auth.signOut();
     setLoading(false);
-    router.replace('/sign-in');
+    router.replace('/sign-in' as any);
   };
 
   const handleSignOut = async () => {
     await supabase.auth.signOut();
-    router.replace('/sign-in');
+    router.replace('/sign-in' as any);
   };
 
   return (

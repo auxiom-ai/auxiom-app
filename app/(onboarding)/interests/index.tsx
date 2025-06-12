@@ -371,7 +371,7 @@ export default function InterestsScreen() {
 const handleSubmit = async (): Promise<void> => {
   try {
     await actions.updateUserKeywords(keywords)
-    router.replace("/settings" as any)
+    router.replace("/day" as any)
   } catch (error) {
     console.error(error)
     Alert.alert("Error saving interests", error instanceof Error ? error.message : "An unknown error occurred")
