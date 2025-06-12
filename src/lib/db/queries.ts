@@ -67,4 +67,44 @@ export async function updateListened(podcastId: number) {
     
   if (error) throw error;
   return data;
+}
+
+export interface UserPreferences {
+  keywords: string[]
+  occupation: string
+  days: string[]
+  onboarding_completed: boolean
+}
+
+export interface UserProfile {
+  id: string
+  email: string
+  preferences: UserPreferences
+}
+
+export interface CreateUserProfileParams {
+  id: string | undefined
+  email: string
+  preferences: UserPreferences
+}
+
+export const queries = {
+  // User queries
+  async createUserProfile({ id, email, preferences }: CreateUserProfileParams) {
+    const { data, error } = await supabase
+      .from('users')
+      .insert([
+        {
+          id,
+          email,
+          preferences,
+          created_at: new Date().toISOString(),
+          updated_at: new Date().toISOString()
+        }
+      ])
+      .select()
+    
+    if (error) throw error
+    return data[0] as UserProfile
+  },
 } 
