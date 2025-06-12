@@ -2,6 +2,7 @@ import { supabase } from '@/lib/supabase';
 import { useRouter } from 'expo-router';
 import { useEffect, useState } from 'react';
 import { Alert, ScrollView, StyleSheet, Text, TextInput, TouchableOpacity, View } from 'react-native';
+import { SafeAreaView } from 'react-native-safe-area-context';
 
 export default function SettingsScreen() {
   const [email, setEmail] = useState('');
@@ -58,82 +59,84 @@ export default function SettingsScreen() {
   };
 
   return (
-    <ScrollView style={styles.scroll} contentContainerStyle={styles.container}>
-      <Text style={styles.header}>Settings</Text>
-      <Text style={styles.subheader}>Manage your account settings and preferences.</Text>
-      <View style={styles.divider} />
+    <SafeAreaView style={{ flex: 1, backgroundColor: '#FAF7E6' }}>
+      <ScrollView style={styles.scroll} contentContainerStyle={styles.container}>
+        <Text style={styles.header}>Settings</Text>
+        <Text style={styles.subheader}>Manage your account settings and preferences.</Text>
+        <View style={styles.divider} />
 
-      {/* Account */}
-      <View style={styles.card}>
-        <Text style={styles.cardTitle}>Account</Text>
-        <Text style={styles.cardDesc}>Update your account information.</Text>
-        <Text style={styles.label}>Email</Text>
-        <TextInput
-          style={styles.input}
-          value={email}
-          onChangeText={setEmail}
-          autoCapitalize="none"
-          keyboardType="email-address"
-        />
-        <Text style={styles.inputDesc}>This is the email your Auxiom podcasts are sent to.</Text>
-        <TouchableOpacity style={styles.button} onPress={handleUpdateEmail} disabled={loading}>
-          <Text style={styles.buttonText}>Update account</Text>
-        </TouchableOpacity>
-      </View>
+        {/* Account */}
+        <View style={styles.card}>
+          <Text style={styles.cardTitle}>Account</Text>
+          <Text style={styles.cardDesc}>Update your account information.</Text>
+          <Text style={styles.label}>Email</Text>
+          <TextInput
+            style={styles.input}
+            value={email}
+            onChangeText={setEmail}
+            autoCapitalize="none"
+            keyboardType="email-address"
+          />
+          <Text style={styles.inputDesc}>This is the email your Auxiom podcasts are sent to.</Text>
+          <TouchableOpacity style={styles.button} onPress={handleUpdateEmail} disabled={loading}>
+            <Text style={styles.buttonText}>Update account</Text>
+          </TouchableOpacity>
+        </View>
 
-      {/* Password */}
-      <View style={styles.card}>
-        <Text style={styles.cardTitle}>Password</Text>
-        <Text style={styles.cardDesc}>Update your password.</Text>
-        <Text style={styles.label}>Current Password</Text>
-        <TextInput
-          style={styles.input}
-          value={currentPassword}
-          onChangeText={setCurrentPassword}
-          secureTextEntry
-        />
-        <Text style={styles.label}>New Password</Text>
-        <TextInput
-          style={styles.input}
-          value={newPassword}
-          onChangeText={setNewPassword}
-          secureTextEntry
-        />
-        <Text style={styles.label}>Confirm New Password</Text>
-        <TextInput
-          style={styles.input}
-          value={confirmPassword}
-          onChangeText={setConfirmPassword}
-          secureTextEntry
-        />
-        <TouchableOpacity style={styles.button} onPress={handleUpdatePassword} disabled={loading}>
-          <Text style={styles.buttonText}>Update password</Text>
-        </TouchableOpacity>
-      </View>
+        {/* Password */}
+        <View style={styles.card}>
+          <Text style={styles.cardTitle}>Password</Text>
+          <Text style={styles.cardDesc}>Update your password.</Text>
+          <Text style={styles.label}>Current Password</Text>
+          <TextInput
+            style={styles.input}
+            value={currentPassword}
+            onChangeText={setCurrentPassword}
+            secureTextEntry
+          />
+          <Text style={styles.label}>New Password</Text>
+          <TextInput
+            style={styles.input}
+            value={newPassword}
+            onChangeText={setNewPassword}
+            secureTextEntry
+          />
+          <Text style={styles.label}>Confirm New Password</Text>
+          <TextInput
+            style={styles.input}
+            value={confirmPassword}
+            onChangeText={setConfirmPassword}
+            secureTextEntry
+          />
+          <TouchableOpacity style={styles.button} onPress={handleUpdatePassword} disabled={loading}>
+            <Text style={styles.buttonText}>Update password</Text>
+          </TouchableOpacity>
+        </View>
 
-      {/* Subscription */}
-      <View style={styles.card}>
-        <Text style={styles.cardTitle}>Subscription</Text>
-        <Text style={styles.cardDesc}>Manage your subscription plan.</Text>
-        <TouchableOpacity style={styles.dangerButton} onPress={handleCancelSubscription}>
-          <Text style={styles.dangerButtonText}>Cancel Subscription</Text>
-        </TouchableOpacity>
-      </View>
+        {/* Subscription */}
+        <View style={styles.card}>
+          <Text style={styles.cardTitle}>Subscription</Text>
+          <Text style={styles.cardDesc}>Manage your subscription plan.</Text>
+          <TouchableOpacity style={styles.dangerButton} onPress={handleCancelSubscription}>
+            <Text style={styles.dangerButtonText}>Cancel Subscription</Text>
+          </TouchableOpacity>
+        </View>
 
-      {/* Delete Account & Sign Out */}
-      <View style={styles.card}>
-        <Text style={styles.cardTitle}>Delete Account</Text>
-        <Text style={styles.cardDesc}>Permanently delete your account.</Text>
-        <TouchableOpacity style={styles.dangerButton} onPress={handleDeleteAccount}>
-          <Text style={styles.dangerButtonText}>Delete Account</Text>
-        </TouchableOpacity>
-        <TouchableOpacity style={styles.button} onPress={handleSignOut}>
-          <Text style={styles.buttonText}>Sign Out</Text>
-        </TouchableOpacity>
-      </View>
+        {/* Delete Account & Sign Out */}
+        <View style={styles.card}>
+          <Text style={styles.cardTitle}>Delete Account</Text>
+          <Text style={styles.cardDesc}>Permanently delete your account.</Text>
+          <TouchableOpacity style={styles.dangerButton} onPress={handleDeleteAccount}>
+            <Text style={styles.dangerButtonText}>Delete Account</Text>
+          </TouchableOpacity>
+          <TouchableOpacity style={styles.button} onPress={handleSignOut}>
+            <Text style={styles.buttonText}>Sign Out</Text>
+          </TouchableOpacity>
+        </View>
 
-      {error ? <Text style={styles.error}>{error}</Text> : null}
-    </ScrollView>
+        {error ? <Text style={styles.error}>{error}</Text> : null}
+      </ScrollView>
+    </SafeAreaView>
   );
 }
 
@@ -182,4 +185,4 @@ const styles = StyleSheet.create({
   },
   dangerButtonText: { color: '#fff', fontWeight: 'bold', fontSize: 16 },
   error: { color: 'red', marginTop: 10, textAlign: 'center' },
-}); 
+});
