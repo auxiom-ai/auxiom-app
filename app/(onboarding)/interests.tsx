@@ -1,6 +1,6 @@
 "use client"
 
-import { supabase } from "@/lib/supabase"
+import { actions } from "@/lib/db/actions"
 import { Feather } from "@expo/vector-icons"
 import { useNavigation } from "@react-navigation/native"
 import { useRouter } from "expo-router"
@@ -369,27 +369,12 @@ export default function InterestsScreen() {
   }
 
 const handleSubmit = async (): Promise<void> => {
-  // Get the current signed-in user
-  const { data: { user }, error: userError } = await supabase.auth.getUser();
-  if (userError) throw userError;
-  if (!user) {
-    Alert.alert("Error", "No authenticated user found");
-    return;
-  }
-  const userId = user.id;
-  const { data, error } = await supabase
-    .from('users')
-    .update({ keywords })   // pass the array directly
-    .eq('email', user.email) // match by email instead of id
-    .select()
-
-  console.log('update returned:', { data, error })
-
-  if (error) {
-    console.error(error)
-    Alert.alert("Error saving interests", error.message)
-  } else {
+  try {
+    await actions.updateUserKeywords(keywords)
     router.replace("/settings" as any)
+  } catch (error) {
+    console.error(error)
+    Alert.alert("Error saving interests", error instanceof Error ? error.message : "An unknown error occurred")
   }
 }
 
