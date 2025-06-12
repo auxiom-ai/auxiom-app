@@ -389,7 +389,7 @@ const handleSubmit = async (): Promise<void> => {
     console.error(error)
     Alert.alert("Error saving interests", error.message)
   } else {
-    router.push("/day")
+    router.replace("/settings" as any)
   }
 }
 

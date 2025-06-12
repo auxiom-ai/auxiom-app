@@ -120,7 +120,7 @@ export default function DayScreen() {
       setLoading(false)
     }
 
-    router.replace("/feed" as any) // Navigate to the feed screen after submission
+    router.replace("/occupation" as any) // Go to occupation step after day selection
   }
 
   const getPreviousDay = () => {

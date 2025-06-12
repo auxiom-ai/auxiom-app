@@ -1,18 +1,18 @@
-import AuthGuard from '@/components/AuthGuard'
-import { GluestackUIProvider } from "@/components/ui/gluestack-ui-provider"
+import AuthGuard from '@/components/AuthGuard';
+import { GluestackUIProvider } from "@/components/ui/gluestack-ui-provider";
 import "@/global.css";
-import { DarkTheme, DefaultTheme, ThemeProvider } from '@react-navigation/native'
-import { useFonts } from 'expo-font'
-import { Stack } from 'expo-router'
-import { StatusBar } from 'expo-status-bar'
-import { useRefreshToken } from '@/lib/useRefreshToken'
-import { useSessionTimeout } from '@/lib/useSessionTimeout'
-import 'react-native-reanimated'
-import { supabase } from '@/lib/supabase'
-import { useEffect, useState } from 'react'
-import { Session } from '@supabase/supabase-js'
+import { supabase } from '@/lib/supabase';
+import { useRefreshToken } from '@/lib/useRefreshToken';
+import { useSessionTimeout } from '@/lib/useSessionTimeout';
+import { DarkTheme, DefaultTheme, ThemeProvider } from '@react-navigation/native';
+import { Session } from '@supabase/supabase-js';
+import { useFonts } from 'expo-font';
+import { Stack } from 'expo-router';
+import { StatusBar } from 'expo-status-bar';
+import { useEffect, useState } from 'react';
+import 'react-native-reanimated';
 
-import { useColorScheme } from '@/hooks/useColorScheme'
+import { useColorScheme } from '@/hooks/useColorScheme';
 
 export default function RootLayout() {
   const colorScheme = useColorScheme();
@@ -47,6 +47,7 @@ export default function RootLayout() {
         <AuthGuard>
           <Stack initialRouteName='(dashboard)'>
             <Stack.Screen name="(dashboard)" options={{ headerShown: false }} />
+            <Stack.Screen name="(onboarding)" options={{ headerShown: false }} />
             <Stack.Screen name="sign-in" options={{ headerShown: false }} />
             <Stack.Screen name="sign-up" options={{ headerShown: false }} />
             <Stack.Screen name="reset-password" options={{ headerShown: false }} />
