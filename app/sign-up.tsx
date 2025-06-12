@@ -1,160 +1,121 @@
-import { supabase } from '@/lib/supabase';
-import { useRouter } from 'expo-router';
-import { useState } from 'react';
-import { Image, StyleSheet, Text, TextInput, TouchableOpacity, View } from 'react-native';
+import { queries } from "@/lib/db/queries"
+import { supabase } from "@/lib/supabase"
+import { router } from "expo-router"
+import { useState } from "react"
+import { Alert, StyleSheet, TextInput, TouchableOpacity, View } from "react-native"
+import { Text } from "react-native-paper"
 
-export default function SignUpScreen() {
-  const [email, setEmail] = useState('');
-  const [password, setPassword] = useState('');
-  const [error, setError] = useState('');
-  const router = useRouter();
+export default function SignUp() {
+  const [email, setEmail] = useState("")
+  const [password, setPassword] = useState("")
+  const [loading, setLoading] = useState(false)
 
-  const handleSignUp = async () => {
-    setError('');
-    const { data, error } = await supabase.auth.signUp({ email, password });
-    if (error) {
-      setError(error.message);
-    } else {
-      // Set the session explicitly
-      const { data: sessionData, error: sessionError } = await supabase.auth.getSession();
-      if (sessionError) {
-        setError(sessionError.message);
-      } else {
-        // Insert user data into the users table
-        const { error: dbError } = await supabase.from('users').insert([
-          {
-            email,
-            password_hash: password, // Note: In production, use a proper hash
-            name: null,
-            delivery_day: 1,
-            delivered: '1970-01-01 00:00:00',
-            active: false,
-            keywords: '{}',
-            role: 'Other',
-            occupation: null,
-            industry: null,
-            stripe_customer_id: null,
-            stripe_subscription_id: null,
-            stripe_product_id: null,
-            plan: 'free',
-            episode: 1,
-            verified: false,
-          },
-        ]);
-        if (dbError) {
-          setError(dbError.message);
-        } else {
-          // Check if the user is already confirmed
-          const { data: userData, error: userError } = await supabase.auth.getUser();
-          if (userError) {
-            setError(userError.message);
-          } else if (userData?.user?.email_confirmed_at) {
-            router.replace('/onboarding' as any);
-          } else {
-            router.replace('/email-confirmation');
-          }
+  async function signUpWithEmail() {
+    setLoading(true)
+    try {
+      // Sign up with Supabase Auth
+      const { data, error } = await supabase.auth.signUp({ email, password })
+      if (error) throw error
+
+      // Get the session
+      const { data: sessionData, error: sessionError } = await supabase.auth.getSession()
+      if (sessionError) throw sessionError
+
+      // Create user profile in database
+      const { error: dbError } = await queries.createUserProfile({
+        id: data.user?.id,
+        email: email,
+        preferences: {
+          keywords: [],
+          occupation: "",
+          days: [],
+          onboarding_completed: false
         }
+      })
+      if (dbError) throw dbError
+
+      // Get user data to verify
+      const { data: userData, error: userError } = await queries.getCurrentUser()
+      if (userError) throw userError
+
+      if (userData) {
+        router.replace("/onboarding/day")
       }
+    } catch (error) {
+      Alert.alert("Error", error instanceof Error ? error.message : "An error occurred during sign up")
+    } finally {
+      setLoading(false)
     }
-  };
+  }
 
   return (
     <View style={styles.container}>
-      <Image
-        source={require('../assets/auxiom-logo.png')}
-        style={{ width: 80, height: 80, marginBottom: 16 }}
-        resizeMode="contain"
-      />
-      <Text style={styles.title}>Create your account</Text>
-      <TextInput
-        style={styles.input}
-        placeholder="Enter your email"
-        value={email}
-        onChangeText={setEmail}
-        autoCapitalize="none"
-        keyboardType="email-address"
-      />
-      <TextInput
-        style={styles.input}
-        placeholder="Enter your password"
-        value={password}
-        onChangeText={setPassword}
-        secureTextEntry
-      />
-      {error ? <Text style={styles.error}>{error}</Text> : null}
-      <TouchableOpacity style={styles.button} onPress={handleSignUp}>
-        <Text style={styles.buttonText}>Sign up</Text>
-      </TouchableOpacity>
-      <Text style={styles.linkText}>Already have an account?</Text>
-      <TouchableOpacity style={styles.secondaryButton} onPress={() => router.push('/occupation' as any)}>
-        <Text style={styles.secondaryButtonText}>Sign in to existing account</Text>
-      </TouchableOpacity>
+      <View style={styles.formContainer}>
+        <Text style={styles.title}>Create Account</Text>
+        <TextInput
+          style={styles.input}
+          placeholder="Email"
+          value={email}
+          onChangeText={setEmail}
+          autoCapitalize="none"
+        />
+        <TextInput
+          style={styles.input}
+          placeholder="Password"
+          value={password}
+          onChangeText={setPassword}
+          secureTextEntry
+        />
+        <TouchableOpacity style={styles.button} onPress={signUpWithEmail} disabled={loading}>
+          <Text style={styles.buttonText}>{loading ? "Creating account..." : "Sign Up"}</Text>
+        </TouchableOpacity>
+        <TouchableOpacity onPress={() => router.push("/sign-in")}>
+          <Text style={styles.link}>Already have an account? Sign In</Text>
+        </TouchableOpacity>
+      </View>
     </View>
-  );
+  )
 }
 
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#FAF7E6',
-    alignItems: 'center',
-    justifyContent: 'center',
-    padding: 24,
+    backgroundColor: "#FAF8EC",
+    padding: 20,
   },
-  logo: {
-    fontSize: 80,
-    marginBottom: 16,
+  formContainer: {
+    flex: 1,
+    justifyContent: "center",
+    maxWidth: 400,
+    width: "100%",
+    alignSelf: "center",
   },
   title: {
-    fontSize: 28,
-    fontWeight: 'bold',
-    marginBottom: 32,
-    textAlign: 'center',
+    fontSize: 24,
+    fontWeight: "bold",
+    marginBottom: 20,
+    textAlign: "center",
   },
   input: {
-    width: '100%',
-    maxWidth: 500,
-    backgroundColor: '#D3D7DF',
-    borderRadius: 20,
-    padding: 16,
-    marginBottom: 16,
-    fontSize: 16,
+    backgroundColor: "white",
+    padding: 15,
+    borderRadius: 10,
+    marginBottom: 10,
   },
   button: {
-    width: '100%',
-    maxWidth: 500,
-    backgroundColor: '#AEB4BE',
-    borderRadius: 20,
-    padding: 16,
-    alignItems: 'center',
-    marginBottom: 16,
+    backgroundColor: "#4A6FA5",
+    padding: 15,
+    borderRadius: 10,
+    marginTop: 10,
   },
   buttonText: {
-    color: '#222',
-    fontWeight: 'bold',
-    fontSize: 18,
+    color: "white",
+    textAlign: "center",
+    fontWeight: "bold",
   },
-  secondaryButton: {
-    width: '100%',
-    maxWidth: 500,
-    backgroundColor: '#222831',
-    borderRadius: 20,
-    padding: 16,
-    alignItems: 'center',
-    marginBottom: 16,
+  link: {
+    color: "#4A6FA5",
+    textAlign: "center",
+    marginTop: 15,
   },
-  secondaryButtonText: {
-    color: '#fff',
-    fontWeight: 'bold',
-    fontSize: 18,
-  },
-  linkText: {
-    marginBottom: 8,
-    color: '#222',
-    fontSize: 16,
-  },
-  error: {
-    color: 'red',
-    marginBottom: 8,
-  },
-});
+})
