@@ -20,9 +20,9 @@ export default function SignIn() {
       const userProfile = await actions.getUserProfile()
       
       if (userProfile.preferences.onboarding_completed) {
-        router.replace("/settings")
+        router.replace("/settings" as any)
       } else {
-        router.replace("/onboarding/day")
+        router.replace("/onboarding/day" as any)
       }
     } catch (error) {
       Alert.alert("Error", error instanceof Error ? error.message : "An error occurred during sign in")

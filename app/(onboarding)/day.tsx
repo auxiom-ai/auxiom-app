@@ -88,7 +88,7 @@ export default function DayScreen() {
 
   const handleSubmit = async (): Promise<void> => {
     try {
-      await actions.updateUserDays([selectedDayIndex])
+      await actions.updateUserDays([DAYS_OF_WEEK[selectedDayIndex]])
       router.replace("/onboarding/interests" as any)
     } catch (error) {
       console.error(error)
