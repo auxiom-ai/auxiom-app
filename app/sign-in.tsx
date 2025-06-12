@@ -1,7 +1,7 @@
 import { supabase } from '@/lib/supabase';
 import { useRouter } from 'expo-router';
 import { useState } from 'react';
-import { StyleSheet, Text, TextInput, TouchableOpacity, View } from 'react-native';
+import { Image, StyleSheet, Text, TextInput, TouchableOpacity, View } from 'react-native';
 
 export default function SignInScreen() {
   const [email, setEmail] = useState('');
@@ -21,7 +21,11 @@ export default function SignInScreen() {
 
   return (
     <View style={styles.container}>
-      <Text style={styles.logo}>🧠</Text>
+      <Image
+        source={require('../assets/auxiom-logo.png')}
+        style={{ width: 80, height: 80, marginBottom: 16 }}
+        resizeMode="contain"
+      />
       <Text style={styles.title}>Sign in to your account</Text>
       <TextInput
         style={styles.input}
@@ -122,4 +126,4 @@ const styles = StyleSheet.create({
     color: 'red',
     marginBottom: 8,
   },
-}); 
+});
