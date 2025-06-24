@@ -1,3 +1,4 @@
+import { actions } from "@/lib/db/actions";
 import { supabase } from '@/lib/supabase';
 import { useRouter } from 'expo-router';
 import { useEffect, useState } from 'react';
@@ -46,36 +47,26 @@ export default function SettingsScreen() {
   };
 
   const handleReinitializePreferences = async () => {
-    Alert.alert(
-      'Reinitialize Preferences',
-      'This will take you through the onboarding flow again to update your preferences. Continue?',
-      [
-        {
-          text: 'Cancel',
-          style: 'cancel',
-        },
-        {
-          text: 'Continue',
-          onPress: () => {
-            router.replace('/day' as any);
-          },
-        },
-      ]
-    );
-  };
+    try {
+      await actions.reinitializePreferences()
+      router.replace("/day")
+    } catch (error) {
+      Alert.alert("Error", error instanceof Error ? error.message : "Failed to reinitialize preferences")
+    }
+  }
 
   const handleDeleteAccount = async () => {
-    setLoading(true);
-    setError('');
-    await supabase.auth.signOut();
-    setLoading(false);
-    router.replace('/sign-in');
-  };
+    setLoading(true)
+    setError("")
+    await actions.signOut()
+    setLoading(false)
+    router.replace("/sign-in")
+  }
 
   const handleSignOut = async () => {
-    await supabase.auth.signOut();
-    router.replace('/sign-in');
-  };
+    await actions.signOut()
+    router.replace("/sign-in")
+  }
 
   return (
     <SafeAreaView style={{ flex: 1, backgroundColor: '#FAF7E6' }}>

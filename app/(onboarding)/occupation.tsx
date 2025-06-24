@@ -2,20 +2,20 @@
 
 import { ThemedText } from "@/components/ThemedText"
 import { ThemedView } from "@/components/ThemedView"
-import { supabase } from "@/lib/supabase"
+import { actions } from "@/lib/db/actions"
 import { router } from "expo-router"
 import { useState } from "react"
 import {
-  Alert,
-  Image,
-  Modal,
-  Platform,
-  ScrollView,
-  StatusBar,
-  StyleSheet,
-  TextInput,
-  TouchableOpacity,
-  View,
+    Alert,
+    Image,
+    Modal,
+    Platform,
+    ScrollView,
+    StatusBar,
+    StyleSheet,
+    TextInput,
+    TouchableOpacity,
+    View,
 } from "react-native"
 import { Button } from "react-native-paper"
 
@@ -57,35 +57,12 @@ export default function IdentityScreen() {
 
     setLoading(true)
     try {
-      // Get the current signed-in user
-      const { data: { user }, error: userError } = await supabase.auth.getUser();
-      if (userError) throw userError;
-      if (!user) {
-        Alert.alert("Error", "No authenticated user found");
-        setLoading(false);
-        return;
-      }
-      const { data, error } = await supabase
-        .from("users")
-        .update({
-          name: name.trim(),
-          occupation: occupation,
-          industry: industry,
-        })
-        .eq("email", user.email)
-        .select()
-
-      if (error) {
-        console.error("Error updating user info:", error)
-        Alert.alert("Error saving information", error.message)
-      } else {
-        console.log("Updated user info:", data)
-        // Navigate to the next onboarding screen
-        router.push("/interests")
-      }
+      await actions.updateUserOccupation(occupation)
+      await actions.updateUserPreferences({ name: name.trim(), industry })
+      router.push("/interests")
     } catch (err) {
       console.error("Unexpected error in handleSubmit:", err)
-      Alert.alert("Error", "An unexpected error occurred.")
+      Alert.alert("Error", err instanceof Error ? err.message : "An unexpected error occurred.")
     } finally {
       setLoading(false)
     }

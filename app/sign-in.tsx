@@ -22,7 +22,7 @@ export default function SignIn() {
       if (userProfile.preferences.onboarding_completed) {
         router.replace("/settings" as any)
       } else {
-        router.replace("/onboarding/day" as any)
+        router.replace("/day")
       }
     } catch (error) {
       Alert.alert("Error", error instanceof Error ? error.message : "An error occurred during sign in")

@@ -50,8 +50,7 @@ export const actions = {
       onboarding_completed: false
     }
     
-    return queries.updateUserPreferences(defaultPreferences)
-  },
+    return queries.updateUserPreferences(user.email, defaultPreferences)  },
 
   // Session actions
   async getCurrentUser() {
