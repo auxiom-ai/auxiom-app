@@ -1,4 +1,4 @@
-import { queries, UserPreferences } from './queries'
+import { CreateUserProfileParams, queries, UserPreferences, UserProfile } from './queries'
 
 export const actions = {
   // User actions
@@ -60,5 +60,9 @@ export const actions = {
 
   async signOut() {
     return queries.signOut()
+  },
+
+  async createUserProfile(params: CreateUserProfileParams): Promise<UserProfile> {
+    return queries.createUserProfile(params)
   }
 } 

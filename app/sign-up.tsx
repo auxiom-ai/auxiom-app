@@ -1,4 +1,4 @@
-import { queries } from "@/lib/db/queries"
+import { actions } from "@/lib/db/actions"
 import { supabase } from "@/lib/supabase"
 import { router } from "expo-router"
 import { useState } from "react"
@@ -22,7 +22,7 @@ export default function SignUp() {
       if (sessionError) throw sessionError
 
       // Create user profile in database
-      const { error: dbError } = await queries.createUserProfile({
+      await actions.createUserProfile({
         id: data.user?.id,
         email: email,
         preferences: {
@@ -32,15 +32,9 @@ export default function SignUp() {
           onboarding_completed: false
         }
       })
-      if (dbError) throw dbError
 
-      // Get user data to verify
-      const { data: userData, error: userError } = await queries.getCurrentUser()
-      if (userError) throw userError
-
-      if (userData) {
-        router.replace("/onboarding/day")
-      }
+      // Go to onboarding day selection
+      router.replace("/day")
     } catch (error) {
       Alert.alert("Error", error instanceof Error ? error.message : "An error occurred during sign up")
     } finally {

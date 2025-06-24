@@ -13,6 +13,12 @@ export interface UserProfile {
   preferences: UserPreferences
 }
 
+export interface CreateUserProfileParams {
+  id: string | undefined
+  email: string
+  preferences: UserPreferences
+}
+
 export const queries = {
   // User queries
   async getUserProfile(email: string) {
@@ -77,6 +83,23 @@ export const queries = {
       .eq('email', email)
       .select()
     
+    if (error) throw error
+    return data[0] as UserProfile
+  },
+
+  async createUserProfile({ id, email, preferences }: CreateUserProfileParams) {
+    const { data, error } = await supabase
+      .from('users')
+      .insert([
+        {
+          id,
+          email,
+          ...preferences,
+          created_at: new Date().toISOString(),
+          updated_at: new Date().toISOString()
+        }
+      ])
+      .select()
     if (error) throw error
     return data[0] as UserProfile
   },
