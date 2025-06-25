@@ -2,7 +2,7 @@
 
 import { ThemedText } from "@/components/ThemedText"
 import { ThemedView } from "@/components/ThemedView"
-import { actions } from "@/lib/db/actions"
+import { supabase } from "@/lib/supabase"
 import { router } from "expo-router"
 import { useState } from "react"
 import {
@@ -87,13 +87,40 @@ export default function DayScreen() {
   }
 
   const handleSubmit = async (): Promise<void> => {
+    setLoading(true)
     try {
-      await actions.updateUserDays([DAYS_OF_WEEK[selectedDayIndex]])
-      router.replace("/feed" as any)
-    } catch (error) {
-      console.error(error)
-      Alert.alert("Error saving days", error instanceof Error ? error.message : "An unknown error occurred")
+      // Get the current signed-in user
+      const { data: { user }, error: userError } = await supabase.auth.getUser();
+      if (userError) throw userError;
+      if (!user) {
+        Alert.alert("Error", "No authenticated user found");
+        setLoading(false);
+        return;
+      }
+
+      const { data, error } = await supabase
+        .from("users")
+        .update({
+          delivery_day: selectedDayIndex, // Use the index directly (0-6)
+        })
+        .eq("email", user.email)
+        .select()
+
+      if (error) {
+        console.error("Error updating day preference:", error)
+        Alert.alert("Error saving day preference", error.message)
+      } else {
+        console.log("Updated day preference:", data)
+        Alert.alert("Success", `Your podcast will be delivered on ${DAYS_OF_WEEK[selectedDayIndex]}s!`)
+      }
+    } catch (err) {
+      console.error("Unexpected error in handleSubmit:", err)
+      Alert.alert("Error", "An unexpected error occurred.")
+    } finally {
+      setLoading(false)
     }
+
+    router.replace("/feed" as any) // Navigate to the feed screen after submission
   }
 
   const getPreviousDay = () => {

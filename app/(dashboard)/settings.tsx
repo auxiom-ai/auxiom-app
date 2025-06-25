@@ -45,36 +45,17 @@ export default function SettingsScreen() {
     Alert.alert('Subscription', 'Subscription cancelled (demo)');
   };
 
-  const handleReinitializePreferences = async () => {
-    Alert.alert(
-      'Reinitialize Preferences',
-      'This will take you through the onboarding flow again to update your preferences. Continue?',
-      [
-        {
-          text: 'Cancel',
-          style: 'cancel',
-        },
-        {
-          text: 'Continue',
-          onPress: () => {
-            router.replace('/day' as any);
-          },
-        },
-      ]
-    );
-  };
-
   const handleDeleteAccount = async () => {
     setLoading(true);
     setError('');
     await supabase.auth.signOut();
     setLoading(false);
-    router.replace('/sign-in' as any);
+    router.replace('/sign-in');
   };
 
   const handleSignOut = async () => {
     await supabase.auth.signOut();
-    router.replace('/sign-in' as any);
+    router.replace('/sign-in');
   };
 
   return (
@@ -129,15 +110,6 @@ export default function SettingsScreen() {
           />
           <TouchableOpacity style={styles.button} onPress={handleUpdatePassword} disabled={loading}>
             <Text style={styles.buttonText}>Update password</Text>
-          </TouchableOpacity>
-        </View>
-
-        {/* Preferences */}
-        <View style={styles.card}>
-          <Text style={styles.cardTitle}>Preferences</Text>
-          <Text style={styles.cardDesc}>Manage your preferences and onboarding settings.</Text>
-          <TouchableOpacity style={styles.button} onPress={handleReinitializePreferences}>
-            <Text style={styles.buttonText}>Reinitialize Preferences</Text>
           </TouchableOpacity>
         </View>
 

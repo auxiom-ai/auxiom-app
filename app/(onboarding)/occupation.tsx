@@ -81,7 +81,7 @@ export default function IdentityScreen() {
       } else {
         console.log("Updated user info:", data)
         // Navigate to the next onboarding screen
-        router.replace("/interests" as any)
+        router.push("/interests")
       }
     } catch (err) {
       console.error("Unexpected error in handleSubmit:", err)

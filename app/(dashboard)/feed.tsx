@@ -134,9 +134,14 @@ export default function FeedScreen() {
     fetchUserName()
   }, [])
 
-  const handleCardPress = (id: number) => {
+  const handleCardPress = (article: (typeof feedData)[0]) => {
     // Navigate to article detail page with article data
-    router.replace(`/feed/${id}` as any)
+    router.push({
+      pathname: "/article-detail",
+      params: {
+        articleData: JSON.stringify(article),
+      },
+    })
   }
 
   return (
@@ -160,7 +165,7 @@ export default function FeedScreen() {
             <TouchableOpacity
               key={item.id}
               style={styles.articleCard}
-              onPress={() => handleCardPress(item.id)}
+              onPress={() => handleCardPress(item)}
               activeOpacity={0.8}
             >
               <View style={styles.articleHeader}>
