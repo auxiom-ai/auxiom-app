@@ -1,4 +1,6 @@
+import { eOnboardingState, eStorageKey } from '@/lib/constants';
 import { supabase } from '@/lib/supabase';
+import { removeItem, setItem } from '@/lib/utils/storage';
 import { useRouter } from 'expo-router';
 import { useState } from 'react';
 import { Image, StyleSheet, Text, TextInput, TouchableOpacity, View } from 'react-native';
@@ -7,61 +9,57 @@ export default function SignUpScreen() {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [error, setError] = useState('');
+  const [loading, setLoading] = useState(false);
   const router = useRouter();
 
   const handleSignUp = async () => {
+    if (!email || !password) {
+      setError('Please fill in all fields');
+      return;
+    }
+
     setError('');
-    const { data, error } = await supabase.auth.signUp({ email, password });
-    if (error) {
-      setError(error.message);
-    } else {
-      // Set the session explicitly
-      const { data: sessionData, error: sessionError } = await supabase.auth.getSession();
-      if (sessionError) {
-        setError(sessionError.message);
-      } else {
-        // Insert user data into the users table
-        const { error: dbError } = await supabase.from('users').insert([
-          {
-            email,
-            password_hash: password, // Note: In production, use a proper hash
-            name: null,
-            delivery_day: 1,
-            delivered: '1970-01-01 00:00:00',
-            active: false,
-            keywords: '{}',
-            role: 'Other',
-            occupation: null,
-            industry: null,
-            stripe_customer_id: null,
-            stripe_subscription_id: null,
-            stripe_product_id: null,
-            plan: 'free',
-            episode: 1,
-            verified: false,
-          },
-        ]);
-        if (dbError) {
-          setError(dbError.message);
-        } else {
-          // Check if the user is already confirmed
-          const { data: userData, error: userError } = await supabase.auth.getUser();
-          if (userError) {
-            setError(userError.message);
-          } else if (userData?.user?.email_confirmed_at) {
-            router.replace('/onboarding' as any);
-          } else {
-            router.replace('/email-confirmation');
-          }
+    setLoading(true);
+
+    try {
+      await setItem(eStorageKey.PendingEmail, email);    // save email for later
+      await setItem(eStorageKey.OnboardingState, eOnboardingState.PendingEmailVerification);
+
+      // Sign up with Supabase - this will send confirmation email
+      const { data, error } = await supabase.auth.signUp({ 
+        email, 
+        password,
+        options: {
+          emailRedirectTo: undefined // Ensure email confirmation is required - TODO - is this correct?
         }
+      });
+
+      if (error) {
+        setError(error.message);
+        await removeItem(eStorageKey.PendingEmail);
+        await removeItem(eStorageKey.OnboardingState);
+      } else {
+        // Navigate to email confirmation screen
+        console.log(`AV: Singup ${JSON.stringify(data)}`);
+        router.push({
+          pathname: '/email-confirmation',
+          params: {
+            email
+          }
+        });
       }
+    } catch (err) {
+      setError('An unexpected error occurred. Please try again.');
+      console.error('Sign up error:', err);
+    } finally {
+      setLoading(false);
     }
   };
 
   return (
     <View style={styles.container}>
       <Image
-        source={require('../assets/auxiom-logo.png')}
+        source={require('../../assets/auxiom-logo.png')}
         style={{ width: 80, height: 80, marginBottom: 16 }}
         resizeMode="contain"
       />
@@ -73,6 +71,7 @@ export default function SignUpScreen() {
         onChangeText={setEmail}
         autoCapitalize="none"
         keyboardType="email-address"
+        editable={!loading}
       />
       <TextInput
         style={styles.input}
@@ -80,13 +79,24 @@ export default function SignUpScreen() {
         value={password}
         onChangeText={setPassword}
         secureTextEntry
+        editable={!loading}
       />
       {error ? <Text style={styles.error}>{error}</Text> : null}
-      <TouchableOpacity style={styles.button} onPress={handleSignUp}>
-        <Text style={styles.buttonText}>Sign up</Text>
+      <TouchableOpacity 
+        style={[styles.button, loading && styles.buttonDisabled]} 
+        onPress={handleSignUp}
+        disabled={loading}
+      >
+        <Text style={styles.buttonText}>
+          {loading ? 'Creating account...' : 'Sign up'}
+        </Text>
       </TouchableOpacity>
       <Text style={styles.linkText}>Already have an account?</Text>
-      <TouchableOpacity style={styles.secondaryButton} onPress={() => router.push('/occupation' as any)}>
+      <TouchableOpacity 
+        style={styles.secondaryButton} 
+        onPress={() => router.push('/sign-in' as any)}
+        disabled={loading}
+      >
         <Text style={styles.secondaryButtonText}>Sign in to existing account</Text>
       </TouchableOpacity>
     </View>
@@ -128,6 +138,10 @@ const styles = StyleSheet.create({
     padding: 16,
     alignItems: 'center',
     marginBottom: 16,
+  },
+  buttonDisabled: {
+    backgroundColor: '#E5E5E5',
+    opacity: 0.6,
   },
   buttonText: {
     color: '#222',

@@ -11,18 +11,30 @@ export default function SignInScreen() {
 
   const handleSignIn = async () => {
     setError('');
-    const { error } = await supabase.auth.signInWithPassword({ email, password });
+    const { data, error } = await supabase.auth.signInWithPassword({ email, password });
     if (error) {
       setError(error.message);
     } else {
-      router.replace('/feed' as any);
+      // Check if email is verified
+      if (data.user && !data.user.email_confirmed_at) {
+        // Email not verified, redirect to confirmation screen
+        router.push({
+          pathname: '/email-confirmation',
+          params: {
+            email
+          }
+        });
+      } else {
+        // Email verified, proceed to dashboard
+        router.replace('/feed' as any);   // TODO - should check onboarding state and direct accordingly 
+      }
     }
   };
 
   return (
     <View style={styles.container}>
       <Image
-        source={require('../assets/auxiom-logo.png')}
+        source={require('../../assets/auxiom-logo.png')}
         style={{ width: 80, height: 80, marginBottom: 16 }}
         resizeMode="contain"
       />
