@@ -1,6 +1,6 @@
-import { eOnboardingState, eStorageKey } from '@/lib/constants';
+import { useAuth } from "@/lib/auth/AuthProvider";
 import { supabase } from '@/lib/supabase';
-import { removeItem, setItem } from '@/lib/utils/storage';
+import { eOnboardingStateValues, eStorageKey } from "@/lib/utils/storage";
 import { useRouter } from 'expo-router';
 import { useState } from 'react';
 import { Image, StyleSheet, Text, TextInput, TouchableOpacity, View } from 'react-native';
@@ -11,6 +11,7 @@ export default function SignUpScreen() {
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
   const router = useRouter();
+  const { updateStore } = useAuth();
 
   const handleSignUp = async () => {
     if (!email || !password) {
@@ -22,9 +23,6 @@ export default function SignUpScreen() {
     setLoading(true);
 
     try {
-      await setItem(eStorageKey.PendingEmail, email);    // save email for later
-      await setItem(eStorageKey.OnboardingState, eOnboardingState.PendingEmailVerification);
-
       // Sign up with Supabase - this will send confirmation email
       const { data, error } = await supabase.auth.signUp({ 
         email, 
@@ -36,17 +34,16 @@ export default function SignUpScreen() {
 
       if (error) {
         setError(error.message);
-        await removeItem(eStorageKey.PendingEmail);
-        await removeItem(eStorageKey.OnboardingState);
       } else {
-        // Navigate to email confirmation screen
         console.log(`AV: Singup ${JSON.stringify(data)}`);
-        router.push({
-          pathname: '/email-confirmation',
-          params: {
-            email
-          }
-        });
+        try {
+          await updateStore(eStorageKey.PendingEmail, email);    // save email for later
+          await updateStore(eStorageKey.OnboardingState, eOnboardingStateValues.PendingEmailVerification);
+        } catch (err) {
+          console.error('Error saving to storage:', err);
+        }
+        // Navigate to email confirmation screen
+        router.replace('/email-confirmation');
       }
     } catch (err) {
       setError('An unexpected error occurred. Please try again.');

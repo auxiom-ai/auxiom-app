@@ -5,8 +5,7 @@ import { AuthProvider } from '@/lib/auth/AuthProvider';
 import { supabase } from '@/lib/supabase';
 // import { useRefreshToken } from '@/lib/useRefreshToken';
 // import { useSessionTimeout } from '@/lib/useSessionTimeout';
-import { eOnboardingState, eStorageKey } from '@/lib/constants';
-import { setItem } from '@/lib/utils/storage';
+import { eOnboardingStateValues, eStorageKey, setItem } from '@/lib/utils/storage';
 import { DarkTheme, DefaultTheme, ThemeProvider } from '@react-navigation/native';
 import { useFonts } from 'expo-font';
 import { Stack } from 'expo-router';
@@ -19,10 +18,13 @@ import { useColorScheme } from '@/hooks/useColorScheme';
 export default function RootLayout() {
   const colorScheme = useColorScheme();
 
-  // TODO - This is for debugging - remove after testing
+  // TODO - This is for debugging - comment/uncomment for testing various scenarios
   (async () => {
     // await removeItem(eStorageKey.PendingEmail);
-    await setItem(eStorageKey.OnboardingState, eOnboardingState.PendingEmailVerification);
+    await setItem(eStorageKey.OnboardingState, eOnboardingStateValues.OnboardingCompleted);
+    // await clearAll();
+    // await supabase.auth.signOut();
+    // console.log('Signed out')
   })();
   
   const [loaded] = useFonts({

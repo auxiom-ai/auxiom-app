@@ -1,27 +1,44 @@
 import { supabase } from '@/lib/supabase';
+import { eOnboardingStateValues, eStorageKey, getItem, setItem, StorageDataType } from '@/lib/utils/storage';
 import { Session, User } from '@supabase/supabase-js';
-import React, { createContext, useEffect, useState } from 'react';
+import React, { createContext, useContext, useEffect, useState } from 'react';
 
-interface AuthContextType {
+export interface AuthContextType {
   user: User | null;
   session: Session | null;
   loading: boolean;
+  storageData: StorageDataType;
+
   signOut: () => Promise<void>;
+  updateStore: (key: eStorageKey, value: any) => Promise<void>;      // Centralized place to update store
 }
 
-export const AuthContext = createContext<AuthContextType | undefined>(undefined);
+const AuthContext = createContext<AuthContextType>({
+  user: null,
+  session: null,
+  loading: true,
+  storageData: {
+    pendingEmail: null,
+    onboardingState: eOnboardingStateValues.Init
+  },
+  signOut: () => Promise.resolve(),
+  updateStore: () => Promise.resolve()
+});
 
 export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
   const [session, setSession] = useState<Session | null>(null);
   const [user, setUser] = useState<User | null>(null);
   const [loading, setLoading] = useState(true);
+  const [storageData, setStorageData] = useState<StorageDataType>({
+    pendingEmail: null,
+    onboardingState: eOnboardingStateValues.Init
+  });
 
   useEffect(() => {
     // Get initial session
     supabase.auth.getSession().then(({ data: { session } }) => {
       setSession(session);
       setUser(session?.user ?? null);
-      setLoading(false);
     });
 
     // Listen for changes
@@ -43,6 +60,15 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
       setUser(session?.user ?? null);
     });
 
+    // Load data from storage
+    const loadStorage = async () => {
+      const pendingEmail: string | null = await getItem(eStorageKey.PendingEmail);
+      const onboardingState: eOnboardingStateValues | null = await getItem(eStorageKey.OnboardingState);
+      setStorageData({ pendingEmail, onboardingState });
+      setLoading(false);
+    };
+    loadStorage();
+
     return () => {
       subscription.unsubscribe();
     };
@@ -52,11 +78,24 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
     await supabase.auth.signOut();
   };
 
+  const updateStore = async (key: eStorageKey, value: any) => {
+    // Update local cache
+    if (key === eStorageKey.PendingEmail) {
+      setStorageData({ ...storageData, pendingEmail: value });
+    } else if (key === eStorageKey.OnboardingState) {
+      setStorageData({ ...storageData, onboardingState: value });
+    }
+    await setItem(key, value);
+    console.log(`Updated store for key: ${key}, value: ${value}`);
+  };
+
   console.log(`********AuthProvider render*****`);
 
   return (
-    <AuthContext.Provider value={{ user, session, loading, signOut }}>
+    <AuthContext.Provider value={{ user, session, loading, storageData, signOut, updateStore }}>
       {children}
     </AuthContext.Provider>
   );
 };
+
+export const useAuth = () => useContext(AuthContext);

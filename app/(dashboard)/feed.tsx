@@ -2,7 +2,7 @@
 
 import { ThemedText } from "@/components/ThemedText"
 import { ThemedView } from "@/components/ThemedView"
-import { supabase } from "@/lib/supabase"
+import { useAuth } from "@/lib/auth/AuthProvider"
 import { router } from "expo-router"
 import { useEffect, useState } from "react"
 import { Image, SafeAreaView, ScrollView, StatusBar, StyleSheet, TouchableOpacity, View } from "react-native"
@@ -125,6 +125,7 @@ const feedData = [
 
 export default function FeedScreen() {
   const [userName, setUserName] = useState<string>("")
+  const { loading, user } = useAuth()
 
   useEffect(() => {
     const fetchUserName = async () => {
@@ -143,6 +144,8 @@ export default function FeedScreen() {
       },
     })
   }
+
+  if (loading || !user) return (<ThemedText>Loading...</ThemedText>);
 
   return (
     <SafeAreaView style={styles.safeArea}>

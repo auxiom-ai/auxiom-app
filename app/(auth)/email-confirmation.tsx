@@ -1,17 +1,17 @@
-import { eOnboardingState, eStorageKey } from '@/lib/constants';
+import { useAuth } from "@/lib/auth/AuthProvider";
 import { supabase } from '@/lib/supabase';
-import { removeItem, setItem } from '@/lib/utils/storage';
-import { useLocalSearchParams, useRouter } from 'expo-router';
+import { eOnboardingStateValues, eStorageKey } from "@/lib/utils/storage";
+import { useRouter } from 'expo-router';
 import { useState } from 'react';
 import { Alert, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 
 export default function EmailConfirmationScreen() {
   const router = useRouter();
-  const { email } = useLocalSearchParams();   // Passed as query param
   const [isResending, setIsResending] = useState(false);
   const [isCanceling, setIsCanceling] = useState(false);
   const [lastResendTime, setLastResendTime] = useState(0);
   const [error, setError] = useState('');
+  const { storageData, updateStore } = useAuth();
 
   const handleResendEmail = async () => {
     const now = Date.now();
@@ -24,7 +24,7 @@ export default function EmailConfirmationScreen() {
       return;
     }
 
-    if (!email) {
+    if (!storageData.pendingEmail) {
       setError('No email address found');
       return;
     }
@@ -35,7 +35,7 @@ export default function EmailConfirmationScreen() {
     try {
       const { error } = await supabase.auth.resend({
         type: 'signup',
-        email: email as string,
+        email: storageData.pendingEmail as string,
       });
 
       if (error) {
@@ -53,7 +53,7 @@ export default function EmailConfirmationScreen() {
   };
 
   const handleCancelSignup = async () => {
-    if (!email) {
+    if (!storageData.pendingEmail) {
       setError('No email address found');
       return;
     }
@@ -62,8 +62,8 @@ export default function EmailConfirmationScreen() {
     setError('');
 
     try {
-      await removeItem(eStorageKey.PendingEmail);
-      await setItem(eStorageKey.OnboardingState, eOnboardingState.Init);
+      await updateStore(eStorageKey.PendingEmail, null);
+      await updateStore(eStorageKey.OnboardingState, eOnboardingStateValues.Init);
     } catch (error) {
       console.error('Error Removing from storage:', error);
       setError('Failed to cancel signup. Please try again.');
@@ -79,7 +79,7 @@ export default function EmailConfirmationScreen() {
       <Text style={styles.subtitle}>
         We've sent a confirmation email to:
       </Text>
-      <Text style={styles.email}>{email}</Text>
+      <Text style={styles.email}>{storageData.pendingEmail}</Text>
       <Text style={styles.instructions}>
         Please check your inbox and click the confirmation link to activate your account.
       </Text>

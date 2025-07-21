@@ -2,7 +2,9 @@
 
 import { ThemedText } from "@/components/ThemedText"
 import { ThemedView } from "@/components/ThemedView"
+import { useAuth } from "@/lib/auth/AuthProvider"
 import { supabase } from "@/lib/supabase"
+import { eOnboardingStateValues, eStorageKey } from "@/lib/utils/storage"
 import { router } from "expo-router"
 import { useState } from "react"
 import {
@@ -18,6 +20,7 @@ import {
   View,
 } from "react-native"
 import { Button } from "react-native-paper"
+
 
 // Industry options for the dropdown
 const INDUSTRY_OPTIONS = [
@@ -40,6 +43,7 @@ export default function IdentityScreen() {
   const [industry, setIndustry] = useState<string>("")
   const [loading, setLoading] = useState<boolean>(false)
   const [showIndustryModal, setShowIndustryModal] = useState<boolean>(false)
+  const { updateStore } = useAuth();
 
   const handleSubmit = async (): Promise<void> => {
     if (!name.trim()) {
@@ -81,6 +85,7 @@ export default function IdentityScreen() {
       } else {
         console.log("Updated user info:", data)
         // Navigate to the next onboarding screen
+        await updateStore(eStorageKey.OnboardingState, eOnboardingStateValues.PrefInterests);
         router.push("/interests")
       }
     } catch (err) {

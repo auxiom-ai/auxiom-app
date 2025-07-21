@@ -1,102 +1,55 @@
-import { eOnboardingState, eStorageKey } from '@/lib/constants';
 import { createUserRecord } from '@/lib/supabase';
-import { getItem, setItem } from '@/lib/utils/storage';
+import { eOnboardingStateValues, eStorageKey } from '@/lib/utils/storage';
 import { usePathname, useRouter } from 'expo-router';
-import React, { useEffect, useState } from 'react';
+import React, { useEffect } from 'react';
 import { ActivityIndicator, View } from 'react-native';
-import { useAuth } from './useAuth';
+import { useAuth } from './AuthProvider';
 
 export const AuthGate = ({ children }: { children: React.ReactNode }) => {
-  const { user, loading } = useAuth();
-  const [email, setEmail] = useState('');
-  const [onboardState, setOnboardState] = useState(eOnboardingState.Init);
+  const { user, loading, storageData, updateStore } = useAuth();
   const router = useRouter();
   const pathname = usePathname(); 
+  const publicRoutes = ['/sign-in', '/sign-up', '/email-confirmation', '/forgot-password', '/reset-password'];
 
   useEffect(() => {
-    console.log(`AuthGate useEffect: pathname: ${pathname}, user: ${user?.aud}, loading: ${loading}`);
+    console.log(`AuthGate useEffect: pathname: ${pathname}, user: ${user?.aud}, loading: ${loading}, storageData: ${JSON.stringify(storageData)}`);
     if (loading) return;
 
-    const routeToNextState = async () => {
-      try {
-        const email = await getItem<string>(eStorageKey.PendingEmail);
-        if (email) {
-          setEmail(email);
-        }
-        const onboardState = await getItem<eOnboardingState>(eStorageKey.OnboardingState);
-        if (onboardState) {
-          setOnboardState(onboardState);
-        }
-        await determineNextState();
-      } catch (error) {
-        console.error('Error loading pending email:', error);
+    if (!user) {
+      if (publicRoutes.includes(pathname)) {
+        return router.replace(pathname as any); // navigate where we were requested to go
+      } else {
+        return router.replace('/sign-in' as any);
       }
-    };
+    }
 
-    routeToNextState();
-
-  }, [user, loading, pathname]);
-
-
-  // Helper function to determine next state based on user and onboard state
-  const determineNextState = async () => {
-    console.log(`determineNextState: onboardState: ${onboardState}`);
-    switch(onboardState) {
-      case eOnboardingState.Init:
-        router.push(pathname == '/sign-up' ? '/sign-up' : '/sign-in');
-        return;
-        
-      case eOnboardingState.PendingEmailVerification:
-        if (user && user.email_confirmed_at) {
+    if (user) {
+      if (storageData.onboardingState === eOnboardingStateValues.PendingEmailVerification) {
+        if (user.email_confirmed_at) {
           console.log('Calling create user record')
-          await createUserRecord(user);
-          await setItem(eStorageKey.OnboardingState, eOnboardingState.PrefOccupation);
-          router.push('/occupation');
+          createUserRecord(user);
+          updateStore(eStorageKey.OnboardingState, eOnboardingStateValues.PrefOccupation);
+          router.replace('/occupation');
         } else {
           if (pathname !== '/sign-in') {
-            router.push({
-              pathname: '/email-confirmation',
-              params: {
-                email
-              }
-            });
+            router.replace('/email-confirmation');
           } else {
             router.replace('/sign-in');
           }
         }
-        return;
-
-      case eOnboardingState.PrefOccupation:
-      case eOnboardingState.PrefInterests:
-      case eOnboardingState.PrefDeliveryDay:
-        const routeMapping = {
-          [eOnboardingState.PrefOccupation]: '/occupation',
-          [eOnboardingState.PrefInterests]: '/interests',
-          [eOnboardingState.PrefDeliveryDay]: '/day'
-        };
-        if (user) {
-          router.push(routeMapping[onboardState] as any);
-        } else {
-          router.push('/sign-in');
-        }
-        return;
-
-      case eOnboardingState.OnboardingCompleted:
-        if (user) {
-          router.push('/feed');
-        } else {
-          router.push('/sign-in');
-        }
-        return;
-        
-      default:
-        console.log('Invalid onboarding state:', onboardState);
-        router.push('/sign-in');
-        return;
+      } else if (storageData.onboardingState === eOnboardingStateValues.PrefOccupation) {
+        return router.replace('/occupation' as any);
+      } else if (storageData.onboardingState === eOnboardingStateValues.PrefInterests) {
+        return router.replace('/interests' as any);
+      } else if (storageData.onboardingState === eOnboardingStateValues.PrefDeliveryDay) {
+        return router.replace('/day' as any);
+      } else {
+        return router.replace('/(dashboard)' as any);
+      }
     }
-  };
+  }, [loading, pathname]);
 
-  console.log(`********AuthGate render*****`);
+  console.log(`********AuthGate render*****Loading = ${loading}`);
 
   if (loading) {
     return (

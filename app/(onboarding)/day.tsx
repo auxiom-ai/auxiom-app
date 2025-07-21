@@ -2,7 +2,9 @@
 
 import { ThemedText } from "@/components/ThemedText"
 import { ThemedView } from "@/components/ThemedView"
+import { useAuth } from "@/lib/auth/AuthProvider"
 import { supabase } from "@/lib/supabase"
+import { eOnboardingStateValues, eStorageKey } from "@/lib/utils/storage"
 import { router } from "expo-router"
 import { useState } from "react"
 import {
@@ -27,6 +29,7 @@ const DAY_ABBREVIATIONS = ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"]
 export default function DayScreen() {
   const [selectedDayIndex, setSelectedDayIndex] = useState<number>(6) // Default to Sunday (index 6)
   const [loading, setLoading] = useState<boolean>(false)
+  const { updateStore } = useAuth();
 
   const [fadeAnim] = useState(new Animated.Value(1))
   const [slideAnim] = useState(new Animated.Value(0))
@@ -119,7 +122,7 @@ export default function DayScreen() {
     } finally {
       setLoading(false)
     }
-
+    await updateStore(eStorageKey.OnboardingState, eOnboardingStateValues.OnboardingCompleted);
     router.replace("/feed" as any) // Navigate to the feed screen after submission
   }
 

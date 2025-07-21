@@ -18,7 +18,7 @@ export default function SignInScreen() {
       // Check if email is verified
       if (data.user && !data.user.email_confirmed_at) {
         // Email not verified, redirect to confirmation screen
-        router.push({
+        router.replace({
           pathname: '/email-confirmation',
           params: {
             email

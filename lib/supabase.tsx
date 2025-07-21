@@ -64,8 +64,14 @@ export const supabase = createClient(supabaseUrl, supabaseAnonKey, {
 
 // Helper function to create user record after email verification
 export const createUserRecord = async (userData: any) => {
+  // If user record already exists, do not create a new one
   try {
-    const { error } = await supabase.from('users').insert([{
+    const { data, error: existsError } = await supabase.from('users').select().eq('email', userData.email);
+    if (data && data.length > 0) {
+      console.log('User record already exists - Skipping Creation');
+      return { success: true };
+    }
+    const { error: insertError } = await supabase.from('users').insert([{
         email: userData.email,
         name: null,
         delivery_day: 1,
@@ -84,9 +90,9 @@ export const createUserRecord = async (userData: any) => {
         password_hash: "",  // TODO - remove after changing Schema in Supabase
     }]);
 
-    if (error) {
-      console.error('Error creating user record:', error);
-      return { success: false, error };
+    if (insertError) {
+      console.error('Error creating user record:', insertError);
+      return { success: false, error: insertError };
     }
 
     return { success: true };

@@ -1,8 +1,27 @@
 import AsyncStorage from '@react-native-async-storage/async-storage';
-import { StorageKey } from '../constants';
+
+// Enumerations for Storage Keys
+export enum eStorageKey {
+  PendingEmail = 'pending_email',
+  OnboardingState = 'onboarding_state',
+}
+
+export enum eOnboardingStateValues {
+  Init = 'init',
+  PendingEmailVerification = 'pending_email_verification',
+  PrefOccupation = 'pref_occupation',
+  PrefInterests = 'pref_interests',
+  PrefDeliveryDay = 'pref_delivery_day',
+  OnboardingCompleted = 'onboarding_completed'
+}
+
+export type StorageDataType = {
+  pendingEmail: string | null;
+  onboardingState: eOnboardingStateValues | null;
+}
 
 // Save a value (auto-serialized)
-export async function setItem<T>(key: StorageKey, value: T): Promise<void> {
+export async function setItem<T>(key: eStorageKey, value: T): Promise<void> {
   try {
     const jsonValue = JSON.stringify(value);
     await AsyncStorage.setItem(key, jsonValue);
@@ -12,7 +31,7 @@ export async function setItem<T>(key: StorageKey, value: T): Promise<void> {
 }
 
 // Get a value (parsed automatically)
-export async function getItem<T>(key: StorageKey): Promise<T | null> {
+export async function getItem<T>(key: eStorageKey): Promise<T | null> {
   try {
     const jsonValue = await AsyncStorage.getItem(key);
     return jsonValue != null ? JSON.parse(jsonValue) as T : null;
@@ -23,7 +42,7 @@ export async function getItem<T>(key: StorageKey): Promise<T | null> {
 }
 
 // Remove a specific item
-export async function removeItem(key: StorageKey): Promise<void> {
+export async function removeItem(key: eStorageKey): Promise<void> {
   try {
     await AsyncStorage.removeItem(key);
   } catch (err) {
