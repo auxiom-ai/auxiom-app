@@ -1,11 +1,9 @@
 "use client"
 
-import { useAuth } from "@/lib/auth/AuthProvider"
 import { supabase } from "@/lib/supabase"
-import { eOnboardingStateValues, eStorageKey } from "@/lib/utils/storage"
 import { Feather } from "@expo/vector-icons"
 import { useNavigation } from "@react-navigation/native"
-import { useRouter } from "expo-router"
+import { router } from "expo-router"
 import Fuse from "fuse.js"
 import React, { useEffect, useLayoutEffect, useMemo, useRef, useState } from "react"
 import { Alert, Image, Platform, SafeAreaView, ScrollView, StatusBar, StyleSheet, TouchableOpacity, View } from "react-native"
@@ -120,7 +118,6 @@ type TagWithSuggestions = {
 export default function InterestsScreen() {
   // hide this tab
   const navigation = useNavigation()
-  const router = useRouter()
   useLayoutEffect(() => {
     navigation.setOptions({ tabBarButton: () => null })
   }, [navigation])
@@ -134,7 +131,6 @@ export default function InterestsScreen() {
   const [selectedSuggestions, setSelectedSuggestions] = useState<Set<string>>(new Set())
   const [isSearching, setIsSearching] = useState(false)
   const inputRef = useRef<any>(null)
-  const { updateStore } = useAuth();
 
   // ---- fuzzy search over ALL_SUBJECT_TERMS -----------------------------
   const fuse = useMemo(
@@ -383,7 +379,7 @@ const handleSubmit = async (): Promise<void> => {
   const { data, error } = await supabase
     .from('users')
     .update({ keywords })   // pass the array directly
-    .eq('email', user.email) // match by email instead of id
+    .eq('auth_user_id', user.id) // match by auth_user_id
     .select()
 
   console.log('update returned:', { data, error })
@@ -392,8 +388,7 @@ const handleSubmit = async (): Promise<void> => {
     console.error(error)
     Alert.alert("Error saving interests", error.message)
   } else {
-    await updateStore(eStorageKey.OnboardingState, eOnboardingStateValues.PrefDeliveryDay);
-    router.push("/day")
+    router.push("/onboarding/day")
   }
 }
 
@@ -468,7 +463,7 @@ const handleSubmit = async (): Promise<void> => {
         <View style={styles.header}>
           <View style={styles.logoContainer}>
             <View style={styles.brainIcon}>
-              <Image source={require("../../assets/auxiom-logo.png")} style={styles.logoImage} resizeMode="contain" />
+              <Image source={require("@/assets/auxiom-logo.png")} style={styles.logoImage} resizeMode="contain" />
             </View>
             <Text style={styles.logoText}>Onboarding</Text>
           </View>

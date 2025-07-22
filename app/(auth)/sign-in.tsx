@@ -26,7 +26,7 @@ export default function SignInScreen() {
         });
       } else {
         // Email verified, proceed to dashboard
-        router.replace('/feed' as any);   // TODO - should check onboarding state and direct accordingly 
+        router.replace('/dashboard/feed' as any);   // TODO - should check onboarding state and direct accordingly 
       }
     }
   };
@@ -34,7 +34,7 @@ export default function SignInScreen() {
   return (
     <View style={styles.container}>
       <Image
-        source={require('../../assets/auxiom-logo.png')}
+        source={require('@/assets/auxiom-logo.png')}
         style={{ width: 80, height: 80, marginBottom: 16 }}
         resizeMode="contain"
       />
@@ -59,7 +59,7 @@ export default function SignInScreen() {
         <Text style={styles.buttonText}>Sign in</Text>
       </TouchableOpacity>
       <Text style={styles.linkText}>New to our platform?</Text>
-      <TouchableOpacity style={styles.secondaryButton} onPress={() => router.push('/sign-up' as any)}>
+      <TouchableOpacity style={styles.secondaryButton} onPress={() => router.push('/sign-up')}>
         <Text style={styles.secondaryButtonText}>Create an account</Text>
       </TouchableOpacity>
       <TouchableOpacity onPress={() => router.push('/reset-password')}>

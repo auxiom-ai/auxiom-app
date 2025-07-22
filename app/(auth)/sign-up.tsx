@@ -1,6 +1,5 @@
-import { useAuth } from "@/lib/auth/AuthProvider";
+import { syncUserProfile } from '@/lib/auth-utils';
 import { supabase } from '@/lib/supabase';
-import { eOnboardingStateValues, eStorageKey } from "@/lib/utils/storage";
 import { useRouter } from 'expo-router';
 import { useState } from 'react';
 import { Image, StyleSheet, Text, TextInput, TouchableOpacity, View } from 'react-native';
@@ -11,7 +10,6 @@ export default function SignUpScreen() {
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
   const router = useRouter();
-  const { updateStore } = useAuth();
 
   const handleSignUp = async () => {
     if (!email || !password) {
@@ -20,43 +18,31 @@ export default function SignUpScreen() {
     }
 
     setError('');
-    setLoading(true);
-
-    try {
-      // Sign up with Supabase - this will send confirmation email
-      const { data, error } = await supabase.auth.signUp({ 
-        email, 
-        password,
-        options: {
-          emailRedirectTo: undefined // Ensure email confirmation is required - TODO - is this correct?
-        }
-      });
-
-      if (error) {
-        setError(error.message);
+    const { data, error } = await supabase.auth.signUp({ email, password });
+    if (error) {
+      setError(error.message);
+    } else if (data.user) {
+      // Create user profile using the updated schema
+      const userProfile = await syncUserProfile(data.user);
+      
+      if (!userProfile) {
+        console.error('Failed to create user profile');
+        setError('Failed to create user profile');
       } else {
-        console.log(`AV: Singup ${JSON.stringify(data)}`);
-        try {
-          await updateStore(eStorageKey.PendingEmail, email);    // save email for later
-          await updateStore(eStorageKey.OnboardingState, eOnboardingStateValues.PendingEmailVerification);
-        } catch (err) {
-          console.error('Error saving to storage:', err);
+        // Check if the user needs email confirmation
+        if (data.user.email_confirmed_at) {
+          router.replace('/onboarding/occupation');
+        } else {
+          router.replace('/email-confirmation');
         }
-        // Navigate to email confirmation screen
-        router.replace('/email-confirmation');
       }
-    } catch (err) {
-      setError('An unexpected error occurred. Please try again.');
-      console.error('Sign up error:', err);
-    } finally {
-      setLoading(false);
-    }
   };
+  }
 
   return (
     <View style={styles.container}>
       <Image
-        source={require('../../assets/auxiom-logo.png')}
+        source={require('@/assets/auxiom-logo.png')}
         style={{ width: 80, height: 80, marginBottom: 16 }}
         resizeMode="contain"
       />

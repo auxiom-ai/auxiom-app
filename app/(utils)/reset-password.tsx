@@ -1,6 +1,6 @@
+import ResetPassword from '@/components/ResetPassword';
 import { Stack } from 'expo-router';
 import React from 'react';
-import ResetPassword from '../components/ResetPassword';
 
 export default function ResetPasswordScreen() {
   return (

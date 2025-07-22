@@ -1,4 +1,4 @@
-import { supabase } from './drizzle';
+import { supabase } from '@/lib/supabase';
 
 export async function getUser() {
   const { data: { user } } = await supabase.auth.getUser();
@@ -7,7 +7,7 @@ export async function getUser() {
   const { data } = await supabase
     .from('users')
     .select('*')
-    .eq('id', user.id)
+    .eq('auth_user_id', user.id)
     .single();
     
   return data;
@@ -37,7 +37,7 @@ export async function createUser(userData: any) {
 export async function updateUser(userId: number, data: any) {
   const { data: updatedUser, error } = await supabase
     .from('users')
-    .update({ ...data, updated_at: new Date().toISOString() })
+    .update(data)
     .eq('id', userId)
     .select()
     .single();
@@ -67,4 +67,4 @@ export async function updateListened(podcastId: number) {
     
   if (error) throw error;
   return data;
-} 
+}

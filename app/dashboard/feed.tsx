@@ -1,11 +1,9 @@
-"use client"
-
 import { ThemedText } from "@/components/ThemedText"
 import { ThemedView } from "@/components/ThemedView"
-import { useAuth } from "@/lib/auth/AuthProvider"
 import { router } from "expo-router"
-import { useEffect, useState } from "react"
+import { use, useEffect, useState } from "react"
 import { Image, SafeAreaView, ScrollView, StatusBar, StyleSheet, TouchableOpacity, View } from "react-native"
+import { getUser } from "@/lib/db/queries"
 
 // Sample data for the feed
 const feedData = [
@@ -125,14 +123,42 @@ const feedData = [
 
 export default function FeedScreen() {
   const [userName, setUserName] = useState<string>("")
-  const { loading, user } = useAuth()
+  const [user, setUser] = useState<any>(null)
+  const [loading, setLoading] = useState(true)
 
   useEffect(() => {
-    const fetchUserName = async () => {
-      setUserName("User...") // Set initial loading state
+    const fetchUser = async () => {
+      try {
+        setLoading(true)
+        const userData = await getUser()
+        
+        if (!userData) {
+          router.replace("/sign-in")
+          return
+        }
+        
+        setUser(userData)
+        setUserName(userData.name)
+
+        if (!userData.active) {
+          if (!userData.occupation) {
+            router.replace("/onboarding/occupation")
+          }
+          else if (!userData.interests) {
+            router.replace("/onboarding/interests")
+          } else {
+            router.replace("/onboarding/day")
+          }
+        }
+      } catch (error) {
+        console.error("Error fetching user:", error)
+        router.replace("/sign-in")
+      } finally {
+        setLoading(false)
+      }
     }
 
-    fetchUserName()
+    fetchUser()
   }, [])
 
   const handleCardPress = (article: (typeof feedData)[0]) => {

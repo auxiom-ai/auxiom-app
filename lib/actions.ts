@@ -1,19 +1,16 @@
-'use server';
-
-import { redirect } from 'next/navigation';
-import { supabase } from '../lib/db/drizzle';
+import { supabase } from '@/lib/supabase';
 
 // Get user profile information
 export async function getUserProfile() {
   const { data: { user } } = await supabase.auth.getUser();
   if (!user) {
-    redirect('/sign-in');
+    throw new Error('User not authenticated');
   }
 
   const { data } = await supabase
     .from('users')
     .select('*')
-    .eq('id', user.id)
+    .eq('auth_user_id', user.id)
     .single();
 
   return data;
@@ -23,13 +20,13 @@ export async function getUserProfile() {
 export async function getUserKeywords(): Promise<string[]> {
   const { data: { user } } = await supabase.auth.getUser();
   if (!user) {
-    redirect('/sign-in');
+    throw new Error('User not authenticated');
   }
 
   const { data } = await supabase
     .from('users')
     .select('keywords')
-    .eq('id', user.id)
+    .eq('auth_user_id', user.id)
     .single();
 
   return data?.keywords || [];
@@ -39,13 +36,13 @@ export async function getUserKeywords(): Promise<string[]> {
 export async function getUserDeliveryDay(): Promise<number> {
   const { data: { user } } = await supabase.auth.getUser();
   if (!user) {
-    redirect('/sign-in');
+    throw new Error('User not authenticated');
   }
 
   const { data } = await supabase
     .from('users')
     .select('delivery_day')
-    .eq('id', user.id)
+    .eq('auth_user_id', user.id)
     .single();
 
   return data?.delivery_day || 0;
@@ -55,13 +52,13 @@ export async function getUserDeliveryDay(): Promise<number> {
 export async function getUserDeliveryStatus(): Promise<boolean> {
   const { data: { user } } = await supabase.auth.getUser();
   if (!user) {
-    redirect('/sign-in');
+    throw new Error('User not authenticated');
   }
 
   const { data } = await supabase
     .from('users')
     .select('delivered')
-    .eq('id', user.id)
+    .eq('auth_user_id', user.id)
     .single();
 
   const now = new Date();
@@ -75,13 +72,13 @@ export async function getUserDeliveryStatus(): Promise<boolean> {
 export async function getUserAccountStatus(): Promise<boolean> {
   const { data: { user } } = await supabase.auth.getUser();
   if (!user) {
-    redirect('/sign-in');
+    throw new Error('User not authenticated');
   }
 
   const { data } = await supabase
     .from('users')
     .select('active')
-    .eq('id', user.id)
+    .eq('auth_user_id', user.id)
     .single();
 
   return data?.active || false;
@@ -91,13 +88,13 @@ export async function getUserAccountStatus(): Promise<boolean> {
 export async function getUserPlan(): Promise<string> {
   const { data: { user } } = await supabase.auth.getUser();
   if (!user) {
-    redirect('/sign-in');
+    throw new Error('User not authenticated');
   }
 
   const { data } = await supabase
     .from('users')
     .select('plan')
-    .eq('id', user.id)
+    .eq('auth_user_id', user.id)
     .single();
 
   return data?.plan || 'free';
@@ -107,13 +104,24 @@ export async function getUserPlan(): Promise<string> {
 export async function getUserPodcasts() {
   const { data: { user } } = await supabase.auth.getUser();
   if (!user) {
-    redirect('/sign-in');
+    throw new Error('User not authenticated');
+  }
+
+  // First get user profile to get the database user id
+  const { data: userProfile } = await supabase
+    .from('users')
+    .select('id')
+    .eq('auth_user_id', user.id)
+    .single();
+
+  if (!userProfile) {
+    throw new Error('User profile not found');
   }
 
   const { data } = await supabase
     .from('podcasts')
     .select('*')
-    .eq('user_id', user.id);
+    .eq('user_id', userProfile.id);
 
   return data || [];
 }
@@ -138,7 +146,7 @@ export async function updatePodcastListenedStatus(podcastId: number) {
 export async function getNewsletterStatus(): Promise<boolean> {
   const { data: { user } } = await supabase.auth.getUser();
   if (!user) {
-    redirect('/sign-in');
+    throw new Error('User not authenticated');
   }
 
   const { data } = await supabase
@@ -154,7 +162,7 @@ export async function getNewsletterStatus(): Promise<boolean> {
 export async function subscribeToNewsletter() {
   const { data: { user } } = await supabase.auth.getUser();
   if (!user) {
-    redirect('/sign-in');
+    throw new Error('User not authenticated');
   }
 
   try {
@@ -174,13 +182,13 @@ export async function subscribeToNewsletter() {
 export async function getVerificationStatus(): Promise<boolean> {
   const { data: { user } } = await supabase.auth.getUser();
   if (!user) {
-    redirect('/sign-in');
+    throw new Error('User not authenticated');
   }
 
   const { data } = await supabase
     .from('users')
     .select('verified')
-    .eq('id', user.id)
+    .eq('auth_user_id', user.id)
     .single();
 
   return data?.verified || false;
@@ -190,14 +198,14 @@ export async function getVerificationStatus(): Promise<boolean> {
 export async function getOnboardingStatus(): Promise<boolean> {
   const { data: { user } } = await supabase.auth.getUser();
   if (!user) {
-    redirect('/sign-in');
+    throw new Error('User not authenticated');
   }
 
   const { data } = await supabase
     .from('users')
     .select('name, occupation, keywords')
-    .eq('id', user.id)
+    .eq('auth_user_id', user.id)
     .single();
 
   return !!(data?.name && data?.occupation && Array.isArray(data?.keywords) && data?.keywords.length >= 5);
-} 
+}
