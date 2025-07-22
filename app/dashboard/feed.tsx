@@ -12,69 +12,56 @@ import {
   View,
   TextInput,
 } from "react-native"
-import { getUser, getArticles } from "@/lib/db/queries"
+import { getArticles, getRecommendedArticles } from "@/lib/db/queries"
+import { useAuth } from "@/lib/auth-context"
 // Types for articles
 export interface Article {
   id: number
   title: string
   summary: string
+  content: string
   people: string[]
   topics: string[]
   tags: string[]
   date: string
   duration: number
   featured: boolean
+  embedding: number[]
 }
 
 export default function FeedScreen() {
-  const [userName, setUserName] = useState<string>("")
-  const [user, setUser] = useState<any>(null)
-  const [loading, setLoading] = useState(true)
+  const { user, loading } = useAuth()
   const [articles, setArticles] = useState<Article[]>([])
   const [searchQuery, setSearchQuery] = useState("")
   const [selectedTopics, setSelectedTopics] = useState<string[]>([])
   const [filteredArticles, setFilteredArticles] = useState<Article[]>([])
   const [currentPage, setCurrentPage] = useState(1)
+  const [articlesLoading, setArticlesLoading] = useState(false)
   const ITEMS_PER_PAGE = 10
 
   useEffect(() => {
-    const fetchData = async () => {
+    const fetchArticles = async () => {
+      
       try {
-        setLoading(true)
-        const userData = await getUser()
-        
-        if (!userData) {
-          router.replace("/sign-in")
-          return
-        }
-        
-        setUser(userData)
-        setUserName(userData.name)
-        
-        if (!userData.active) {
-          if (!userData.occupation) {
-            router.replace("/onboarding/occupation")
-          } else if (!userData.interests) {
-            router.replace("/onboarding/interests")
-          } else {
-            router.replace("/onboarding/day")
-          }
-        }
-        
+        setArticlesLoading(true)
         // Fetch articles
-        const articlesData = await getArticles()
+        let articlesData: Article[] = []
+        if (user && user.embedding) {
+          articlesData = await getRecommendedArticles(user.embedding)
+        } else {
+          articlesData = await getArticles()
+        }
         setArticles(articlesData as Article[])
         setFilteredArticles(articlesData as Article[])
       } catch (error) {
-        console.error("Error fetching data:", error)
-        router.replace("/sign-in")
+        console.error("Error fetching articles:", error)
       } finally {
-        setLoading(false)
+        setArticlesLoading(false)
       }
     }
 
-    fetchData()
-  }, [])
+    fetchArticles()
+  }, [user])
 
   // Get all unique topics from articles for filtering
   const getAllTopics = (articles: Article[]) => {
@@ -155,8 +142,14 @@ export default function FeedScreen() {
   const endIndex = startIndex + ITEMS_PER_PAGE
   const paginatedArticles = filteredArticles.slice(startIndex, endIndex)
 
-  if (loading || !user) {
-    return <ThemedText>Loading...</ThemedText>
+  if (loading || !user || articlesLoading) {
+    return (
+      <SafeAreaView style={styles.safeArea}>
+        <ThemedView style={[styles.container, { justifyContent: 'center', alignItems: 'center' }]}>
+          <ThemedText>Loading...</ThemedText>
+        </ThemedView>
+      </SafeAreaView>
+    )
   }
 
   return (
@@ -175,59 +168,59 @@ export default function FeedScreen() {
               />
             </View>
             <ThemedText style={styles.logoText}>
-              {userName ? `${userName.split(" ")[0]}'s Feed` : "Your Feed"}
+              {user.name ? `${user.name.split(" ")[0]}'s Feed` : "Your Feed"}
             </ThemedText>
           </View>
         </View>
 
-        {/* Search Bar */}
-        <View style={styles.searchContainer}>
-          <TextInput
-            style={styles.searchInput}
-            placeholder="Search articles, authors, or topics..."
-            value={searchQuery}
-            onChangeText={handleSearch}
-          />
-        </View>
-
-        {/* Topic Filter */}
-        <ScrollView 
-          horizontal 
-          showsHorizontalScrollIndicator={false}
-          style={styles.topicContainer}
-          contentContainerStyle={styles.topicContentContainer}
-        >
-          {topics.map((topic) => {
-            const isSelected = topic === "All" ? selectedTopics.length === 0 : selectedTopics.includes(topic)
-            return (
-              <TouchableOpacity
-                key={topic}
-                style={[styles.topicButton, isSelected && styles.selectedTopicButton]}
-                onPress={() => handleTopicFilter(topic)}
-              >
-                <ThemedText style={[styles.topicButtonText, isSelected && styles.selectedTopicButtonText]}>
-                  {topic}
-                </ThemedText>
-              </TouchableOpacity>
-            )
-          })}
-        </ScrollView>
-
-        {/* Results Info */}
-        <View style={styles.resultsInfo}>
-          <ThemedText style={styles.resultsText}>
-            {filteredArticles.length > 0 ? (
-              `Showing ${startIndex + 1}-${Math.min(endIndex, filteredArticles.length)} of ${filteredArticles.length} ${filteredArticles.length === 1 ? "article" : "articles"}`
-            ) : (
-              "0 articles"
-            )}
-            {selectedTopics.length > 0 && ` in ${selectedTopics.join(", ")}`}
-            {searchQuery && ` matching "${searchQuery}"`}
-          </ThemedText>
-        </View>
-
         {/* Articles Feed */}
         <ScrollView style={styles.scrollView} showsVerticalScrollIndicator={false}>
+          {/* Search Bar */}
+          <View style={styles.searchContainer}>
+            <TextInput
+              style={styles.searchInput}
+              placeholder="Search articles, authors, or topics..."
+              value={searchQuery}
+              onChangeText={handleSearch}
+            />
+          </View>
+
+          {/* Topic Filter */}
+          <ScrollView 
+            horizontal 
+            showsHorizontalScrollIndicator={false}
+            style={styles.topicContainer}
+            contentContainerStyle={styles.topicContentContainer}
+          >
+            {topics.map((topic) => {
+              const isSelected = topic === "All" ? selectedTopics.length === 0 : selectedTopics.includes(topic)
+              return (
+                <TouchableOpacity
+                  key={topic}
+                  style={[styles.topicButton, isSelected && styles.selectedTopicButton]}
+                  onPress={() => handleTopicFilter(topic)}
+                >
+                  <ThemedText style={[styles.topicButtonText, isSelected && styles.selectedTopicButtonText]}>
+                    {topic}
+                  </ThemedText>
+                </TouchableOpacity>
+              )
+            })}
+          </ScrollView>
+
+          {/* Results Info */}
+          <View style={styles.resultsInfo}>
+            <ThemedText style={styles.resultsText}>
+              {filteredArticles.length > 0 ? (
+                `Showing ${startIndex + 1}-${Math.min(endIndex, filteredArticles.length)} of ${filteredArticles.length} ${filteredArticles.length === 1 ? "article" : "articles"}`
+              ) : (
+                "0 articles"
+              )}
+              {selectedTopics.length > 0 && ` in ${selectedTopics.join(", ")}`}
+              {searchQuery && ` matching "${searchQuery}"`}
+            </ThemedText>
+          </View>
+
           {paginatedArticles.length === 0 ? (
             <View style={styles.noResultsContainer}>
               <ThemedText style={styles.noResultsTitle}>No articles found</ThemedText>

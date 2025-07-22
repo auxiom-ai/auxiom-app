@@ -1,19 +1,22 @@
-"use client"
-
 import { ThemedText } from "@/components/ThemedText"
 import { ThemedView } from "@/components/ThemedView"
+import { Ionicons } from "@expo/vector-icons"
 import { router, useLocalSearchParams } from "expo-router"
 import {
+  Dimensions,
+  Linking,
+  SafeAreaView,
   ScrollView,
   StatusBar,
   StyleSheet,
   TouchableOpacity,
   View,
-  SafeAreaView,
-  Linking,
-  Dimensions,
+  FlatList,
+  ActivityIndicator,
 } from "react-native"
-import { Ionicons } from "@expo/vector-icons"
+import RenderHtml from "react-native-render-html"
+import React, { useState, useEffect } from "react"
+import { getSimilarArticles } from "@/lib/db/queries"
 
 const { width: screenWidth } = Dimensions.get("window")
 const cardWidth = screenWidth * 0.7 // 70% of screen width
@@ -21,8 +24,34 @@ const cardWidth = screenWidth * 0.7 // 70% of screen width
 export default function ArticleDetailScreen() {
   const { articleData } = useLocalSearchParams()
 
-  // Parse the article data from the navigation params
-  const article = articleData ? JSON.parse(articleData as string) : null
+  // Parse the article data from the navigation params using useMemo to prevent recreation on every render
+  const article = React.useMemo(() => 
+    articleData ? JSON.parse(articleData as string) : null
+  , [articleData])
+  
+  const [similarArticles, setSimilarArticles] = useState<any[]>([])
+  const [isLoading, setIsLoading] = useState(false)
+
+  // Fetch similar articles based on the current article's embedding
+  useEffect(() => {
+    const fetchSimilarArticles = async() => {
+      if (article && article.embedding) {
+        try {
+          setIsLoading(true)
+          const data = await getSimilarArticles(article.embedding)
+          setSimilarArticles(data || [])
+        } catch (error) {
+          console.error("Error fetching similar articles:", error)
+        } finally {
+          setIsLoading(false)
+        }
+      } else {
+        console.warn("No article embedding available for similarity search")
+      }
+    }
+
+    fetchSimilarArticles()
+  }, [article?.embedding]) // Only depend on the embedding, not the entire article object
 
   if (!article) {
     return (
@@ -52,6 +81,13 @@ export default function ArticleDetailScreen() {
       month: "short",
       day: "numeric",
       year: "numeric",
+    })
+  }
+
+  const navigateToArticle = (article: any) => {
+    router.push({
+      pathname: "/(utils)/article-detail",
+      params: { articleData: JSON.stringify(article) }
     })
   }
 
@@ -114,18 +150,43 @@ export default function ArticleDetailScreen() {
             </View>
           </View>
 
-          {/* Authors Section */}
+          {/* Article Analysis Section */}
+          <View style={styles.section}>
+            <View style={styles.sectionHeader}>
+              <Ionicons name="newspaper" size={20} color="#1F2937" />
+              <ThemedText style={styles.sectionTitle}>Content</ThemedText>
+            </View>
+            <RenderHtml
+              contentWidth={screenWidth - 48} // Screen width minus padding
+              source={{ html: article.content }}
+              tagsStyles={{
+                p: {
+                  color: "#374151",
+                  fontSize: 16,
+                  lineHeight: 28,
+                  marginBottom: 16,
+                },
+                div: {
+                  color: "#374151",
+                  fontSize: 16,
+                  lineHeight: 28,
+                },
+              }}
+            />
+          </View>
+
+          {/* People Section */}
           <View style={styles.section}>
             <View style={styles.sectionHeader}>
               <Ionicons name="people" size={20} color="#1F2937" />
-              <ThemedText style={styles.sectionTitle}>Authors & Key Figures</ThemedText>
+              <ThemedText style={styles.sectionTitle}>Key Figures</ThemedText>
             </View>
             <View style={styles.authorsContent}>
               {article.people.map((person: string, index: number) => (
                 <View key={index} style={styles.authorCard}>
                   <View style={styles.authorAvatar}>
                     <ThemedText style={styles.authorInitials}>
-                      {person.split(" ").map((n: string) => n[0]).join("")}
+                      {person.split(" ").map((n: string) => n[0]).join("").slice(0, 2)}
                     </ThemedText>
                   </View>
                   <ThemedText style={styles.authorName}>{person}</ThemedText>
@@ -134,21 +195,47 @@ export default function ArticleDetailScreen() {
             </View>
           </View>
 
-          {/* Article Analysis Section */}
+          {/* Similar Articles Section */}
           <View style={[styles.section, styles.lastSection]}>
             <View style={styles.sectionHeader}>
-              <Ionicons name="analytics" size={20} color="#1F2937" />
-              <ThemedText style={styles.sectionTitle}>Article Analysis</ThemedText>
+              <Ionicons name="link" size={20} color="#1F2937" />
+              <ThemedText style={styles.sectionTitle}>Similar Articles</ThemedText>
             </View>
-            <View style={styles.storyContent}>
-              <ThemedText style={styles.storyText}>
-                This article covers key developments in {article.topics.join(", ").toLowerCase()}, featuring insights from {article.people.join(", ")}. 
-                {"\n\n"}
-                The analysis focuses on {article.tags.slice(0, 3).join(", ").toLowerCase()} and provides a comprehensive overview of the current situation and its potential implications.
-                {"\n\n"}
-                Key themes include policy implications, stakeholder perspectives, and potential future developments in this area.
-              </ThemedText>
-            </View>
+            {isLoading ? (
+              <ActivityIndicator size="small" color="#3B82F6" />
+            ) : similarArticles.length > 0 ? (
+              <ScrollView 
+                horizontal
+                showsHorizontalScrollIndicator={false}
+                contentContainerStyle={styles.horizontalScrollContent}
+              >
+                {similarArticles.map((similarArticle: any, index: number) => (
+                  <TouchableOpacity 
+                    key={index} 
+                    style={styles.newsCard}
+                    onPress={() => navigateToArticle(similarArticle)}
+                  >
+                    <View style={styles.newsContent}>
+                      <ThemedText style={styles.newsTitle}>{similarArticle.title}</ThemedText>
+                      <ThemedText style={styles.newsSummary} numberOfLines={2}>
+                        {similarArticle.summary}
+                      </ThemedText>
+                      <View style={styles.newsFooter}>
+                        <ThemedText style={styles.newsSource}>
+                          {formatDate(similarArticle.date)} • {similarArticle.duration} min read
+                        </ThemedText>
+                        <View style={styles.readArticleContainer}>
+                          <ThemedText style={styles.readArticleText}>Read Article</ThemedText>
+                          <Ionicons name="arrow-forward" size={16} color="#FFFFFF" style={styles.readIcon} />
+                        </View>
+                      </View>
+                    </View>
+                  </TouchableOpacity>
+                ))}
+              </ScrollView>
+            ) : (
+              <ThemedText style={styles.noContentText}>No similar articles found</ThemedText>
+            )}
           </View>
         </ScrollView>
       </ThemedView>
@@ -294,7 +381,7 @@ const styles = StyleSheet.create({
     backgroundColor: "#1F2937",
     borderRadius: 16,
     marginRight: 16,
-    height: 180,
+    height: 200,
     shadowColor: "#000",
     shadowOffset: {
       width: 0,
@@ -314,6 +401,12 @@ const styles = StyleSheet.create({
     fontSize: 16,
     fontWeight: "500",
     lineHeight: 24,
+    marginBottom: 8,
+  },
+  newsSummary: {
+    color: "#D1D5DB",
+    fontSize: 14,
+    lineHeight: 20,
     flex: 1,
   },
   newsFooter: {
@@ -345,6 +438,11 @@ const styles = StyleSheet.create({
     color: "#1F2937",
     textAlign: "center",
     marginTop: 50,
+  },
+  noContentText: {
+    fontSize: 14,
+    color: "#6B7280",
+    fontStyle: "italic",
   },
   featuredBadge: {
     alignSelf: "flex-start",
