@@ -3,57 +3,30 @@ import { useRouter } from 'expo-router';
 import { useState } from 'react';
 import { Image, StyleSheet, Text, TextInput, TouchableOpacity, View } from 'react-native';
 
-export default function SignUpScreen() {
+export default function SignInScreen() {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [error, setError] = useState('');
   const router = useRouter();
 
-  const handleSignUp = async () => {
+  const handleSignIn = async () => {
     setError('');
-    const { data, error } = await supabase.auth.signUp({ email, password });
+    const { data, error } = await supabase.auth.signInWithPassword({ email, password });
     if (error) {
       setError(error.message);
     } else {
-      // Set the session explicitly
-      const { data: sessionData, error: sessionError } = await supabase.auth.getSession();
-      if (sessionError) {
-        setError(sessionError.message);
-      } else {
-        // Insert user data into the users table
-        const { error: dbError } = await supabase.from('users').insert([
-          {
-            email,
-            password_hash: password, // Note: In production, use a proper hash
-            name: null,
-            delivery_day: 1,
-            delivered: '1970-01-01 00:00:00',
-            active: false,
-            keywords: '{}',
-            role: 'Other',
-            occupation: null,
-            industry: null,
-            stripe_customer_id: null,
-            stripe_subscription_id: null,
-            stripe_product_id: null,
-            plan: 'free',
-            episode: 1,
-            verified: false,
-          },
-        ]);
-        if (dbError) {
-          setError(dbError.message);
-        } else {
-          // Check if the user is already confirmed
-          const { data: userData, error: userError } = await supabase.auth.getUser();
-          if (userError) {
-            setError(userError.message);
-          } else if (userData?.user?.email_confirmed_at) {
-            router.replace('/onboarding' as any);
-          } else {
-            router.replace('/email-confirmation');
+      // Check if email is verified
+      if (data.user && !data.user.email_confirmed_at) {
+        // Email not verified, redirect to confirmation screen
+        router.replace({
+          pathname: '/email-confirmation',
+          params: {
+            email
           }
-        }
+        });
+      } else {
+        // Email verified, proceed to dashboard
+        router.replace('/feed' as any);   // TODO - should check onboarding state and direct accordingly 
       }
     }
   };
@@ -61,11 +34,11 @@ export default function SignUpScreen() {
   return (
     <View style={styles.container}>
       <Image
-        source={require('../assets/auxiom-logo.png')}
+        source={require('../../assets/auxiom-logo.png')}
         style={{ width: 80, height: 80, marginBottom: 16 }}
         resizeMode="contain"
       />
-      <Text style={styles.title}>Create your account</Text>
+      <Text style={styles.title}>Sign in to your account</Text>
       <TextInput
         style={styles.input}
         placeholder="Enter your email"
@@ -82,12 +55,15 @@ export default function SignUpScreen() {
         secureTextEntry
       />
       {error ? <Text style={styles.error}>{error}</Text> : null}
-      <TouchableOpacity style={styles.button} onPress={handleSignUp}>
-        <Text style={styles.buttonText}>Sign up</Text>
+      <TouchableOpacity style={styles.button} onPress={handleSignIn}>
+        <Text style={styles.buttonText}>Sign in</Text>
       </TouchableOpacity>
-      <Text style={styles.linkText}>Already have an account?</Text>
-      <TouchableOpacity style={styles.secondaryButton} onPress={() => router.push('/occupation' as any)}>
-        <Text style={styles.secondaryButtonText}>Sign in to existing account</Text>
+      <Text style={styles.linkText}>New to our platform?</Text>
+      <TouchableOpacity style={styles.secondaryButton} onPress={() => router.push('/sign-up' as any)}>
+        <Text style={styles.secondaryButtonText}>Create an account</Text>
+      </TouchableOpacity>
+      <TouchableOpacity onPress={() => router.push('/reset-password')}>
+        <Text style={styles.forgotText}>Forgot your password?</Text>
       </TouchableOpacity>
     </View>
   );
@@ -152,6 +128,11 @@ const styles = StyleSheet.create({
     marginBottom: 8,
     color: '#222',
     fontSize: 16,
+  },
+  forgotText: {
+    color: '#222',
+    fontSize: 14,
+    textDecorationLine: 'underline',
   },
   error: {
     color: 'red',

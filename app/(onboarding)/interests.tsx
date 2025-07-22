@@ -1,6 +1,8 @@
 "use client"
 
+import { useAuth } from "@/lib/auth/AuthProvider"
 import { supabase } from "@/lib/supabase"
+import { eOnboardingStateValues, eStorageKey } from "@/lib/utils/storage"
 import { Feather } from "@expo/vector-icons"
 import { useNavigation } from "@react-navigation/native"
 import { useRouter } from "expo-router"
@@ -132,6 +134,7 @@ export default function InterestsScreen() {
   const [selectedSuggestions, setSelectedSuggestions] = useState<Set<string>>(new Set())
   const [isSearching, setIsSearching] = useState(false)
   const inputRef = useRef<any>(null)
+  const { updateStore } = useAuth();
 
   // ---- fuzzy search over ALL_SUBJECT_TERMS -----------------------------
   const fuse = useMemo(
@@ -389,6 +392,7 @@ const handleSubmit = async (): Promise<void> => {
     console.error(error)
     Alert.alert("Error saving interests", error.message)
   } else {
+    await updateStore(eStorageKey.OnboardingState, eOnboardingStateValues.PrefDeliveryDay);
     router.push("/day")
   }
 }
