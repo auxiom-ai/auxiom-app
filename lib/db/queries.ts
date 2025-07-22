@@ -46,6 +46,44 @@ export async function updateUser(userId: number, data: any) {
   return updatedUser;
 }
 
+export async function updateUserByAuthId(authUserId: string, data: any) {
+  const { data: updatedUser, error } = await supabase
+    .from('users')
+    .update(data)
+    .eq('auth_user_id', authUserId)
+    .select()
+    .single();
+    
+  if (error) throw error;
+  return updatedUser;
+}
+
+export async function updateUserEmail(email: string) {
+  const { data, error } = await supabase.auth.updateUser({ email });
+  if (error) throw error;
+  return data;
+}
+
+export async function updateUserPassword(password: string) {
+  const { data, error } = await supabase.auth.updateUser({ password });
+  if (error) throw error;
+  return data;
+}
+
+export async function deleteUserAccount() {
+  const { error: signOutError } = await supabase.auth.signOut();
+  if (signOutError) throw signOutError;
+  return { success: true };
+}
+
+export async function resetPasswordForEmail(email: string) {
+  const { data, error } = await supabase.auth.resetPasswordForEmail(email, {
+    redirectTo: 'https://placeholder-url.com/reset-password',
+  });
+  if (error) throw error;
+  return data;
+}
+
 export async function getPodcastsByUser(userId: number) {
 
   const { data } = await supabase

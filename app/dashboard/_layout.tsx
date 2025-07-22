@@ -24,10 +24,29 @@ export default function TabLayout() {
         />
 
         <Tabs.Screen
-          name="settings"
+          name="settings/index"
           options={{
             title: 'Settings',
             tabBarIcon: ({ color }) => <IconSymbol size={28} name="gearshape.fill" color={color} />
+          }}
+        />
+
+        <Tabs.Screen
+          name="settings/edit-profile"
+          options={{
+            href: null
+          }}
+        />
+        <Tabs.Screen
+          name="settings/edit-interests"
+          options={{
+            href: null
+          }}
+        />
+        <Tabs.Screen
+          name="settings/edit-delivery-day"
+          options={{
+            href: null
           }}
         />
       </Tabs>

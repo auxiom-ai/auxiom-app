@@ -447,7 +447,7 @@ const styles = StyleSheet.create({
   },
   articleCard: {
     marginVertical: 12,
-    backgroundColor: "#E5E7EB",
+    backgroundColor: "#d0cec2ff",
     borderRadius: 16,
     overflow: "hidden",
     elevation: 2,
