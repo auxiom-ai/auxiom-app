@@ -2,7 +2,7 @@ import { supabase } from './supabase';
 
 export interface AuthResult {
   success: boolean;
-  user?: any;
+  data?: any;
   error?: string;
 }
 
@@ -40,12 +40,13 @@ export async function handleSignIn(email: string, password: string): Promise<Aut
       return { success: false, error: error.message };
     }
 
-    return { success: true, user: data.user };
+    return { success: true, data: data };
   } catch (error) {
     return { success: false, error: 'An unexpected error occurred' };
   }
 }
 
+// TODO: Add zod validation for email and password
 // Handle sign up with email verification
 export async function handleSignUp(email: string, password: string): Promise<AuthResult> {
   try {
@@ -58,7 +59,7 @@ export async function handleSignUp(email: string, password: string): Promise<Aut
       return { success: false, error: error.message };
     }
 
-    return { success: true, user: data.user };
+    return { success: true, data: data };
   } catch (error) {
     return { success: false, error: 'An unexpected error occurred' };
   }
@@ -85,7 +86,7 @@ export async function syncUserProfile(authUser: any): Promise<UserData | null> {
         .from('users')
         .insert({
           email: authUser.email,
-          password_hash: 'managed_by_supabase_auth', // Placeholder since schema requires it
+          password_hash: 'managed_by_supabase_auth', // Placeholder since legacy schema requires it
           name: null,
           delivery_day: 1,
           delivered: new Date(0),
@@ -139,45 +140,6 @@ export async function syncUserProfile(authUser: any): Promise<UserData | null> {
     console.error('Error in syncUserProfile:', error);
     return null;
   }
-}
-
-// Check onboarding completion by auth_user_id
-export async function checkOnboardingStatus(authUserId: string): Promise<boolean> {
-  try {
-    const { data, error } = await supabase
-      .from('users')
-      .select('name, occupation, industry, keywords, delivery_day, active')
-      .eq('auth_user_id', authUserId)
-      .single();
-
-    if (error) {
-      console.error('Error checking onboarding status:', error);
-      return false;
-    }
-
-    return !!(data?.name && 
-              data?.occupation && 
-              data?.industry && 
-              Array.isArray(data?.keywords) && 
-              data?.keywords.length >= 5 &&
-              data?.delivery_day !== null &&
-              data?.delivery_day !== undefined &&
-              data?.active === true);
-  } catch (error) {
-    console.error('Error in checkOnboardingStatus:', error);
-    return false;
-  }
-}
-
-// Check if user profile has all required fields (but not necessarily active)
-export function checkOnboardingComplete(profile: UserData): boolean {
-  return !!(profile.name && 
-            profile.occupation && 
-            profile.industry && 
-            Array.isArray(profile.keywords) && 
-            profile.keywords.length >= 5 &&
-            profile.delivery_day !== null &&
-            profile.delivery_day !== undefined);
 }
 
 // Activate user after completing onboarding
@@ -244,35 +206,5 @@ export async function updatePassword(newPassword: string): Promise<{ success: bo
     return { success: true };
   } catch (error) {
     return { success: false, error: 'Failed to update password' };
-  }
-}
-
-// Get current user session
-export async function getCurrentSession() {
-  try {
-    const { data: { session }, error } = await supabase.auth.getSession();
-    if (error) {
-      console.error('Session error:', error);
-      return null;
-    }
-    return session;
-  } catch (error) {
-    console.error('Error getting session:', error);
-    return null;
-  }
-}
-
-// Refresh session
-export async function refreshSession() {
-  try {
-    const { data, error } = await supabase.auth.refreshSession();
-    if (error) {
-      console.error('Refresh session error:', error);
-      return null;
-    }
-    return data.session;
-  } catch (error) {
-    console.error('Error refreshing session:', error);
-    return null;
   }
 }

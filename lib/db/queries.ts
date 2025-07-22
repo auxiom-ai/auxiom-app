@@ -46,33 +46,58 @@ export async function updateUser(userId: number, data: any) {
   return updatedUser;
 }
 
-export async function addEmailToNewsletter(email: string) {
-  const { data, error } = await supabase
-    .from('emails')
-    .insert({ email })
-    .select()
-    .single();
-    
-  if (error) throw error;
-  return data;
-}
+export async function getPodcastsByUser(userId: number) {
 
-export async function updateListened(podcastId: number) {
-  const { data, error } = await supabase
+  const { data } = await supabase
     .from('podcasts')
-    .update({ listened: true })
-    .eq('id', podcastId)
-    .select()
-    .single();
-    
-  if (error) throw error;
-  return data;
+    .select('*')
+    .eq('user_id', userId);
+
+  return data || [];
 }
 
 export async function getArticles() {
   const { data, error } = await supabase
     .from('articles')
     .select('*');
+
+  if (error) throw error;
+  return data;
+}
+
+// Update user's listened status for a podcast
+export async function updatePodcastListenedStatus(podcastId: number) {
+  const { data, error } = await supabase
+    .from('podcasts')
+    .update({ listened: true })
+    .eq('id', podcastId)
+    .select()
+    .single();
+
+  if (error) {
+    return { error: 'Podcast not found.' };
+  } else {
+    return { success: 'Podcast marked as listened.' };
+  }
+}
+
+export async function getSimilarArticles(currentEmbedding: number[]) {
+  const { data, error } = await supabase
+    .rpc('sim_search', {
+      query_embedding: currentEmbedding,
+      match_count: 2,
+      offset_count: 1,
+    });
+
+  if (error) throw error;
+  return data;
+}
+
+export async function getRecommendedArticles(userEmbedding: number[]) {
+  const { data, error } = await supabase
+    .rpc('sim_search', {
+      query_embedding: userEmbedding,
+    });
 
   if (error) throw error;
   return data;

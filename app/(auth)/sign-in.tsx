@@ -2,6 +2,7 @@ import { supabase } from '@/lib/supabase';
 import { useRouter } from 'expo-router';
 import { useState } from 'react';
 import { Image, StyleSheet, Text, TextInput, TouchableOpacity, View } from 'react-native';
+import { handleSignIn } from '@/lib/auth-utils';
 
 export default function SignInScreen() {
   const [email, setEmail] = useState('');
@@ -9,11 +10,11 @@ export default function SignInScreen() {
   const [error, setError] = useState('');
   const router = useRouter();
 
-  const handleSignIn = async () => {
+  const OnSignIn = async () => {
     setError('');
-    const { data, error } = await supabase.auth.signInWithPassword({ email, password });
-    if (error) {
-      setError(error.message);
+    const { success, data, error } = await handleSignIn(email, password);
+    if (!success) {
+      setError(error || 'Failed to sign in');
     } else {
       // Check if email is verified
       if (data.user && !data.user.email_confirmed_at) {
@@ -55,7 +56,7 @@ export default function SignInScreen() {
         secureTextEntry
       />
       {error ? <Text style={styles.error}>{error}</Text> : null}
-      <TouchableOpacity style={styles.button} onPress={handleSignIn}>
+      <TouchableOpacity style={styles.button} onPress={OnSignIn}>
         <Text style={styles.buttonText}>Sign in</Text>
       </TouchableOpacity>
       <Text style={styles.linkText}>New to our platform?</Text>
