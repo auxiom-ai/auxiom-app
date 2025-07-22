@@ -46,6 +46,15 @@ export default function ArticleDetailScreen() {
     router.back()
   }
 
+  const formatDate = (dateString: string) => {
+    const date = new Date(dateString)
+    return date.toLocaleDateString("en-US", {
+      month: "short",
+      day: "numeric",
+      year: "numeric",
+    })
+  }
+
   return (
     <SafeAreaView style={styles.safeArea}>
       <ThemedView style={styles.container}>
@@ -63,91 +72,83 @@ export default function ArticleDetailScreen() {
         <ScrollView style={styles.scrollView} showsVerticalScrollIndicator={false}>
           {/* Article Header */}
           <View style={styles.articleHeader}>
-            <ThemedText style={styles.articleCount}>
-              {article.articleCount} ARTICLES • {article.time}
+            {article.featured && (
+              <View style={styles.featuredBadge}>
+                <ThemedText style={styles.featuredBadgeText}>Featured</ThemedText>
+              </View>
+            )}
+            <ThemedText style={styles.metaInfo}>
+              {formatDate(article.date)} • {article.duration} min read
             </ThemedText>
-            <ThemedText style={styles.headline}>{article.headline}</ThemedText>
-            <ThemedText style={styles.description}>{article.description}</ThemedText>
+            <ThemedText style={styles.headline}>{article.title}</ThemedText>
+            <ThemedText style={styles.description}>{article.summary}</ThemedText>
           </View>
 
-          {/* Full Story Section */}
+          {/* Topics Section */}
           <View style={styles.section}>
             <View style={styles.sectionHeader}>
-              <Ionicons name="newspaper" size={20} color="#1F2937" />
-              <ThemedText style={styles.sectionTitle}>Full Story</ThemedText>
+              <Ionicons name="pricetag" size={20} color="#1F2937" />
+              <ThemedText style={styles.sectionTitle}>Topics</ThemedText>
             </View>
-            <View style={styles.storyContent}>
-              <ThemedText style={styles.storyText}>{article.fullStory}</ThemedText>
-            </View>
-          </View>
-
-          {/* Government Documents Section - Horizontal Scrolling */}
-          <View style={styles.section}>
-            <View style={styles.sectionHeader}>
-              <Ionicons name="document-text" size={20} color="#1F2937" />
-              <ThemedText style={styles.sectionTitle}>Government Documents</ThemedText>
-            </View>
-            <ScrollView
-              horizontal
-              showsHorizontalScrollIndicator={false}
-              contentContainerStyle={styles.horizontalScrollContent}
-              decelerationRate="fast"
-              snapToInterval={cardWidth + 16}
-              snapToAlignment="center"
-            >
-              {article.governmentDocuments.map((doc: any, index: number) => (
-                <TouchableOpacity
-                  key={index}
-                  style={styles.documentCard}
-                  onPress={() => handleOpenLink(doc.url)}
-                  activeOpacity={0.8}
-                >
-                  <View style={styles.documentContent}>
-                    <ThemedText style={styles.documentTitle}>{doc.title}</ThemedText>
-                    <View style={styles.documentFooter}>
-                      <ThemedText style={styles.viewText}>View Document</ThemedText>
-                      <Ionicons name="open-outline" size={16} color="#FFFFFF" />
-                    </View>
-                  </View>
-                </TouchableOpacity>
+            <View style={styles.tagsContainer}>
+              {article.topics.map((topic: string, index: number) => (
+                <View key={index} style={styles.topicTag}>
+                  <ThemedText style={styles.topicTagText}>{topic}</ThemedText>
+                </View>
               ))}
-            </ScrollView>
+            </View>
           </View>
 
-          {/* Related News Section - Horizontal Scrolling */}
+          {/* Tags Section */}
+          <View style={styles.section}>
+            <View style={styles.sectionHeader}>
+              <Ionicons name="bookmark" size={20} color="#1F2937" />
+              <ThemedText style={styles.sectionTitle}>Tags</ThemedText>
+            </View>
+            <View style={styles.tagsContainer}>
+              {article.tags.map((tag: string, index: number) => (
+                <View key={index} style={styles.regularTag}>
+                  <ThemedText style={styles.regularTagText}>{tag}</ThemedText>
+                </View>
+              ))}
+            </View>
+          </View>
+
+          {/* Authors Section */}
+          <View style={styles.section}>
+            <View style={styles.sectionHeader}>
+              <Ionicons name="people" size={20} color="#1F2937" />
+              <ThemedText style={styles.sectionTitle}>Authors & Key Figures</ThemedText>
+            </View>
+            <View style={styles.authorsContent}>
+              {article.people.map((person: string, index: number) => (
+                <View key={index} style={styles.authorCard}>
+                  <View style={styles.authorAvatar}>
+                    <ThemedText style={styles.authorInitials}>
+                      {person.split(" ").map((n: string) => n[0]).join("")}
+                    </ThemedText>
+                  </View>
+                  <ThemedText style={styles.authorName}>{person}</ThemedText>
+                </View>
+              ))}
+            </View>
+          </View>
+
+          {/* Article Analysis Section */}
           <View style={[styles.section, styles.lastSection]}>
             <View style={styles.sectionHeader}>
-              <Ionicons name="library" size={20} color="#1F2937" />
-              <ThemedText style={styles.sectionTitle}>Related News</ThemedText>
+              <Ionicons name="analytics" size={20} color="#1F2937" />
+              <ThemedText style={styles.sectionTitle}>Article Analysis</ThemedText>
             </View>
-            <ScrollView
-              horizontal
-              showsHorizontalScrollIndicator={false}
-              contentContainerStyle={styles.horizontalScrollContent}
-              decelerationRate="fast"
-              snapToInterval={cardWidth + 16}
-              snapToAlignment="center"
-            >
-              {article.newsArticles.map((newsItem: any, index: number) => (
-                <TouchableOpacity
-                  key={index}
-                  style={styles.newsCard}
-                  onPress={() => handleOpenLink(newsItem.url)}
-                  activeOpacity={0.8}
-                >
-                  <View style={styles.newsContent}>
-                    <ThemedText style={styles.newsTitle}>{newsItem.title}</ThemedText>
-                    <View style={styles.newsFooter}>
-                      <ThemedText style={styles.newsSource}>{newsItem.source}</ThemedText>
-                      <View style={styles.readArticleContainer}>
-                        <ThemedText style={styles.readArticleText}>Read article</ThemedText>
-                        <Ionicons name="arrow-forward" size={16} color="#FFFFFF" style={styles.readIcon} />
-                      </View>
-                    </View>
-                  </View>
-                </TouchableOpacity>
-              ))}
-            </ScrollView>
+            <View style={styles.storyContent}>
+              <ThemedText style={styles.storyText}>
+                This article covers key developments in {article.topics.join(", ").toLowerCase()}, featuring insights from {article.people.join(", ")}. 
+                {"\n\n"}
+                The analysis focuses on {article.tags.slice(0, 3).join(", ").toLowerCase()} and provides a comprehensive overview of the current situation and its potential implications.
+                {"\n\n"}
+                Key themes include policy implications, stakeholder perspectives, and potential future developments in this area.
+              </ThemedText>
+            </View>
           </View>
         </ScrollView>
       </ThemedView>
@@ -344,5 +345,89 @@ const styles = StyleSheet.create({
     color: "#1F2937",
     textAlign: "center",
     marginTop: 50,
+  },
+  featuredBadge: {
+    alignSelf: "flex-start",
+    backgroundColor: "#3B82F6",
+    paddingHorizontal: 8,
+    paddingVertical: 4,
+    borderRadius: 12,
+    marginBottom: 16,
+  },
+  featuredBadgeText: {
+    color: "#FFFFFF",
+    fontSize: 12,
+    fontWeight: "600",
+  },
+  metaInfo: {
+    color: "#6B7280",
+    fontSize: 14,
+    fontWeight: "500",
+    marginBottom: 16,
+  },
+  tagsContainer: {
+    flexDirection: "row",
+    flexWrap: "wrap",
+  },
+  topicTag: {
+    backgroundColor: "#DBEAFE",
+    borderColor: "#93C5FD",
+    borderWidth: 1,
+    paddingHorizontal: 12,
+    paddingVertical: 6,
+    borderRadius: 16,
+    marginRight: 8,
+    marginBottom: 8,
+  },
+  topicTagText: {
+    color: "#1E40AF",
+    fontSize: 12,
+    fontWeight: "600",
+  },
+  regularTag: {
+    backgroundColor: "#F9FAFB",
+    borderColor: "#E5E7EB",
+    borderWidth: 1,
+    paddingHorizontal: 12,
+    paddingVertical: 6,
+    borderRadius: 16,
+    marginRight: 8,
+    marginBottom: 8,
+  },
+  regularTagText: {
+    color: "#6B7280",
+    fontSize: 12,
+    fontWeight: "500",
+  },
+  authorsContent: {
+    flexDirection: "row",
+    flexWrap: "wrap",
+  },
+  authorCard: {
+    alignItems: "center",
+    marginRight: 16,
+    marginBottom: 16,
+    width: 80,
+  },
+  authorAvatar: {
+    width: 56,
+    height: 56,
+    borderRadius: 28,
+    backgroundColor: "#3B82F6",
+    alignItems: "center",
+    justifyContent: "center",
+    marginBottom: 8,
+  },
+  authorInitials: {
+    color: "#FFFFFF",
+    fontSize: 18,
+    fontWeight: "600",
+  },
+  authorName: {
+    color: "#374151",
+    fontSize: 12,
+    fontWeight: "500",
+    textAlign: "center",
+    lineHeight: 16,
   },
 })

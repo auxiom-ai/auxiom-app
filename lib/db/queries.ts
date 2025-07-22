@@ -68,3 +68,12 @@ export async function updateListened(podcastId: number) {
   if (error) throw error;
   return data;
 }
+
+export async function getArticles() {
+  const { data, error } = await supabase
+    .from('articles')
+    .select('*');
+
+  if (error) throw error;
+  return data;
+}

@@ -1,133 +1,44 @@
 import { ThemedText } from "@/components/ThemedText"
 import { ThemedView } from "@/components/ThemedView"
 import { router } from "expo-router"
-import { use, useEffect, useState } from "react"
-import { Image, SafeAreaView, ScrollView, StatusBar, StyleSheet, TouchableOpacity, View } from "react-native"
-import { getUser } from "@/lib/db/queries"
-
-// Sample data for the feed
-const feedData = [
-  {
-    id: 1,
-    headline: "US-China Trade War Escalation and Tariff Adjustments",
-    description:
-      "US-China trade war escalates! Tariffs on Chinese low-value imports jump from 34% to 84%, effective April 9, 2025, in response to China's retaliation.",
-    time: "36M AGO",
-    articleCount: 5,
-    fullStory:
-      "The escalating trade tensions between the United States and China have reached a new peak with the implementation of significantly higher tariffs on Chinese imports. This move represents a 50 percentage point increase from the previous 34% rate, affecting a wide range of low-value consumer goods. The decision comes as a direct response to China's retaliatory measures implemented earlier this year. Economic analysts predict this will lead to higher consumer prices across multiple sectors, increased business operational costs, and potential supply chain disruptions. The tit-for-tat nature of these trade policies suggests further escalation may be on the horizon, with both nations showing little sign of backing down from their respective positions.",
-    governmentDocuments: [
-      {
-        title:
-          "Amendment to Reciprocal Tariffs and Updated Duties as Applied to Low-Value Imports From the People's Republic of China",
-        url: "#",
-      },
-      {
-        title: "Modifying Reciprocal Tariff Rates To Reflect Trading Partner Retaliation and Alignment",
-        url: "#",
-      },
-    ],
-    newsArticles: [
-      {
-        title: "Trump's China tariff shocks US importers. One CEO calls it 'end of the world'",
-        source: "AP News",
-        url: "#",
-      },
-      {
-        title: "China hits back at US and will raise tariffs on American goods",
-        source: "AP News",
-        url: "#",
-      },
-      {
-        title: "Trump trade war escalates as China raises retaliatory duties",
-        source: "NBC News",
-        url: "#",
-      },
-    ],
-  },
-  {
-    id: 2,
-    headline: "Federal Reserve Interest Rate Decision",
-    description:
-      "The Federal Reserve announces a 0.25% interest rate cut, marking the third consecutive reduction this year.",
-    time: "2H AGO",
-    articleCount: 7,
-    fullStory:
-      "In a closely watched decision, the Federal Reserve has announced a quarter-point reduction in the federal funds rate, bringing it to its lowest level since early 2023. This marks the third consecutive rate cut this year as the central bank attempts to stimulate economic growth amid concerns about slowing inflation and employment rates. Fed Chair Jerome Powell cited global economic uncertainties and domestic market volatility as key factors in the decision. The move is expected to lower borrowing costs for consumers and businesses, potentially boosting spending and investment. However, critics argue that the aggressive monetary policy could lead to asset bubbles and increased financial risk-taking.",
-    governmentDocuments: [
-      {
-        title: "Federal Open Market Committee Meeting Minutes",
-        url: "#",
-      },
-      {
-        title: "Monetary Policy Implementation Guidelines",
-        url: "#",
-      },
-    ],
-    newsArticles: [
-      {
-        title: "Fed cuts rates again as inflation concerns mount",
-        source: "Reuters",
-        url: "#",
-      },
-      {
-        title: "Interest rate decision impacts mortgage markets",
-        source: "Wall Street Journal",
-        url: "#",
-      },
-      {
-        title: "Economic outlook remains uncertain after Fed decision",
-        source: "CNN Business",
-        url: "#",
-      },
-    ],
-  },
-  {
-    id: 3,
-    headline: "Climate Policy and Carbon Emission Standards",
-    description:
-      "New federal regulations set stricter carbon emission standards for manufacturing industries. Companies have 18 months to comply.",
-    time: "1D AGO",
-    articleCount: 4,
-    fullStory:
-      "The Environmental Protection Agency has unveiled comprehensive new regulations targeting carbon emissions from manufacturing sectors, representing the most significant environmental policy shift in over a decade. The new standards require a 40% reduction in carbon emissions by 2027, with interim targets beginning in 2026. Industries affected include steel production, chemical manufacturing, and automotive assembly. Companies that fail to meet the new standards face substantial penalties, including potential facility shutdowns. Environmental groups have praised the move as essential for meeting climate goals, while industry representatives warn of potential job losses and increased production costs that could be passed on to consumers.",
-    governmentDocuments: [
-      {
-        title: "Updated Carbon Emission Standards for Industrial Sectors",
-        url: "#",
-      },
-      {
-        title: "Environmental Compliance Framework 2025",
-        url: "#",
-      },
-    ],
-    newsArticles: [
-      {
-        title: "New climate rules could reshape manufacturing",
-        source: "Bloomberg",
-        url: "#",
-      },
-      {
-        title: "Industries prepare for stricter emission standards",
-        source: "Financial Times",
-        url: "#",
-      },
-      {
-        title: "Environmental groups praise new carbon regulations",
-        source: "The Guardian",
-        url: "#",
-      },
-    ],
-  },
-]
+import { useEffect, useState } from "react"
+import {
+  Image,
+  SafeAreaView,
+  ScrollView,
+  StatusBar,
+  StyleSheet,
+  TouchableOpacity,
+  View,
+  TextInput,
+} from "react-native"
+import { getUser, getArticles } from "@/lib/db/queries"
+// Types for articles
+export interface Article {
+  id: number
+  title: string
+  summary: string
+  people: string[]
+  topics: string[]
+  tags: string[]
+  date: string
+  duration: number
+  featured: boolean
+}
 
 export default function FeedScreen() {
   const [userName, setUserName] = useState<string>("")
   const [user, setUser] = useState<any>(null)
   const [loading, setLoading] = useState(true)
+  const [articles, setArticles] = useState<Article[]>([])
+  const [searchQuery, setSearchQuery] = useState("")
+  const [selectedTopics, setSelectedTopics] = useState<string[]>([])
+  const [filteredArticles, setFilteredArticles] = useState<Article[]>([])
+  const [currentPage, setCurrentPage] = useState(1)
+  const ITEMS_PER_PAGE = 10
 
   useEffect(() => {
-    const fetchUser = async () => {
+    const fetchData = async () => {
       try {
         setLoading(true)
         const userData = await getUser()
@@ -139,30 +50,88 @@ export default function FeedScreen() {
         
         setUser(userData)
         setUserName(userData.name)
-
+        
         if (!userData.active) {
           if (!userData.occupation) {
             router.replace("/onboarding/occupation")
-          }
-          else if (!userData.interests) {
+          } else if (!userData.interests) {
             router.replace("/onboarding/interests")
           } else {
             router.replace("/onboarding/day")
           }
         }
+        
+        // Fetch articles
+        const articlesData = await getArticles()
+        setArticles(articlesData as Article[])
+        setFilteredArticles(articlesData as Article[])
       } catch (error) {
-        console.error("Error fetching user:", error)
+        console.error("Error fetching data:", error)
         router.replace("/sign-in")
       } finally {
         setLoading(false)
       }
     }
 
-    fetchUser()
+    fetchData()
   }, [])
 
-  const handleCardPress = (article: (typeof feedData)[0]) => {
-    // Navigate to article detail page with article data
+  // Get all unique topics from articles for filtering
+  const getAllTopics = (articles: Article[]) => {
+    const allTopics = articles.flatMap(article => article.topics)
+    return ["All", ...Array.from(new Set(allTopics)).sort()]
+  }
+
+  const topics = getAllTopics(articles)
+
+  const handleSearch = (query: string) => {
+    setSearchQuery(query)
+    filterArticles(query, selectedTopics)
+  }
+
+  const handleTopicFilter = (topic: string) => {
+    let newSelectedTopics: string[]
+    
+    if (topic === "All") {
+      newSelectedTopics = []
+    } else {
+      const isSelected = selectedTopics.includes(topic)
+      if (isSelected) {
+        newSelectedTopics = selectedTopics.filter(t => t !== topic)
+      } else {
+        newSelectedTopics = [...selectedTopics, topic]
+      }
+    }
+    
+    setSelectedTopics(newSelectedTopics)
+    filterArticles(searchQuery, newSelectedTopics)
+  }
+
+  const filterArticles = (query: string, selectedTopics: string[]) => {
+    let filtered = articles
+    
+    if (selectedTopics.length > 0) {
+      filtered = filtered.filter((article) =>
+        selectedTopics.some(topic => article.topics.includes(topic))
+      )
+    }
+    
+    if (query) {
+      filtered = filtered.filter(
+        (article) =>
+          article.title.toLowerCase().includes(query.toLowerCase()) ||
+          article.summary.toLowerCase().includes(query.toLowerCase()) ||
+          article.people.some(person => person.toLowerCase().includes(query.toLowerCase())) ||
+          article.topics.some(topic => topic.toLowerCase().includes(query.toLowerCase())) ||
+          article.tags.some(tag => tag.toLowerCase().includes(query.toLowerCase()))
+      )
+    }
+    
+    setFilteredArticles(filtered)
+    setCurrentPage(1) // Reset to first page when filtering
+  }
+
+  const handleCardPress = (article: Article) => {
     router.push({
       pathname: "/article-detail",
       params: {
@@ -171,41 +140,191 @@ export default function FeedScreen() {
     })
   }
 
-  if (loading || !user) return (<ThemedText>Loading...</ThemedText>);
+  const formatDate = (dateString: string) => {
+    const date = new Date(dateString)
+    return date.toLocaleDateString("en-US", {
+      month: "short",
+      day: "numeric",
+      year: "numeric",
+    })
+  }
+
+  // Calculate pagination
+  const totalPages = Math.ceil(filteredArticles.length / ITEMS_PER_PAGE)
+  const startIndex = (currentPage - 1) * ITEMS_PER_PAGE
+  const endIndex = startIndex + ITEMS_PER_PAGE
+  const paginatedArticles = filteredArticles.slice(startIndex, endIndex)
+
+  if (loading || !user) {
+    return <ThemedText>Loading...</ThemedText>
+  }
 
   return (
     <SafeAreaView style={styles.safeArea}>
       <ThemedView style={styles.container}>
         <StatusBar barStyle="dark-content" backgroundColor="#FAF8EC" />
-
+        
         {/* Header */}
         <View style={styles.header}>
           <View style={styles.logoContainer}>
             <View style={styles.brainIcon}>
-              <Image source={require("@/assets/auxiom-logo.png")} style={styles.logoImage} resizeMode="contain" />
+              <Image 
+                source={require("@/assets/auxiom-logo.png")} 
+                style={styles.logoImage} 
+                resizeMode="contain" 
+              />
             </View>
-            <ThemedText style={styles.logoText}>Hello, {userName || "User"}</ThemedText>
+            <ThemedText style={styles.logoText}>
+              {userName ? `${userName.split(" ")[0]}'s Feed` : "Your Feed"}
+            </ThemedText>
           </View>
         </View>
 
-        {/* Feed Content */}
-        <ScrollView style={styles.scrollView} showsVerticalScrollIndicator={false}>
-          {feedData.map((item) => (
-            <TouchableOpacity
-              key={item.id}
-              style={styles.articleCard}
-              onPress={() => handleCardPress(item)}
-              activeOpacity={0.8}
-            >
-              <View style={styles.articleHeader}>
-                <ThemedText style={styles.articleCount}>
-                  {item.articleCount} ARTICLES • {item.time}
+        {/* Search Bar */}
+        <View style={styles.searchContainer}>
+          <TextInput
+            style={styles.searchInput}
+            placeholder="Search articles, authors, or topics..."
+            value={searchQuery}
+            onChangeText={handleSearch}
+          />
+        </View>
+
+        {/* Topic Filter */}
+        <ScrollView 
+          horizontal 
+          showsHorizontalScrollIndicator={false}
+          style={styles.topicContainer}
+          contentContainerStyle={styles.topicContentContainer}
+        >
+          {topics.map((topic) => {
+            const isSelected = topic === "All" ? selectedTopics.length === 0 : selectedTopics.includes(topic)
+            return (
+              <TouchableOpacity
+                key={topic}
+                style={[styles.topicButton, isSelected && styles.selectedTopicButton]}
+                onPress={() => handleTopicFilter(topic)}
+              >
+                <ThemedText style={[styles.topicButtonText, isSelected && styles.selectedTopicButtonText]}>
+                  {topic}
                 </ThemedText>
-                <ThemedText style={styles.headline}>{item.headline}</ThemedText>
-                <ThemedText style={styles.description}>{item.description}</ThemedText>
-              </View>
-            </TouchableOpacity>
-          ))}
+              </TouchableOpacity>
+            )
+          })}
+        </ScrollView>
+
+        {/* Results Info */}
+        <View style={styles.resultsInfo}>
+          <ThemedText style={styles.resultsText}>
+            {filteredArticles.length > 0 ? (
+              `Showing ${startIndex + 1}-${Math.min(endIndex, filteredArticles.length)} of ${filteredArticles.length} ${filteredArticles.length === 1 ? "article" : "articles"}`
+            ) : (
+              "0 articles"
+            )}
+            {selectedTopics.length > 0 && ` in ${selectedTopics.join(", ")}`}
+            {searchQuery && ` matching "${searchQuery}"`}
+          </ThemedText>
+        </View>
+
+        {/* Articles Feed */}
+        <ScrollView style={styles.scrollView} showsVerticalScrollIndicator={false}>
+          {paginatedArticles.length === 0 ? (
+            <View style={styles.noResultsContainer}>
+              <ThemedText style={styles.noResultsTitle}>No articles found</ThemedText>
+              <ThemedText style={styles.noResultsText}>
+                Try adjusting your search terms or filters
+              </ThemedText>
+              <TouchableOpacity
+                style={styles.clearFiltersButton}
+                onPress={() => {
+                  setSearchQuery("")
+                  setSelectedTopics([])
+                  setFilteredArticles(articles)
+                }}
+              >
+                <ThemedText style={styles.clearFiltersButtonText}>Clear Filters</ThemedText>
+              </TouchableOpacity>
+            </View>
+          ) : (
+            paginatedArticles.map((article, index) => (
+              <TouchableOpacity
+                key={article.id}
+                style={[styles.articleCard, article.featured && styles.featuredCard]}
+                onPress={() => handleCardPress(article)}
+                activeOpacity={0.8}
+              >
+                <View style={styles.articleHeader}>
+                  {/* Featured Badge */}
+                  {article.featured && (
+                    <View style={styles.featuredBadge}>
+                      <ThemedText style={styles.featuredBadgeText}>Featured</ThemedText>
+                    </View>
+                  )}
+                  
+                  {/* Title */}
+                  <ThemedText style={[
+                    styles.headline, 
+                    (index === 0 || article.featured) && styles.largerHeadline
+                  ]}>
+                    {article.title}
+                  </ThemedText>
+                  
+                  {/* Summary */}
+                  <ThemedText style={[
+                    styles.description, 
+                    (index === 0 || article.featured) && styles.largerDescription
+                  ]}>
+                    {article.summary}
+                  </ThemedText>
+                  
+                  {/* Topics */}
+                  <View style={styles.tagsContainer}>
+                    {article.topics.slice(0, 3).map((topic, topicIndex) => (
+                      <View key={topicIndex} style={styles.topicTag}>
+                        <ThemedText style={styles.topicTagText}>{topic}</ThemedText>
+                      </View>
+                    ))}
+                    {article.topics.length > 3 && (
+                      <View style={styles.topicTag}>
+                        <ThemedText style={styles.topicTagText}>
+                          +{article.topics.length - 3} more
+                        </ThemedText>
+                      </View>
+                    )}
+                  </View>
+                  
+                  {/* Tags */}
+                  <View style={styles.tagsContainer}>
+                    {article.tags.slice(0, 4).map((tag, tagIndex) => (
+                      <View key={tagIndex} style={styles.regularTag}>
+                        <ThemedText style={styles.regularTagText}>{tag}</ThemedText>
+                      </View>
+                    ))}
+                    {article.tags.length > 4 && (
+                      <View style={styles.regularTag}>
+                        <ThemedText style={styles.regularTagText}>
+                          +{article.tags.length - 4}
+                        </ThemedText>
+                      </View>
+                    )}
+                  </View>
+                  
+                  {/* Article Meta */}
+                  <View style={styles.articleMeta}>
+                    <View style={styles.authorsContainer}>
+                      <ThemedText style={styles.authorsText}>
+                        {article.people.join(", ")}
+                      </ThemedText>
+                    </View>
+                    <View style={styles.metaInfo}>
+                      <ThemedText style={styles.metaText}>{formatDate(article.date)}</ThemedText>
+                      <ThemedText style={styles.metaText}> • {article.duration} min read</ThemedText>
+                    </View>
+                  </View>
+                </View>
+              </TouchableOpacity>
+            ))
+          )}
         </ScrollView>
       </ThemedView>
     </SafeAreaView>
@@ -242,14 +361,96 @@ const styles = StyleSheet.create({
     height: 36,
   },
   logoText: {
-    fontSize: 30, // Increased size
+    fontSize: 30,
     fontWeight: "700",
     color: "#1F2937",
     paddingTop: 10,
   },
+  searchContainer: {
+    paddingHorizontal: 16,
+    paddingVertical: 12,
+  },
+  searchInput: {
+    height: 48,
+    backgroundColor: "#F3F4F6",
+    borderRadius: 12,
+    paddingHorizontal: 16,
+    fontSize: 16,
+    borderWidth: 1,
+    borderColor: "#E5E7EB",
+  },
+  topicContainer: {
+    paddingHorizontal: 16,
+    paddingBottom: 8,
+    maxHeight: 50,
+  },
+  topicContentContainer: {
+    paddingVertical: 4,
+  },
+  topicButton: {
+    backgroundColor: "#F3F4F6",
+    paddingHorizontal: 16,
+    paddingVertical: 6,
+    borderRadius: 20,
+    marginRight: 8,
+    borderWidth: 1,
+    borderColor: "#E5E7EB",
+    alignItems: "center",
+    justifyContent: "center",
+    maxHeight: 38,
+  },
+  selectedTopicButton: {
+    backgroundColor: "#3B82F6",
+    borderColor: "#3B82F6",
+  },
+  topicButtonText: {
+    fontSize: 12,
+    fontWeight: "600",
+    color: "#6B7280",
+  },
+  selectedTopicButtonText: {
+    color: "#FFFFFF",
+  },
+  resultsInfo: {
+    paddingHorizontal: 16,
+    paddingVertical: 8,
+  },
+  resultsText: {
+    fontSize: 12,
+    color: "#6B7280",
+  },
   scrollView: {
     flex: 1,
     paddingHorizontal: 16,
+  },
+  noResultsContainer: {
+    alignItems: "center",
+    justifyContent: "center",
+    paddingVertical: 48,
+  },
+  noResultsTitle: {
+    fontSize: 18,
+    fontWeight: "600",
+    color: "#1F2937",
+    marginBottom: 8,
+  },
+  noResultsText: {
+    fontSize: 14,
+    color: "#6B7280",
+    marginBottom: 16,
+  },
+  clearFiltersButton: {
+    backgroundColor: "#F3F4F6",
+    paddingHorizontal: 16,
+    paddingVertical: 8,
+    borderRadius: 8,
+    borderWidth: 1,
+    borderColor: "#E5E7EB",
+  },
+  clearFiltersButtonText: {
+    fontSize: 14,
+    color: "#374151",
+    fontWeight: "500",
   },
   articleCard: {
     marginVertical: 12,
@@ -265,26 +466,102 @@ const styles = StyleSheet.create({
     shadowOpacity: 0.1,
     shadowRadius: 2,
   },
+  featuredCard: {
+    borderWidth: 2,
+    borderColor: "#3B82F6",
+  },
   articleHeader: {
     padding: 20,
   },
-  articleCount: {
-    color: "#6B7280",
-    fontSize: 12,
-    fontWeight: "600",
+  featuredBadge: {
+    alignSelf: "flex-start",
+    backgroundColor: "#3B82F6",
+    paddingHorizontal: 8,
+    paddingVertical: 4,
+    borderRadius: 12,
     marginBottom: 12,
-    letterSpacing: 0.5,
+  },
+  featuredBadgeText: {
+    color: "#FFFFFF",
+    fontSize: 10,
+    fontWeight: "600",
   },
   headline: {
     color: "#1F2937",
-    fontSize: 24,
+    fontSize: 20,
     fontWeight: "bold",
     marginBottom: 12,
+    lineHeight: 28,
+  },
+  largerHeadline: {
+    fontSize: 24,
     lineHeight: 32,
   },
   description: {
     color: "#4B5563",
+    fontSize: 14,
+    lineHeight: 20,
+    marginBottom: 12,
+  },
+  largerDescription: {
     fontSize: 16,
     lineHeight: 24,
+  },
+  tagsContainer: {
+    flexDirection: "row",
+    flexWrap: "wrap",
+    marginBottom: 8,
+  },
+  topicTag: {
+    backgroundColor: "#DBEAFE",
+    borderColor: "#93C5FD",
+    borderWidth: 1,
+    paddingHorizontal: 8,
+    paddingVertical: 4,
+    borderRadius: 12,
+    marginRight: 6,
+    marginBottom: 6,
+  },
+  topicTagText: {
+    color: "#1E40AF",
+    fontSize: 10,
+    fontWeight: "500",
+  },
+  regularTag: {
+    backgroundColor: "#F9FAFB",
+    paddingHorizontal: 8,
+    paddingVertical: 4,
+    borderRadius: 12,
+    marginRight: 6,
+    marginBottom: 6,
+  },
+  regularTagText: {
+    color: "#6B7280",
+    fontSize: 10,
+  },
+  articleMeta: {
+    flexDirection: "row",
+    justifyContent: "space-between",
+    alignItems: "center",
+    paddingTop: 16,
+    marginTop: 16,
+    borderTopWidth: 1,
+    borderTopColor: "#E5E7EB",
+  },
+  authorsContainer: {
+    flex: 1,
+  },
+  authorsText: {
+    fontSize: 14,
+    fontWeight: "500",
+    color: "#374151",
+  },
+  metaInfo: {
+    flexDirection: "row",
+    alignItems: "center",
+  },
+  metaText: {
+    fontSize: 12,
+    color: "#6B7280",
   },
 })
