@@ -14,7 +14,7 @@ export interface UserData {
   delivery_day: number;
   delivered: Date;
   active: boolean;
-  keywords: any[];
+  keywords: string[];
   role: string;
   occupation?: string;
   industry?: string;

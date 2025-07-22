@@ -26,7 +26,7 @@ export default function SignInScreen() {
         });
       } else {
         // Email verified, proceed to dashboard
-        router.replace('/feed' as any);   // TODO - should check onboarding state and direct accordingly 
+        router.replace('/dashboard/feed' as any);   // TODO - should check onboarding state and direct accordingly 
       }
     }
   };

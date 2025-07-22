@@ -1,8 +1,9 @@
 import { supabase } from '@/lib/supabase';
-import { useRouter } from 'expo-router';
+import { router } from 'expo-router';
 import { useEffect, useState } from 'react';
 import { Alert, ScrollView, StyleSheet, Text, TextInput, TouchableOpacity, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
+import { getUser } from '@/lib/db/queries';
 
 export default function SettingsScreen() {
   const [email, setEmail] = useState('');
@@ -11,13 +12,40 @@ export default function SettingsScreen() {
   const [confirmPassword, setConfirmPassword] = useState('');
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
-  const router = useRouter();
 
   useEffect(() => {
-    supabase.auth.getUser().then(({ data: { user } }) => {
-      setEmail(user?.email ?? '');
-    });
-  }, []);
+      const fetchUser = async () => {
+        try {
+          setLoading(true)
+          const userData = await getUser()
+          
+          if (!userData) {
+            router.replace("/sign-in")
+            return
+          }
+          
+          setEmail(userData.email)
+  
+          if (!userData.active) {
+            if (!userData.occupation) {
+              router.replace("/onboarding/occupation")
+            }
+            else if (!userData.interests) {
+              router.replace("/onboarding/interests")
+            } else {
+              router.replace("/onboarding/day")
+            }
+          }
+        } catch (error) {
+          console.error("Error fetching user:", error)
+          router.replace("/sign-in")
+        } finally {
+          setLoading(false)
+        }
+      }
+  
+      fetchUser()
+    }, [])
 
   const handleUpdateEmail = async () => {
     setLoading(true);

@@ -2,7 +2,6 @@
 
 import { ThemedText } from "@/components/ThemedText"
 import { ThemedView } from "@/components/ThemedView"
-import { useAuth } from "@/lib/auth/AuthProvider"
 import { supabase } from "@/lib/supabase"
 import { router } from "expo-router"
 import { useState } from "react"
@@ -42,7 +41,6 @@ export default function IdentityScreen() {
   const [industry, setIndustry] = useState<string>("")
   const [loading, setLoading] = useState<boolean>(false)
   const [showIndustryModal, setShowIndustryModal] = useState<boolean>(false)
-  const { updateStore } = useAuth();
 
   const handleSubmit = async (): Promise<void> => {
     if (!name.trim()) {

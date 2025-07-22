@@ -1,8 +1,6 @@
 "use client"
 
-import { useAuth } from "@/lib/auth/AuthProvider"
 import { supabase } from "@/lib/supabase"
-import { eOnboardingStateValues, eStorageKey } from "@/lib/utils/storage"
 import { Feather } from "@expo/vector-icons"
 import { useNavigation } from "@react-navigation/native"
 import { router } from "expo-router"
@@ -133,7 +131,6 @@ export default function InterestsScreen() {
   const [selectedSuggestions, setSelectedSuggestions] = useState<Set<string>>(new Set())
   const [isSearching, setIsSearching] = useState(false)
   const inputRef = useRef<any>(null)
-  const { updateStore } = useAuth();
 
   // ---- fuzzy search over ALL_SUBJECT_TERMS -----------------------------
   const fuse = useMemo(

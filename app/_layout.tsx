@@ -4,15 +4,10 @@ import { DarkTheme, DefaultTheme, ThemeProvider } from '@react-navigation/native
 import { useFonts } from 'expo-font';
 import { Stack } from 'expo-router';
 import { StatusBar } from 'expo-status-bar';
-
 import { supabase } from '@/lib/supabase';
 import { Session } from '@supabase/supabase-js';
 import { useEffect, useState } from 'react';
 import 'react-native-reanimated';
-
-import { AuthGate } from '@/lib/auth/AuthGate';
-import { AuthProvider } from '@/lib/auth/AuthProvider';
-
 import { useColorScheme } from '@/hooks/useColorScheme';
 
 export default function RootLayout() {
@@ -40,10 +35,7 @@ export default function RootLayout() {
 
   return (
     <GluestackUIProvider mode="light"><ThemeProvider value={colorScheme === 'dark' ? DarkTheme : DefaultTheme}>
-        <AuthProvider>
-          <AuthGate>
           <Stack>
-            <Stack.Screen name="index" options={{ headerShown: false }} />
             <Stack.Screen name="dashboard" options={{ headerShown: false }} />
             <Stack.Screen name="onboarding" options={{ headerShown: false }} />
             <Stack.Screen name="(auth)/sign-in" options={{ headerShown: false }} />
@@ -54,8 +46,6 @@ export default function RootLayout() {
             <Stack.Screen name="(utils)/article-detail" options={{ headerShown: false }} />
             <Stack.Screen name="+not-found" />
           </Stack>
-          </AuthGate>
-        </AuthProvider>
         <StatusBar style="auto" />
       </ThemeProvider></GluestackUIProvider>
   );
