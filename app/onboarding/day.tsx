@@ -2,9 +2,7 @@
 
 import { ThemedText } from "@/components/ThemedText"
 import { ThemedView } from "@/components/ThemedView"
-import { useAuth } from "@/lib/auth/AuthProvider"
 import { supabase } from "@/lib/supabase"
-import { eOnboardingStateValues, eStorageKey } from "@/lib/utils/storage"
 import { router } from "expo-router"
 import { useState } from "react"
 import {
@@ -29,8 +27,6 @@ const DAY_ABBREVIATIONS = ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"]
 export default function DayScreen() {
   const [selectedDayIndex, setSelectedDayIndex] = useState<number>(6) // Default to Sunday (index 6)
   const [loading, setLoading] = useState<boolean>(false)
-  const { updateStore } = useAuth();
-
   const [fadeAnim] = useState(new Animated.Value(1))
   const [slideAnim] = useState(new Animated.Value(0))
   const [scaleAnim] = useState(new Animated.Value(1))
@@ -101,29 +97,33 @@ export default function DayScreen() {
         return;
       }
 
+      // Update delivery day and activate user in one query
       const { data, error } = await supabase
         .from("users")
         .update({
           delivery_day: selectedDayIndex, // Use the index directly (0-6)
+          active: true, // Activate the user now that onboarding is complete
         })
-        .eq("email", user.email)
+        .eq("auth_user_id", user.id)
         .select()
 
       if (error) {
-        console.error("Error updating day preference:", error)
-        Alert.alert("Error saving day preference", error.message)
-      } else {
-        console.log("Updated day preference:", data)
-        Alert.alert("Success", `Your podcast will be delivered on ${DAYS_OF_WEEK[selectedDayIndex]}s!`)
+        console.error("Error completing onboarding:", error)
+        Alert.alert("Error completing onboarding", error.message)
+        setLoading(false)
+        return
       }
+
+      console.log("Onboarding completed successfully:", data)
+      
+      // Navigate to dashboard after successful completion
+      router.replace("/dashboard/feed" as any)
+
     } catch (err) {
       console.error("Unexpected error in handleSubmit:", err)
       Alert.alert("Error", "An unexpected error occurred.")
-    } finally {
       setLoading(false)
     }
-    await updateStore(eStorageKey.OnboardingState, eOnboardingStateValues.OnboardingCompleted);
-    router.replace("/feed" as any) // Navigate to the feed screen after submission
   }
 
   const getPreviousDay = () => {
@@ -145,7 +145,7 @@ export default function DayScreen() {
         <View style={styles.header}>
           <View style={styles.logoContainer}>
             <View style={styles.brainIcon}>
-              <Image source={require("../../assets/auxiom-logo.png")} style={styles.logoImage} resizeMode="contain" />
+              <Image source={require("@/assets/auxiom-logo.png")} style={styles.logoImage} resizeMode="contain" />
             </View>
             <ThemedText style={styles.logoText}>Onboarding</ThemedText>
           </View>

@@ -11,11 +11,11 @@ import {
   getVerificationStatus,
   subscribeToNewsletter,
   updatePodcastListenedStatus
-} from '../actions';
-import { supabase } from '../db/drizzle';
+} from '@/actions';
+import { supabase } from '@/db/drizzle';
 
 // Mock Supabase client
-jest.mock('../db/drizzle', () => ({
+jest.mock('@/db/drizzle', () => ({
   supabase: {
     auth: {
       getUser: jest.fn()

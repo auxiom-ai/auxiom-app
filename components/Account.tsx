@@ -1,9 +1,9 @@
 import { Button, ButtonText } from "@/components/ui/button";
 import { Input, InputField } from "@/components/ui/input";
+import { supabase } from '@/lib/supabase';
 import { Session } from '@supabase/supabase-js';
 import { useEffect, useState } from 'react';
 import { Alert, StyleSheet, View } from 'react-native';
-import { supabase } from '../lib/supabase';
 
 export default function Account({ session }: { session: Session }) {
   const [loading, setLoading] = useState(true)

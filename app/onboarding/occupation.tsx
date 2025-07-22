@@ -4,7 +4,6 @@ import { ThemedText } from "@/components/ThemedText"
 import { ThemedView } from "@/components/ThemedView"
 import { useAuth } from "@/lib/auth/AuthProvider"
 import { supabase } from "@/lib/supabase"
-import { eOnboardingStateValues, eStorageKey } from "@/lib/utils/storage"
 import { router } from "expo-router"
 import { useState } from "react"
 import {
@@ -76,7 +75,7 @@ export default function IdentityScreen() {
           occupation: occupation,
           industry: industry,
         })
-        .eq("email", user.email)
+        .eq("auth_user_id", user.id)
         .select()
 
       if (error) {
@@ -85,8 +84,7 @@ export default function IdentityScreen() {
       } else {
         console.log("Updated user info:", data)
         // Navigate to the next onboarding screen
-        await updateStore(eStorageKey.OnboardingState, eOnboardingStateValues.PrefInterests);
-        router.push("/interests")
+        router.push("/onboarding/interests")
       }
     } catch (err) {
       console.error("Unexpected error in handleSubmit:", err)
@@ -106,7 +104,7 @@ export default function IdentityScreen() {
         <View style={styles.header}>
           <View style={styles.logoContainer}>
             <View style={styles.brainIcon}>
-              <Image source={require("../../assets/auxiom-logo.png")} style={styles.logoImage} resizeMode="contain" />
+              <Image source={require("@/assets/auxiom-logo.png")} style={styles.logoImage} resizeMode="contain" />
             </View>
             <ThemedText style={styles.logoText}>Onboarding</ThemedText>
           </View>

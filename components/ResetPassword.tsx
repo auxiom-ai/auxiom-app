@@ -1,10 +1,10 @@
 import { Button, ButtonText } from "@/components/ui/button";
 import { Input, InputField } from "@/components/ui/input";
 import { Text } from "@/components/ui/text";
+import { supabase } from '@/lib/supabase';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import React, { useState } from 'react';
 import { Alert, StyleSheet, View } from 'react-native';
-import { supabase } from '../lib/supabase';
 
 export default function ResetPassword() {
   const [newPassword, setNewPassword] = useState('')
