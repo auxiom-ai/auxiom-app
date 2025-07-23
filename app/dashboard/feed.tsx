@@ -384,7 +384,7 @@ const styles = StyleSheet.create({
   logoText: {
     fontSize: 30,
     fontWeight: "700",
-    color: "#0f172a", // Changed to brand color
+    color: "#0f172a",
     paddingTop: 10,
   },
   scrollView: {

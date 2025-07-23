@@ -1,4 +1,4 @@
-import React, { createContext, useContext, useState, useEffect, ReactNode } from 'react'
+import React, { createContext, useContext, useState, useEffect, ReactNode, useRef } from 'react'
 import { getArticles, getRecommendedArticles } from '@/lib/db/queries'
 import { useAuth } from '@/lib/auth-context'
 import { Article } from '@/app/dashboard/feed'
@@ -33,6 +33,7 @@ export function ArticleCacheProvider({ children }: { children: ReactNode }) {
   const [filteredArticles, setFilteredArticles] = useState<Article[]>([])
   const [loading, setLoading] = useState<boolean>(false)
   const [lastFetchTime, setLastFetchTime] = useState<number | null>(null)
+  const isFetchingRef = useRef(false)
   
   const isCacheExpired = () => {
     if (!lastFetchTime) return true
@@ -41,7 +42,15 @@ export function ArticleCacheProvider({ children }: { children: ReactNode }) {
   }
   
   const fetchArticles = async () => {
+    // Prevent concurrent fetch operations
+    if (isFetchingRef.current) {
+      console.log('Fetch already in progress, skipping...')
+      return
+    }
+    
+    isFetchingRef.current = true
     try {
+      console.log('Starting article fetch...')
       setLoading(true)
       let articlesData: Article[] = []
       
@@ -54,17 +63,21 @@ export function ArticleCacheProvider({ children }: { children: ReactNode }) {
       setArticles(articlesData as Article[])
       setFilteredArticles(articlesData as Article[])
       setLastFetchTime(Date.now())
+      console.log('Article fetch completed successfully')
     } catch (error) {
       console.error("Error fetching articles:", error)
     } finally {
       setLoading(false)
+      isFetchingRef.current = false
     }
   }
 
   // Fetch articles when the user changes, when the app loads initially, or when the cache expires
   useEffect(() => {
     // Only fetch if we don't have articles, user has changed, or cache is expired
-    if (articles.length === 0 || !lastFetchTime || isCacheExpired()) {
+    // And we're not already fetching
+    if ((articles.length === 0 || !lastFetchTime || isCacheExpired()) && !isFetchingRef.current) {
+      console.log('Triggering fetch from user change effect')
       fetchArticles()
     }
   }, [user])
@@ -73,7 +86,8 @@ export function ArticleCacheProvider({ children }: { children: ReactNode }) {
   useEffect(() => {
     // Check every minute if the cache should be refreshed when the app is active
     const cacheCheckInterval = setInterval(() => {
-      if (isCacheExpired() && !loading) {
+      if (isCacheExpired() && !loading && !isFetchingRef.current) {
+        console.log('Triggering fetch from interval check')
         fetchArticles()
       }
     }, 60000) // Check every minute

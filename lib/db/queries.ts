@@ -71,6 +71,16 @@ export async function updateUserPassword(password: string) {
 }
 
 export async function deleteUserAccount() {
+  // delete user from database
+  const userData = await getUser();
+  if (!userData) {
+    throw new Error('User not authenticated');
+  }
+  const { error } = await supabase
+    .from('users')
+    .delete()
+    .eq('auth_user_id', userData.auth_user_id);
+
   const { error: signOutError } = await supabase.auth.signOut();
   if (signOutError) throw signOutError;
   return { success: true };
