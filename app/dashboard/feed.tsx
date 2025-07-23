@@ -16,6 +16,7 @@ import {
 } from "react-native"
 import { useArticleCache } from "@/lib/article-cache-context"
 import { useAuth } from "@/lib/auth-context"
+import { FeedSkeleton } from "@/components/feed-skeleton"
 
 const { width: screenWidth } = Dimensions.get('window')
 
@@ -129,15 +130,7 @@ export default function FeedScreen() {
   const paginatedArticles = filteredArticles.slice(startIndex, endIndex)
 
   if (loading || !user || articlesLoading) {
-    return (
-      <SafeAreaView style={styles.safeArea}>
-        <ThemedView style={[styles.container, styles.loadingContainer]}>
-          <View style={styles.loadingSpinner}>
-            <ThemedText style={styles.loadingText}>Loading...</ThemedText>
-          </View>
-        </ThemedView>
-      </SafeAreaView>
-    )
+    return <FeedSkeleton />
   }
 
   return (
