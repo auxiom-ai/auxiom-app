@@ -95,6 +95,7 @@ export async function getPodcastsByUser(userId: number) {
 }
 
 export async function getArticles() {
+  console.log('Fetching articles from database...');
   const { data, error } = await supabase
     .from('articles')
     .select('*');

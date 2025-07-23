@@ -1,18 +1,22 @@
-import { Tabs } from 'expo-router';
-import React from 'react';
-
 import { IconSymbol } from '@/components/ui/IconSymbol';
 import { Colors } from '@/constants/Colors';
 import { useColorScheme } from '@/hooks/useColorScheme';
+import { ArticleCacheProvider } from '@/lib/article-cache-context';
+import { Tabs } from 'expo-router';
+import React from 'react';
 
 export default function TabLayout() {
   const colorScheme = useColorScheme();
 
   return (
+    <ArticleCacheProvider>
       <Tabs
         screenOptions={{
           tabBarActiveTintColor: '#0f172a',
           headerShown: false,
+          tabBarStyle: {
+            backgroundColor: '#FAF8EC'
+          },
         }}>
 
         <Tabs.Screen
@@ -50,5 +54,6 @@ export default function TabLayout() {
           }}
         />
       </Tabs>
+    </ArticleCacheProvider>
   );
 }

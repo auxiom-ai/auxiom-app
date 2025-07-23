@@ -319,7 +319,7 @@ const styles = StyleSheet.create({
     marginBottom: 16,
   },
   interestTag: {
-    backgroundColor: '#4A6FA5',
+    backgroundColor: '#0f172a',
     borderRadius: 20,
     paddingHorizontal: 12,
     paddingVertical: 6,

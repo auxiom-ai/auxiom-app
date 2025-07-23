@@ -657,7 +657,7 @@ const styles = StyleSheet.create({
     borderRadius: 20,
   },
   activeTab: {
-    backgroundColor: "#4A6FA5",
+    backgroundColor: "#0f172a",
   },
   tabText: {
     color: "#333333",
@@ -682,10 +682,10 @@ const styles = StyleSheet.create({
     paddingHorizontal: 12,
   },
   selectedTag: {
-    backgroundColor: "#4A6FA5",
+    backgroundColor: "#0f172a",
   },
   unselectedTag: {
-    backgroundColor: "#FFFFFF",
+    backgroundColor: "#0f172a3e",
     borderWidth: 1,
     borderColor: "#E5E5E5",
   },
@@ -734,7 +734,7 @@ const styles = StyleSheet.create({
   submitButton: {
     borderRadius: 24,
     paddingHorizontal: 16,
-    backgroundColor: "#4A6FA5",
+    backgroundColor: "#0f172a",
     width: "100%",
   },
   buttonLabel: {

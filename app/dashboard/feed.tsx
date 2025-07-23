@@ -12,8 +12,9 @@ import {
   View,
   TextInput,
   Dimensions,
+  RefreshControl,
 } from "react-native"
-import { getArticles, getRecommendedArticles } from "@/lib/db/queries"
+import { useArticleCache } from "@/lib/article-cache-context"
 import { useAuth } from "@/lib/auth-context"
 
 const { width: screenWidth } = Dimensions.get('window')
@@ -35,35 +36,18 @@ export interface Article {
 
 export default function FeedScreen() {
   const { user, loading } = useAuth()
-  const [articles, setArticles] = useState<Article[]>([])
+  const { articles, filteredArticles, setFilteredArticles, loading: articlesLoading, refreshArticles } = useArticleCache()
   const [searchQuery, setSearchQuery] = useState("")
   const [selectedTopics, setSelectedTopics] = useState<string[]>([])
-  const [filteredArticles, setFilteredArticles] = useState<Article[]>([])
   const [currentPage, setCurrentPage] = useState(1)
-  const [articlesLoading, setArticlesLoading] = useState(false)
+  const [refreshing, setRefreshing] = useState(false)
   const ITEMS_PER_PAGE = 10
 
-  useEffect(() => {
-    const fetchArticles = async () => {
-      try {
-        setArticlesLoading(true)
-        let articlesData: Article[] = []
-        if (user && user.embedding) {
-          articlesData = await getRecommendedArticles(user.embedding)
-        } else {
-          articlesData = await getArticles()
-        }
-        setArticles(articlesData as Article[])
-        setFilteredArticles(articlesData as Article[])
-      } catch (error) {
-        console.error("Error fetching articles:", error)
-      } finally {
-        setArticlesLoading(false)
-      }
-    }
-
-    fetchArticles()
-  }, [user])
+  const onRefresh = async () => {
+    setRefreshing(true)
+    await refreshArticles()
+    setRefreshing(false)
+  }
 
   // Get all unique topics from articles for filtering
   const getAllTopics = (articles: Article[]) => {
@@ -178,7 +162,18 @@ export default function FeedScreen() {
         </View>
 
         {/* Articles Feed */}
-        <ScrollView style={styles.scrollView} showsVerticalScrollIndicator={false}>
+        <ScrollView 
+          style={styles.scrollView} 
+          showsVerticalScrollIndicator={false}
+          refreshControl={
+            <RefreshControl
+              refreshing={refreshing}
+              onRefresh={onRefresh}
+              tintColor="#0f172a"
+              colors={["#0f172a"]}
+            />
+          }
+        >
           {/* Search Bar */}
           <View style={styles.searchContainer}>
             <TextInput
@@ -232,13 +227,13 @@ export default function FeedScreen() {
               <ThemedText style={styles.noResultsText}>
                 Try adjusting your search terms or filters
               </ThemedText>
-              <TouchableOpacity
-                style={styles.clearFiltersButton}
-                onPress={() => {
-                  setSearchQuery("")
-                  setSelectedTopics([])
-                  setFilteredArticles(articles)
-                }}
+                <TouchableOpacity
+                  style={styles.clearFiltersButton}
+                  onPress={() => {
+                    setSearchQuery("")
+                    setSelectedTopics([])
+                    setFilteredArticles(articles)
+                  }}
               >
                 <ThemedText style={styles.clearFiltersButtonText}>Clear Filters</ThemedText>
               </TouchableOpacity>

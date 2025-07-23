@@ -14,6 +14,7 @@ import {
   TextInput,
   TouchableOpacity,
   View,
+  SafeAreaView,
 } from "react-native"
 import { Button } from "react-native-paper"
 import { getUser } from "@/lib/db/queries"
@@ -94,7 +95,7 @@ export default function EditProfileScreen() {
   const isFormValid = name.trim() && occupation.trim() && industry
 
   return (
-    <ThemedView style={styles.safeArea}>
+    <SafeAreaView style={styles.safeArea}>
       <StatusBar barStyle="dark-content" backgroundColor="#f8f5e6" />
       <View style={styles.header}>
         <View style={styles.headerContent}>
@@ -196,7 +197,7 @@ export default function EditProfileScreen() {
           </View>
         </TouchableOpacity>
       </Modal>
-    </ThemedView>
+    </SafeAreaView>
   )
 }
 

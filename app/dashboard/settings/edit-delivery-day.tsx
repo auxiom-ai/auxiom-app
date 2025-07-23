@@ -12,7 +12,8 @@ import {
   StatusBar,
   StyleSheet,
   TouchableOpacity,
-  View
+  View,
+  SafeAreaView
 } from "react-native"
 import { Button } from "react-native-paper"
 import { getUser } from "@/lib/db/queries"
@@ -128,7 +129,7 @@ export default function EditDeliveryDayScreen() {
   }
 
   return (
-    <ThemedView style={styles.safeArea}>
+    <SafeAreaView style={styles.safeArea}>
       <StatusBar barStyle="dark-content" backgroundColor="#f8f5e6" />
       <View style={styles.header}>
         <View style={styles.headerContent}>
@@ -195,7 +196,7 @@ export default function EditDeliveryDayScreen() {
           </Button>
         </View>
       </ScrollView>
-    </ThemedView>
+    </SafeAreaView>
   )
 }
 
