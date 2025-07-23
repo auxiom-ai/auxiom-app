@@ -1,5 +1,4 @@
-import { syncUserProfile } from '@/lib/auth-utils';
-import { supabase } from '@/lib/supabase';
+import { syncUserProfile, handleSignUp } from '@/lib/auth-utils';
 import { useRouter } from 'expo-router';
 import { useState } from 'react';
 import { Image, StyleSheet, Text, TextInput, TouchableOpacity, View } from 'react-native';
@@ -11,32 +10,28 @@ export default function SignUpScreen() {
   const [loading, setLoading] = useState(false);
   const router = useRouter();
 
-  const handleSignUp = async () => {
-    if (!email || !password) {
-      setError('Please fill in all fields');
-      return;
-    }
-
-    setError('');
-    const { data, error } = await supabase.auth.signUp({ email, password });
-    if (error) {
-      setError(error.message);
+  const OnSignUp = async () => {
+    setLoading(true);
+    const { success, data, error } = await handleSignUp(email, password);
+    if (!success) {
+      setError(error || 'Failed to create account');
     } else if (data.user) {
-      // Create user profile using the updated schema
-      const userProfile = await syncUserProfile(data.user);
-      
-      if (!userProfile) {
-        console.error('Failed to create user profile');
-        setError('Failed to create user profile');
-      } else {
-        // Check if the user needs email confirmation
-        if (data.user.email_confirmed_at) {
-          router.replace('/onboarding/occupation');
+        // Create user profile using the updated schema
+        const userProfile = await syncUserProfile(data.user);
+        
+        if (!userProfile) {
+          console.error('Failed to create user profile');
+          setError('Failed to create user profile');
         } else {
-          router.replace('/email-confirmation');
+          // Check if the user needs email confirmation
+          if (data.user.email_confirmed_at) {
+            router.replace('/onboarding/occupation');
+          } else {
+            router.replace('/email-confirmation');
+          }
         }
-      }
-  };
+    };
+    setLoading(false);
   }
 
   return (
@@ -67,7 +62,7 @@ export default function SignUpScreen() {
       {error ? <Text style={styles.error}>{error}</Text> : null}
       <TouchableOpacity 
         style={[styles.button, loading && styles.buttonDisabled]} 
-        onPress={handleSignUp}
+        onPress={OnSignUp}
         disabled={loading}
       >
         <Text style={styles.buttonText}>

@@ -4,11 +4,9 @@ import { DarkTheme, DefaultTheme, ThemeProvider } from '@react-navigation/native
 import { useFonts } from 'expo-font';
 import { Stack } from 'expo-router';
 import { StatusBar } from 'expo-status-bar';
-import { supabase } from '@/lib/supabase';
-import { Session } from '@supabase/supabase-js';
-import { useEffect, useState } from 'react';
 import 'react-native-reanimated';
 import { useColorScheme } from '@/hooks/useColorScheme';
+import { AuthProvider } from '@/lib/auth-context';
 
 export default function RootLayout() {
   const colorScheme = useColorScheme();
@@ -16,17 +14,6 @@ export default function RootLayout() {
   const [loaded] = useFonts({
     SpaceMono: require('@/assets/fonts/SpaceMono-Regular.ttf'),
   });
-  const [session, setSession] = useState<Session | null>(null)
-
-  useEffect(() => {
-    supabase.auth.getSession().then(({ data: { session } }) => {
-      setSession(session)
-    })
-
-    supabase.auth.onAuthStateChange((_event, session) => {
-      setSession(session)
-    })
-  }, [])
 
   if (!loaded) {
     // Async font loading only occurs in development.
@@ -34,7 +21,9 @@ export default function RootLayout() {
   }
 
   return (
-    <GluestackUIProvider mode="light"><ThemeProvider value={colorScheme === 'dark' ? DarkTheme : DefaultTheme}>
+    <GluestackUIProvider mode="light">
+      <ThemeProvider value={colorScheme === 'dark' ? DarkTheme : DefaultTheme}>
+        <AuthProvider>
           <Stack>
             <Stack.Screen name="dashboard" options={{ headerShown: false }} />
             <Stack.Screen name="onboarding" options={{ headerShown: false }} />
@@ -46,7 +35,9 @@ export default function RootLayout() {
             <Stack.Screen name="(utils)/article-detail" options={{ headerShown: false }} />
             <Stack.Screen name="+not-found" />
           </Stack>
-        <StatusBar style="auto" />
-      </ThemeProvider></GluestackUIProvider>
+          <StatusBar style="auto" />
+        </AuthProvider>
+      </ThemeProvider>
+    </GluestackUIProvider>
   );
 }

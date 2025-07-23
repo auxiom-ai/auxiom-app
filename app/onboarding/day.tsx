@@ -5,6 +5,7 @@ import { ThemedView } from "@/components/ThemedView"
 import { supabase } from "@/lib/supabase"
 import { router } from "expo-router"
 import { useState } from "react"
+import { useAuth } from "@/lib/auth-context"
 import {
   Alert,
   Animated,
@@ -30,6 +31,7 @@ export default function DayScreen() {
   const [fadeAnim] = useState(new Animated.Value(1))
   const [slideAnim] = useState(new Animated.Value(0))
   const [scaleAnim] = useState(new Animated.Value(1))
+  const { user } = useAuth()
 
   const animateTransition = (direction: "left" | "right") => {
     // Start the slide animation
@@ -88,15 +90,12 @@ export default function DayScreen() {
   const handleSubmit = async (): Promise<void> => {
     setLoading(true)
     try {
-      // Get the current signed-in user
-      const { data: { user }, error: userError } = await supabase.auth.getUser();
-      if (userError) throw userError;
       if (!user) {
-        Alert.alert("Error", "No authenticated user found");
-        setLoading(false);
-        return;
-      }
-
+        Alert.alert("Error", "No authenticated user found")
+        setLoading(false)
+        return
+      };
+      
       // Update delivery day and activate user in one query
       const { data, error } = await supabase
         .from("users")
