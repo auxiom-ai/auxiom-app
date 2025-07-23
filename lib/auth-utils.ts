@@ -6,6 +6,11 @@ export interface AuthResult {
   error?: string;
 }
 
+// OTP sign-in types
+export interface OtpAuthResult extends AuthResult {
+  isNewUser?: boolean;
+}
+
 export interface UserData {
   id: number;
   email: string;
@@ -159,6 +164,49 @@ export async function activateUser(authUserId: string): Promise<{ success: boole
   } catch (error) {
     console.error('Error in activateUser:', error);
     return { success: false, error: 'Failed to activate user' };
+  }
+}
+
+// Send OTP to user's email
+export async function sendOtpToEmail(email: string): Promise<OtpAuthResult> {
+  try {
+    const { data, error } = await supabase.auth.signInWithOtp({
+      email: email.trim(),
+      options: {
+        shouldCreateUser: true,
+      }
+    });
+
+    if (error) {
+      return { success: false, error: error.message };
+    }
+
+    return { 
+      success: true, 
+      data, 
+      isNewUser: data.user === null
+    };
+  } catch (error) {
+    return { success: false, error: 'Failed to send OTP' };
+  }
+}
+
+// Verify OTP
+export async function verifyOtp(email: string, otp: string): Promise<AuthResult> {
+  try {
+    const { data, error } = await supabase.auth.verifyOtp({
+      email: email.trim(),
+      token: otp,
+      type: 'email',
+    });
+
+    if (error) {
+      return { success: false, error: error.message };
+    }
+
+    return { success: true, data };
+  } catch (error) {
+    return { success: false, error: 'Failed to verify OTP' };
   }
 }
 

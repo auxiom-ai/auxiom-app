@@ -1,7 +1,7 @@
 import { supabase } from '@/lib/supabase';
 import { useRouter } from 'expo-router';
 import { useState } from 'react';
-import { Image, StyleSheet, Text, TextInput, TouchableOpacity, View } from 'react-native';
+import { Image, Keyboard, StyleSheet, Text, TextInput, TouchableOpacity, TouchableWithoutFeedback, View } from 'react-native';
 import { handleSignIn } from '@/lib/auth-utils';
 
 export default function SignInScreen() {
@@ -32,8 +32,13 @@ export default function SignInScreen() {
     }
   };
 
+  const dismissKeyboard = () => {
+    Keyboard.dismiss();
+  };
+
   return (
-    <View style={styles.container}>
+    <TouchableWithoutFeedback onPress={dismissKeyboard}>
+      <View style={styles.container}>
       <Image
         source={require('@/assets/auxiom-logo.png')}
         style={{ width: 80, height: 80, marginBottom: 16 }}
@@ -59,6 +64,9 @@ export default function SignInScreen() {
       <TouchableOpacity style={styles.button} onPress={OnSignIn}>
         <Text style={styles.buttonText}>Sign in</Text>
       </TouchableOpacity>
+      <TouchableOpacity style={styles.secondaryButton} onPress={() => router.push('/sign-in-otp' as any)}>
+        <Text style={styles.secondaryButtonText}>Sign in with one-time code</Text>
+      </TouchableOpacity>
       <Text style={styles.linkText}>New to our platform?</Text>
       <TouchableOpacity style={styles.secondaryButton} onPress={() => router.push('/sign-up')}>
         <Text style={styles.secondaryButtonText}>Create an account</Text>
@@ -66,7 +74,8 @@ export default function SignInScreen() {
       <TouchableOpacity onPress={() => router.push('/reset-password')}>
         <Text style={styles.forgotText}>Forgot your password?</Text>
       </TouchableOpacity>
-    </View>
+      </View>
+    </TouchableWithoutFeedback>
   );
 }
 

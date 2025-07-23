@@ -28,6 +28,8 @@ export default function RootLayout() {
             <Stack.Screen name="dashboard" options={{ headerShown: false }} />
             <Stack.Screen name="onboarding" options={{ headerShown: false }} />
             <Stack.Screen name="(auth)/sign-in" options={{ headerShown: false }} />
+            <Stack.Screen name="(auth)/sign-in-otp" options={{ headerShown: false }} />
+            <Stack.Screen name="(auth)/verify-otp" options={{ headerShown: false }} />
             <Stack.Screen name="(auth)/sign-up" options={{ headerShown: false }} />
             <Stack.Screen name="(utils)/reset-password" options={{ headerShown: false }} />
             <Stack.Screen name="(utils)/forgot-password" options={{ headerShown: false }} />

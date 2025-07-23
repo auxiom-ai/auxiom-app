@@ -11,14 +11,11 @@ import {
   TouchableOpacity,
   View,
   TextInput,
-  Dimensions,
   RefreshControl,
 } from "react-native"
 import { useArticleCache } from "@/lib/article-cache-context"
 import { useAuth } from "@/lib/auth-context"
 import { FeedSkeleton } from "@/components/feed-skeleton"
-
-const { width: screenWidth } = Dimensions.get('window')
 
 // Types for articles
 export interface Article {

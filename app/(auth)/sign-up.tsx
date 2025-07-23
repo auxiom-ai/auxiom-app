@@ -1,7 +1,7 @@
 import { syncUserProfile, handleSignUp } from '@/lib/auth-utils';
 import { useRouter } from 'expo-router';
 import { useState } from 'react';
-import { Image, StyleSheet, Text, TextInput, TouchableOpacity, View } from 'react-native';
+import { Image, Keyboard, StyleSheet, Text, TextInput, TouchableOpacity, TouchableWithoutFeedback, View } from 'react-native';
 
 export default function SignUpScreen() {
   const [email, setEmail] = useState('');
@@ -34,8 +34,13 @@ export default function SignUpScreen() {
     setLoading(false);
   }
 
+  const dismissKeyboard = () => {
+    Keyboard.dismiss();
+  };
+
   return (
-    <View style={styles.container}>
+    <TouchableWithoutFeedback onPress={dismissKeyboard}>
+      <View style={styles.container}>
       <Image
         source={require('@/assets/auxiom-logo.png')}
         style={{ width: 80, height: 80, marginBottom: 16 }}
@@ -77,7 +82,8 @@ export default function SignUpScreen() {
       >
         <Text style={styles.secondaryButtonText}>Sign in to existing account</Text>
       </TouchableOpacity>
-    </View>
+      </View>
+    </TouchableWithoutFeedback>
   );
 }
 
