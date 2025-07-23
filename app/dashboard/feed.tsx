@@ -11,9 +11,13 @@ import {
   TouchableOpacity,
   View,
   TextInput,
+  Dimensions,
 } from "react-native"
 import { getArticles, getRecommendedArticles } from "@/lib/db/queries"
 import { useAuth } from "@/lib/auth-context"
+
+const { width: screenWidth } = Dimensions.get('window')
+
 // Types for articles
 export interface Article {
   id: number
@@ -41,10 +45,8 @@ export default function FeedScreen() {
 
   useEffect(() => {
     const fetchArticles = async () => {
-      
       try {
         setArticlesLoading(true)
-        // Fetch articles
         let articlesData: Article[] = []
         if (user && user.embedding) {
           articlesData = await getRecommendedArticles(user.embedding)
@@ -115,7 +117,7 @@ export default function FeedScreen() {
     }
     
     setFilteredArticles(filtered)
-    setCurrentPage(1) // Reset to first page when filtering
+    setCurrentPage(1)
   }
 
   const handleCardPress = (article: Article) => {
@@ -145,8 +147,10 @@ export default function FeedScreen() {
   if (loading || !user || articlesLoading) {
     return (
       <SafeAreaView style={styles.safeArea}>
-        <ThemedView style={[styles.container, { justifyContent: 'center', alignItems: 'center' }]}>
-          <ThemedText>Loading...</ThemedText>
+        <ThemedView style={[styles.container, styles.loadingContainer]}>
+          <View style={styles.loadingSpinner}>
+            <ThemedText style={styles.loadingText}>Loading...</ThemedText>
+          </View>
         </ThemedView>
       </SafeAreaView>
     )
@@ -180,6 +184,7 @@ export default function FeedScreen() {
             <TextInput
               style={styles.searchInput}
               placeholder="Search articles, authors, or topics..."
+              placeholderTextColor="#6B7280"
               value={searchQuery}
               onChangeText={handleSearch}
             />
@@ -250,7 +255,7 @@ export default function FeedScreen() {
                   {/* Featured Badge */}
                   {article.featured && (
                     <View style={styles.featuredBadge}>
-                      <ThemedText style={styles.featuredBadgeText}>Featured</ThemedText>
+                      <ThemedText style={styles.featuredBadgeText}>✨ Featured</ThemedText>
                     </View>
                   )}
                   
@@ -271,36 +276,40 @@ export default function FeedScreen() {
                   </ThemedText>
                   
                   {/* Topics */}
-                  <View style={styles.tagsContainer}>
-                    {article.topics.slice(0, 3).map((topic, topicIndex) => (
-                      <View key={topicIndex} style={styles.topicTag}>
-                        <ThemedText style={styles.topicTagText}>{topic}</ThemedText>
-                      </View>
-                    ))}
-                    {article.topics.length > 3 && (
-                      <View style={styles.topicTag}>
-                        <ThemedText style={styles.topicTagText}>
-                          +{article.topics.length - 3} more
-                        </ThemedText>
-                      </View>
-                    )}
-                  </View>
+                  {article.topics.length > 0 && (
+                    <View style={styles.tagsContainer}>
+                      {article.topics.slice(0, 3).map((topic, topicIndex) => (
+                        <View key={topicIndex} style={styles.topicTag}>
+                          <ThemedText style={styles.topicTagText}>{topic}</ThemedText>
+                        </View>
+                      ))}
+                      {article.topics.length > 3 && (
+                        <View style={styles.topicTag}>
+                          <ThemedText style={styles.topicTagText}>
+                            +{article.topics.length - 3} more
+                          </ThemedText>
+                        </View>
+                      )}
+                    </View>
+                  )}
                   
                   {/* Tags */}
-                  <View style={styles.tagsContainer}>
-                    {article.tags.slice(0, 4).map((tag, tagIndex) => (
-                      <View key={tagIndex} style={styles.regularTag}>
-                        <ThemedText style={styles.regularTagText}>{tag}</ThemedText>
-                      </View>
-                    ))}
-                    {article.tags.length > 4 && (
-                      <View style={styles.regularTag}>
-                        <ThemedText style={styles.regularTagText}>
-                          +{article.tags.length - 4}
-                        </ThemedText>
-                      </View>
-                    )}
-                  </View>
+                  {article.tags.length > 0 && (
+                    <View style={styles.tagsContainer}>
+                      {article.tags.slice(0, 4).map((tag, tagIndex) => (
+                        <View key={tagIndex} style={styles.regularTag}>
+                          <ThemedText style={styles.regularTagText}>{tag}</ThemedText>
+                        </View>
+                      ))}
+                      {article.tags.length > 4 && (
+                        <View style={styles.regularTag}>
+                          <ThemedText style={styles.regularTagText}>
+                            +{article.tags.length - 4}
+                          </ThemedText>
+                        </View>
+                      )}
+                    </View>
+                  )}
                   
                   {/* Article Meta */}
                   <View style={styles.articleMeta}>
@@ -318,6 +327,15 @@ export default function FeedScreen() {
               </TouchableOpacity>
             ))
           )}
+
+          {/* Pagination Info */}
+          {totalPages > 1 && (
+            <View style={styles.paginationContainer}>
+              <ThemedText style={styles.paginationText}>
+                Page {currentPage} of {totalPages}
+              </ThemedText>
+            </View>
+          )}
         </ScrollView>
       </ThemedView>
     </SafeAreaView>
@@ -333,15 +351,30 @@ const styles = StyleSheet.create({
     flex: 1,
     backgroundColor: "#FAF8EC",
   },
+  loadingContainer: {
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  loadingSpinner: {
+    padding: 20,
+    backgroundColor: "#0f172a15",
+    borderRadius: 12,
+  },
+  loadingText: {
+    color: "#0f172a",
+    fontSize: 16,
+    fontWeight: "500",
+  },
   header: {
     paddingHorizontal: 24,
     paddingVertical: 16,
     borderBottomWidth: 1,
-    borderBottomColor: "#E5E7EB",
-    marginTop: 20,
+    borderBottomColor: "#0f172a20",
+    marginTop: 20, // Restored original margin
   },
   logoContainer: {
     flexDirection: "row",
+    alignItems: "center",
   },
   brainIcon: {
     width: 40,
@@ -356,65 +389,64 @@ const styles = StyleSheet.create({
   logoText: {
     fontSize: 30,
     fontWeight: "700",
-    color: "#1F2937",
+    color: "#0f172a", // Changed to brand color
     paddingTop: 10,
-  },
-  searchContainer: {
-    paddingHorizontal: 16,
-    paddingVertical: 12,
-  },
-  searchInput: {
-    height: 48,
-    backgroundColor: "#F3F4F6",
-    borderRadius: 12,
-    paddingHorizontal: 16,
-    fontSize: 16,
-    borderWidth: 1,
-    borderColor: "#E5E7EB",
-  },
-  topicContainer: {
-    paddingHorizontal: 16,
-    paddingBottom: 8,
-    maxHeight: 50,
-  },
-  topicContentContainer: {
-    paddingVertical: 4,
-  },
-  topicButton: {
-    backgroundColor: "#F3F4F6",
-    paddingHorizontal: 16,
-    paddingVertical: 6,
-    borderRadius: 20,
-    marginRight: 8,
-    borderWidth: 1,
-    borderColor: "#E5E7EB",
-    alignItems: "center",
-    justifyContent: "center",
-    maxHeight: 38,
-  },
-  selectedTopicButton: {
-    backgroundColor: "#3B82F6",
-    borderColor: "#3B82F6",
-  },
-  topicButtonText: {
-    fontSize: 12,
-    fontWeight: "600",
-    color: "#6B7280",
-  },
-  selectedTopicButtonText: {
-    color: "#FFFFFF",
-  },
-  resultsInfo: {
-    paddingHorizontal: 16,
-    paddingVertical: 8,
-  },
-  resultsText: {
-    fontSize: 12,
-    color: "#6B7280",
   },
   scrollView: {
     flex: 1,
     paddingHorizontal: 16,
+  },
+  searchContainer: {
+    paddingVertical: 12,
+  },
+  searchInput: {
+    height: 48,
+    backgroundColor: "#FFFFFF",
+    borderRadius: 12,
+    paddingHorizontal: 16,
+    fontSize: 16,
+    borderWidth: 1,
+    borderColor: "#0f172a20",
+    color: "#0f172a",
+  },
+  topicContainer: {
+    paddingBottom: 8,
+    maxHeight: 60, // Increased height to prevent cutoff
+  },
+  topicContentContainer: {
+    paddingVertical: 8, // Increased padding
+  },
+  topicButton: {
+    backgroundColor: "#FFFFFF",
+    paddingHorizontal: 16,
+    paddingVertical: 10, // Increased vertical padding
+    borderRadius: 20,
+    marginRight: 8,
+    borderWidth: 1,
+    borderColor: "#0f172a30",
+    alignItems: "center",
+    justifyContent: "center",
+    minHeight: 40, // Ensured minimum height
+  },
+  selectedTopicButton: {
+    backgroundColor: "#0f172a",
+    borderColor: "#0f172a",
+  },
+  topicButtonText: {
+    fontSize: 12,
+    fontWeight: "600",
+    color: "#0f172a",
+    textAlign: "center", // Ensured text is centered
+  },
+  selectedTopicButtonText: {
+    color: "#FAF8EC",
+  },
+  resultsInfo: {
+    paddingVertical: 8,
+  },
+  resultsText: {
+    fontSize: 12,
+    color: "#0f172a80",
   },
   noResultsContainer: {
     alignItems: "center",
@@ -424,63 +456,64 @@ const styles = StyleSheet.create({
   noResultsTitle: {
     fontSize: 18,
     fontWeight: "600",
-    color: "#1F2937",
+    color: "#0f172a",
     marginBottom: 8,
   },
   noResultsText: {
     fontSize: 14,
-    color: "#6B7280",
+    color: "#0f172a80",
     marginBottom: 16,
   },
   clearFiltersButton: {
-    backgroundColor: "#F3F4F6",
+    backgroundColor: "#0f172a",
     paddingHorizontal: 16,
     paddingVertical: 8,
     borderRadius: 8,
-    borderWidth: 1,
-    borderColor: "#E5E7EB",
   },
   clearFiltersButtonText: {
     fontSize: 14,
-    color: "#374151",
+    color: "#FAF8EC",
     fontWeight: "500",
   },
   articleCard: {
     marginVertical: 12,
-    backgroundColor: "#d0cec2ff",
+    backgroundColor: "#0f172a15", // Muted version of brand color
     borderRadius: 16,
     overflow: "hidden",
     elevation: 2,
-    shadowColor: "#000",
+    shadowColor: "#0f172a",
     shadowOffset: {
       width: 0,
       height: 1,
     },
     shadowOpacity: 0.1,
     shadowRadius: 2,
+    borderWidth: 1,
+    borderColor: "#0f172a20",
   },
   featuredCard: {
     borderWidth: 2,
-    borderColor: "#3B82F6",
+    borderColor: "#0f172a",
+    backgroundColor: "#0f172a20", // Slightly darker for featured
   },
   articleHeader: {
     padding: 20,
   },
   featuredBadge: {
     alignSelf: "flex-start",
-    backgroundColor: "#3B82F6",
+    backgroundColor: "#0f172a",
     paddingHorizontal: 8,
     paddingVertical: 4,
     borderRadius: 12,
     marginBottom: 12,
   },
   featuredBadgeText: {
-    color: "#FFFFFF",
+    color: "#FAF8EC",
     fontSize: 10,
     fontWeight: "600",
   },
   headline: {
-    color: "#1F2937",
+    color: "#0f172a",
     fontSize: 20,
     fontWeight: "bold",
     marginBottom: 12,
@@ -491,7 +524,7 @@ const styles = StyleSheet.create({
     lineHeight: 32,
   },
   description: {
-    color: "#4B5563",
+    color: "#0f172a90",
     fontSize: 14,
     lineHeight: 20,
     marginBottom: 12,
@@ -506,9 +539,7 @@ const styles = StyleSheet.create({
     marginBottom: 8,
   },
   topicTag: {
-    backgroundColor: "#DBEAFE",
-    borderColor: "#93C5FD",
-    borderWidth: 1,
+    backgroundColor: "#0f172a",
     paddingHorizontal: 8,
     paddingVertical: 4,
     borderRadius: 12,
@@ -516,12 +547,12 @@ const styles = StyleSheet.create({
     marginBottom: 6,
   },
   topicTagText: {
-    color: "#1E40AF",
+    color: "#FAF8EC",
     fontSize: 10,
     fontWeight: "500",
   },
   regularTag: {
-    backgroundColor: "#F9FAFB",
+    backgroundColor: "#0f172a30",
     paddingHorizontal: 8,
     paddingVertical: 4,
     borderRadius: 12,
@@ -529,7 +560,7 @@ const styles = StyleSheet.create({
     marginBottom: 6,
   },
   regularTagText: {
-    color: "#6B7280",
+    color: "#0f172a",
     fontSize: 10,
   },
   articleMeta: {
@@ -539,7 +570,7 @@ const styles = StyleSheet.create({
     paddingTop: 16,
     marginTop: 16,
     borderTopWidth: 1,
-    borderTopColor: "#E5E7EB",
+    borderTopColor: "#0f172a30",
   },
   authorsContainer: {
     flex: 1,
@@ -547,7 +578,7 @@ const styles = StyleSheet.create({
   authorsText: {
     fontSize: 14,
     fontWeight: "500",
-    color: "#374151",
+    color: "#0f172a",
   },
   metaInfo: {
     flexDirection: "row",
@@ -555,6 +586,15 @@ const styles = StyleSheet.create({
   },
   metaText: {
     fontSize: 12,
-    color: "#6B7280",
+    color: "#0f172a70",
+  },
+  paginationContainer: {
+    alignItems: "center",
+    paddingVertical: 20,
+  },
+  paginationText: {
+    fontSize: 14,
+    color: "#0f172a80",
+    fontWeight: "500",
   },
 })
