@@ -1,7 +1,7 @@
+import { sendOtpToEmail } from '@/lib/auth-utils';
 import { useRouter } from 'expo-router';
 import { useState } from 'react';
-import { Image, StyleSheet, Text, TextInput, TouchableOpacity, View, ActivityIndicator } from 'react-native';
-import { sendOtpToEmail } from '@/lib/auth-utils';
+import { ActivityIndicator, Image, Keyboard, StyleSheet, Text, TextInput, TouchableOpacity, TouchableWithoutFeedback, View } from 'react-native';
 
 export default function SignInOtpScreen() {
   const [email, setEmail] = useState('');
@@ -38,8 +38,13 @@ export default function SignInOtpScreen() {
     }
   };
 
+  const dismissKeyboard = () => {
+    Keyboard.dismiss();
+  };
+
   return (
-    <View style={styles.container}>
+    <TouchableWithoutFeedback onPress={dismissKeyboard}>
+      <View style={styles.container}>
       <Image
         source={require('@/assets/auxiom-logo.png')}
         style={{ width: 80, height: 80, marginBottom: 16 }}
@@ -82,6 +87,7 @@ export default function SignInOtpScreen() {
         <Text style={styles.backButtonText}>Back to sign in</Text>
       </TouchableOpacity>
     </View>
+    </TouchableWithoutFeedback>
   );
 }
 

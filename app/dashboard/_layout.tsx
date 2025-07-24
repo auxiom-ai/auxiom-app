@@ -47,12 +47,6 @@ export default function TabLayout() {
             href: null
           }}
         />
-        <Tabs.Screen
-          name="settings/edit-delivery-day"
-          options={{
-            href: null
-          }}
-        />
       </Tabs>
     </ArticleCacheProvider>
   );

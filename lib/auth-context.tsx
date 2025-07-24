@@ -53,9 +53,10 @@ export function AuthProvider({ children }: AuthProviderProps) {
       
       // Handle redirections based on user state
       if (!userData) {
-        // No user data, redirect to sign-in unless already on auth pages
+        // No user data, redirect to sign-in unless already on auth pages or email confirmation
         const inAuthGroup = segments[0] === '(auth)'
-        if (!inAuthGroup) {
+        const onEmailConfirmation = segments[0] === '(utils)' && segments[1] === 'email-confirmation'
+        if (!inAuthGroup && !onEmailConfirmation) {
           router.replace("/sign-in")
         }
       } else if (!userData.active) {
@@ -70,11 +71,6 @@ export function AuthProvider({ children }: AuthProviderProps) {
           // Check for interests/keywords
           if (!inOnboardingGroup || segments[1] !== 'interests') {
             router.replace("/onboarding/interests")
-          }
-        } else {
-          // Has occupation and interests, go to day selection
-          if (!inOnboardingGroup || segments[1] !== 'day') {
-            router.replace("/onboarding/day")
           }
         }
       } else {

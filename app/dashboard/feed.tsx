@@ -12,6 +12,7 @@ import {
   View,
   TextInput,
   RefreshControl,
+  ActivityIndicator,
 } from "react-native"
 import { useArticleCache } from "@/lib/article-cache-context"
 import { useAuth } from "@/lib/auth-context"
@@ -39,6 +40,7 @@ export default function FeedScreen() {
   const [selectedTopics, setSelectedTopics] = useState<string[]>([])
   const [currentPage, setCurrentPage] = useState(1)
   const [refreshing, setRefreshing] = useState(false)
+  const [loadingMore, setLoadingMore] = useState(false)
   const ITEMS_PER_PAGE = 10
 
   const onRefresh = async () => {
@@ -102,6 +104,28 @@ export default function FeedScreen() {
     setCurrentPage(1)
   }
 
+  const handleLoadMore = () => {
+    const totalPages = Math.ceil(filteredArticles.length / ITEMS_PER_PAGE)
+    if (currentPage < totalPages && !loadingMore) {
+      setLoadingMore(true)
+      // Simulate loading delay for better UX
+      setTimeout(() => {
+        setCurrentPage(prev => prev + 1)
+        setLoadingMore(false)
+      }, 500)
+    }
+  }
+
+  const handleScroll = (event: any) => {
+    const { layoutMeasurement, contentOffset, contentSize } = event.nativeEvent
+    const paddingToBottom = 20
+    
+    // Check if user has scrolled to bottom
+    if (layoutMeasurement.height + contentOffset.y >= contentSize.height - paddingToBottom) {
+      handleLoadMore()
+    }
+  }
+
   const handleCardPress = (article: Article) => {
     router.push({
       pathname: "/article-detail",
@@ -120,11 +144,12 @@ export default function FeedScreen() {
     })
   }
 
-  // Calculate pagination
+  // Calculate pagination for infinite scroll
   const totalPages = Math.ceil(filteredArticles.length / ITEMS_PER_PAGE)
-  const startIndex = (currentPage - 1) * ITEMS_PER_PAGE
-  const endIndex = startIndex + ITEMS_PER_PAGE
+  const startIndex = 0
+  const endIndex = currentPage * ITEMS_PER_PAGE
   const paginatedArticles = filteredArticles.slice(startIndex, endIndex)
+  const hasMoreArticles = currentPage < totalPages
 
   if (loading || !user || articlesLoading) {
     return <FeedSkeleton />
@@ -155,6 +180,8 @@ export default function FeedScreen() {
         <ScrollView 
           style={styles.scrollView} 
           showsVerticalScrollIndicator={false}
+          onScroll={handleScroll}
+          scrollEventThrottle={400}
           refreshControl={
             <RefreshControl
               refreshing={refreshing}
@@ -313,11 +340,19 @@ export default function FeedScreen() {
             ))
           )}
 
-          {/* Pagination Info */}
-          {totalPages > 1 && (
-            <View style={styles.paginationContainer}>
-              <ThemedText style={styles.paginationText}>
-                Page {currentPage} of {totalPages}
+          {/* Loading More Indicator */}
+          {loadingMore && hasMoreArticles && (
+            <View style={styles.loadingMoreContainer}>
+              <ActivityIndicator size="small" color="#0f172a" />
+              <ThemedText style={styles.loadingMoreText}>Loading more articles...</ThemedText>
+            </View>
+          )}
+
+          {/* End of Feed Message */}
+          {!hasMoreArticles && filteredArticles.length > ITEMS_PER_PAGE && (
+            <View style={styles.endOfFeedContainer}>
+              <ThemedText style={styles.endOfFeedText}>
+                You've reached the end of your feed
               </ThemedText>
             </View>
           )}
@@ -581,5 +616,25 @@ const styles = StyleSheet.create({
     fontSize: 14,
     color: "#0f172a80",
     fontWeight: "500",
+  },
+  loadingMoreContainer: {
+    flexDirection: "row",
+    justifyContent: "center",
+    alignItems: "center",
+    paddingVertical: 20,
+  },
+  loadingMoreText: {
+    marginLeft: 10,
+    fontSize: 14,
+    color: "#0f172a80",
+  },
+  endOfFeedContainer: {
+    alignItems: "center",
+    paddingVertical: 20,
+  },
+  endOfFeedText: {
+    fontSize: 14,
+    color: "#0f172a60",
+    fontStyle: "italic",
   },
 })

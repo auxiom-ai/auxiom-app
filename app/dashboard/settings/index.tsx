@@ -4,12 +4,11 @@ import { Alert, ScrollView, StyleSheet, Text, TextInput, TouchableOpacity, View 
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Feather } from '@expo/vector-icons';
 import { getUser } from '@/lib/db/queries';
-import { updateEmail, requestPasswordReset, deleteAccount } from '@/lib/actions';
+import { requestPasswordReset, deleteAccount } from '@/lib/actions';
 import { supabase } from '@/lib/supabase';
 
 export default function ProfileScreen() {
   const [userData, setUserData] = useState<any>(null);
-  const [email, setEmail] = useState('');
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
 
@@ -25,7 +24,6 @@ export default function ProfileScreen() {
         }
         
         setUserData(user);
-        setEmail(user.email);
 
         if (!user.active) {
           if (!user.occupation) {
@@ -33,8 +31,6 @@ export default function ProfileScreen() {
           }
           else if (!user.interests || !user.keywords || user.keywords.length === 0) {
             router.replace("/onboarding/interests");
-          } else {
-            router.replace("/onboarding/day");
           }
         }
       } catch (error) {
@@ -48,24 +44,11 @@ export default function ProfileScreen() {
     fetchUser();
   }, []);
 
-  const handleUpdateEmail = async () => {
-    try {
-      setLoading(true);
-      setError('');
-      await updateEmail(email);
-      Alert.alert('Success', 'Email updated! Please check your inbox to confirm.');
-    } catch (error: any) {
-      setError(error.message || 'Failed to update email');
-    } finally {
-      setLoading(false);
-    }
-  };
-
   const handleResetPassword = async () => {
     try {
       setLoading(true);
       setError('');
-      await requestPasswordReset(email);
+      await requestPasswordReset(userData.email);
       Alert.alert('Success', 'Check your email for a password reset link.');
     } catch (error: any) {
       setError(error.message || 'Failed to send password reset email');
@@ -117,9 +100,6 @@ export default function ProfileScreen() {
     router.push('/dashboard/settings/edit-interests' as any);
   };
 
-  const navigateToEditDeliveryDay = () => {
-    router.push('/dashboard/settings/edit-delivery-day' as any);
-  };
 
   return (
     <SafeAreaView style={{ flex: 1, backgroundColor: '#FAF7E6' }}>
@@ -195,53 +175,11 @@ export default function ProfileScreen() {
           </TouchableOpacity>
         </View>
 
-        {/* Delivery Preferences */}
-        <View style={styles.card}>
-          <Text style={styles.cardTitle}>Delivery Preferences</Text>
-          <Text style={styles.cardDesc}>Choose when to receive your podcasts.</Text>
-          
-          <View style={styles.infoRow}>
-            <View style={styles.infoDetail}>
-              <Text style={styles.infoLabel}>Delivery Day</Text>
-              <Text style={styles.infoValue}>
-                {userData?.delivery_day !== undefined && userData?.delivery_day !== null
-                  ? ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday'][userData.delivery_day]
-                  : 'Not set'}
-              </Text>
-            </View>
-          </View>
-          
-          <TouchableOpacity 
-            style={styles.button} 
-            onPress={navigateToEditDeliveryDay}
-            disabled={loading}
-          >
-            <Text style={styles.buttonText}>Edit Delivery Day</Text>
-          </TouchableOpacity>
-        </View>
 
         {/* Account */}
         <View style={styles.card}>
           <Text style={styles.cardTitle}>Account</Text>
-          <Text style={styles.cardDesc}>Update your account information.</Text>
-          <Text style={styles.label}>Email</Text>
-          <TextInput
-            style={styles.input}
-            value={email}
-            onChangeText={setEmail}
-            autoCapitalize="none"
-            keyboardType="email-address"
-          />
-          <Text style={styles.inputDesc}>This is the email your Auxiom podcasts are sent to.</Text>
-          <TouchableOpacity 
-            style={styles.button} 
-            onPress={handleUpdateEmail} 
-            disabled={loading}
-          >
-            <Text style={styles.buttonText}>Update Email</Text>
-          </TouchableOpacity>
-          
-          <View style={styles.divider} />
+          <Text style={styles.cardDesc}>Manage your account settings.</Text>
           
           <Text style={styles.cardSubtitle}>Password</Text>
           <Text style={styles.cardDesc}>Change your account password.</Text>

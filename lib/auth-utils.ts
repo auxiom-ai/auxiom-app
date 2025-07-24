@@ -16,7 +16,6 @@ export interface UserData {
   email: string;
   password_hash?: string;
   name?: string;
-  delivery_day: number;
   delivered: Date;
   active: boolean;
   keywords: string[];
@@ -93,7 +92,6 @@ export async function syncUserProfile(authUser: any): Promise<UserData | null> {
           email: authUser.email,
           password_hash: 'managed_by_supabase_auth', // Placeholder since legacy schema requires it
           name: null,
-          delivery_day: 1,
           delivered: new Date(0),
           active: false,
           keywords: [],

@@ -6,7 +6,6 @@ export default function OnboardingLayout() {
     <Stack screenOptions={{ headerShown: false }}>
       <Stack.Screen name="occupation" />
       <Stack.Screen name="interests" />
-      <Stack.Screen name="day" />
     </Stack>
   );
 }

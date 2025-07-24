@@ -1,4 +1,4 @@
-import { syncUserProfile, handleSignUp } from '@/lib/auth-utils';
+import { handleSignUp } from '@/lib/auth-utils';
 import { useRouter } from 'expo-router';
 import { useState } from 'react';
 import { Image, Keyboard, StyleSheet, Text, TextInput, TouchableOpacity, TouchableWithoutFeedback, View } from 'react-native';
@@ -16,21 +16,15 @@ export default function SignUpScreen() {
     if (!success) {
       setError(error || 'Failed to create account');
     } else if (data.user) {
-        // Create user profile using the updated schema
-        const userProfile = await syncUserProfile(data.user);
-        
-        if (!userProfile) {
-          console.error('Failed to create user profile');
-          setError('Failed to create user profile');
-        } else {
-          // Check if the user needs email confirmation
-          if (data.user.email_confirmed_at) {
-            router.replace('/onboarding/occupation');
-          } else {
-            router.replace('/email-confirmation');
-          }
-        }
-    };
+      // Check if the user needs email confirmation
+      if (data.user.email_confirmed_at) {
+        // User is already verified, redirect to onboarding
+        router.replace('/onboarding/occupation');
+      } else {
+        // User needs to verify email first
+        router.replace(`/email-confirmation?email=${encodeURIComponent(email)}`);
+      }
+    }
     setLoading(false);
   }
 

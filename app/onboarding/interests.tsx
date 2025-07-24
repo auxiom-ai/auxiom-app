@@ -378,7 +378,10 @@ const handleSubmit = async (): Promise<void> => {
   const userId = user.id;
   const { data, error } = await supabase
     .from('users')
-    .update({ keywords })   // pass the array directly
+    .update({ 
+      keywords,   // pass the array directly
+      active: true // Activate the user now that onboarding is complete
+    })
     .eq('auth_user_id', user.id) // match by auth_user_id
     .select()
 
@@ -388,7 +391,8 @@ const handleSubmit = async (): Promise<void> => {
     console.error(error)
     Alert.alert("Error saving interests", error.message)
   } else {
-    router.push("/onboarding/day")
+    // Navigate to dashboard after successful completion
+    router.replace("/dashboard/feed" as any)
   }
 }
 

@@ -25,16 +25,6 @@ export async function updateUserInterests(keywords: string[]) {
   });
 }
 
-export async function updateUserDeliveryPreference(delivery_day: number) {
-  const userData = await getUser();
-  if (!userData) {
-    throw new Error('User not authenticated');
-  }
-  
-  return await updateUserByAuthId(userData.auth_user_id, {
-    delivery_day
-  });
-}
 
 export async function updateEmail(email: string) {
   return await updateUserEmail(email);
@@ -62,15 +52,6 @@ export async function getUserKeywords(): Promise<string[]> {
   return userData.keywords || [];
 }
 
-// Get user's delivery day preference
-export async function getUserDeliveryDay(): Promise<number> {
-  const userData = await getUser();
-  if (!userData) {
-    throw new Error('User not authenticated');
-  }
-  
-  return userData.delivery_day || 0;
-}
 
 // Get user's current subscription plan
 export async function getUserPlan(): Promise<string> {
