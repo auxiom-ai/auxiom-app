@@ -62,7 +62,7 @@ export default function SignInScreen() {
       <TouchableOpacity style={styles.secondaryButton} onPress={() => router.push('/sign-up' as any)}>
         <Text style={styles.secondaryButtonText}>Create an account</Text>
       </TouchableOpacity>
-      <TouchableOpacity onPress={() => router.push('/reset-password')}>
+      <TouchableOpacity onPress={() => router.push('/forgot-password' as any)}>
         <Text style={styles.forgotText}>Forgot your password?</Text>
       </TouchableOpacity>
     </View>

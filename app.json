@@ -11,7 +11,8 @@
     "version": "1.0.0",
     "orientation": "portrait",
     "icon": "./assets/images/icon.png",
-    "scheme": "auxiomapp",
+    "scheme": "auxiom",
+    "deepLinking": true,
     "userInterfaceStyle": "automatic",
     "newArchEnabled": true,
     "ios": {
