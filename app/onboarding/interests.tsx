@@ -582,12 +582,12 @@ const styles = StyleSheet.create({
   title: {
     fontSize: 28,
     fontWeight: "bold",
-    color: "#333333",
+    color: "#0f172a",
     marginBottom: 8,
   },
   subtitle: {
     fontSize: 16,
-    color: "#666666",
+    color: "#0f172a",
     marginTop: 0,
     marginBottom: 0,
     fontWeight: '400',
@@ -637,7 +637,7 @@ const styles = StyleSheet.create({
   },
   searchResultText: {
     fontSize: 16,
-    color: "#333333",
+    color: "#0f172a",
   },
   tabContainer: {
     flexDirection: "row",
@@ -653,7 +653,7 @@ const styles = StyleSheet.create({
     backgroundColor: "#4A6FA5", // Auxiom blue
   },
   tabText: {
-    color: "#333333",
+    color: "#0f172a",
     fontWeight: "500",
   },
   activeTabText: {
@@ -687,7 +687,7 @@ const styles = StyleSheet.create({
     alignItems: "center",
   },
   tagText: {
-    color: "#333333",
+    color: "#0f172a",
     fontSize: 14,
     marginRight: 4,
   },
@@ -713,12 +713,12 @@ const styles = StyleSheet.create({
   emptyStateText: {
     fontSize: 18,
     fontWeight: "500",
-    color: "#333333",
+    color: "#0f172a",
     marginBottom: 8,
   },
   emptyStateSubtext: {
     fontSize: 14,
-    color: "#666666",
+    color: "#0f172a",
   },
   suggestionsContainer: {
     marginTop: 8,
@@ -775,7 +775,7 @@ const styles = StyleSheet.create({
   logoText: {
     fontSize: 30,
     fontWeight: "700",
-    color: "#1F2937",
+    color: "#0f172a",
  
   },
 })

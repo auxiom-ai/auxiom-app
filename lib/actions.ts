@@ -1,4 +1,5 @@
-import { getUser, getPodcastsByUser, updateUserByAuthId, updateUserEmail, updateUserPassword, resetPasswordForEmail, deleteUserAccount } from '@/lib/db/queries';
+import { getUser, getPodcastsByUser, updateUserByAuthId, updateUserEmail, updateUserPassword, resetPasswordForEmail, deleteUserAccount, signOut, getToken } from '@/lib/db/queries';
+import { json } from 'stream/consumers';
 
 // User profile actions
 export async function updateUserProfile(name: string, occupation: string, industry: string) {
@@ -39,7 +40,29 @@ export async function requestPasswordReset(email: string) {
 }
 
 export async function deleteAccount() {
-  return await deleteUserAccount();
+  const userData = await getUser();
+  if (!userData) {
+    throw new Error('User not authenticated');
+  }
+
+  // Delete from users table
+  await deleteUserAccount();
+
+  const accessToken = await getToken();
+
+  // Call Supabase function to delete user from auth
+  const response = await fetch('https://uufxuxbilvlzllxgbewh.supabase.co/functions/v1/delete-user', {
+    method: 'POST',
+    headers: {
+      'Authorization': `Bearer ${accessToken}`
+    }
+  });
+
+  if (!response.ok) {
+    throw new Error(`Failed to delete user from auth: ${response.status}`);
+  }
+
+  await signOut();
 }
 
 // Get user's keywords/interests

@@ -2,7 +2,6 @@ import { router } from 'expo-router';
 import { useEffect, useState } from 'react';
 import { Alert, ScrollView, StyleSheet, Text, TextInput, TouchableOpacity, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { Feather } from '@expo/vector-icons';
 import { getUser } from '@/lib/db/queries';
 import { requestPasswordReset, deleteAccount } from '@/lib/actions';
 import { supabase } from '@/lib/supabase';

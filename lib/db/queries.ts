@@ -81,8 +81,9 @@ export async function deleteUserAccount() {
     .delete()
     .eq('auth_user_id', userData.auth_user_id);
 
-  const { error: signOutError } = await supabase.auth.signOut();
-  if (signOutError) throw signOutError;
+  if (error) {
+    console.error('Error deleting user from database:', error);
+  }
   return { success: true };
 }
 
@@ -150,4 +151,16 @@ export async function getRecommendedArticles(userEmbedding: number[]) {
 
   if (error) throw error;
   return data;
+}
+
+export async function signOut() {
+  const { error } = await supabase.auth.signOut();
+  if (error) throw error;
+  return { success: true };
+}
+
+export async function getToken() {
+  const { data, error } = await supabase.auth.getSession()
+  if (error) throw error;
+  return data.session?.access_token || null;
 }

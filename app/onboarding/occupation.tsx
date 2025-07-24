@@ -244,7 +244,7 @@ const styles = StyleSheet.create({
   logoText: {
     fontSize: 30, // Increased size
     fontWeight: "700",
-    color: "#1F2937",
+    color: "#0f172a",
     paddingTop: 10,
   },
   formContainer: {
@@ -263,13 +263,13 @@ const styles = StyleSheet.create({
   title: {
     fontSize: 26, 
     fontWeight: "bold",
-    color: "#1F2937",
+    color: "#0f172a",
     marginBottom: 8,
     marginTop: 24, 
   },
   subtitle: {
     fontSize: 16,
-    color: "#6B7280",
+    color: "#0f172a",
     marginBottom: 32,
   },
   fieldContainer: {
@@ -278,7 +278,7 @@ const styles = StyleSheet.create({
   fieldLabel: {
     fontSize: 16,
     fontWeight: "600",
-    color: "#1F2937",
+    color: "#0f172a",
     marginBottom: 8,
   },
   textInput: {
@@ -287,7 +287,7 @@ const styles = StyleSheet.create({
     paddingHorizontal: 16,
     paddingVertical: 12,
     fontSize: 16,
-    color: "#1F2937",
+    color: "#0f172a",
     borderWidth: 1,
     borderColor: "#D1D5DB",
   },
@@ -304,7 +304,7 @@ const styles = StyleSheet.create({
   },
   dropdownText: {
     fontSize: 16,
-    color: "#1F2937",
+    color: "#0f172a",
   },
   placeholderText: {
     color: "#9CA3AF",
@@ -337,7 +337,7 @@ const styles = StyleSheet.create({
   },
   optionText: {
     fontSize: 16,
-    color: "#1F2937",
+    color: "#0f172a",
   },
   pickerContainer: {
     backgroundColor: "#F9FAFB",
@@ -348,16 +348,16 @@ const styles = StyleSheet.create({
   },
   picker: {
     height: 48,
-    color: "#1F2937",
+    color: "#0f172a",
   },
   fieldHelper: {
     fontSize: 14,
-    color: "#6B7280",
+    color: "#0f172a",
     marginTop: 6,
     lineHeight: 20,
   },
   submitButton: {
-    backgroundColor: "#1F2937",
+    backgroundColor: "#0f172a",
     borderRadius: 24,
     paddingVertical: 4,
     marginTop: 16,
