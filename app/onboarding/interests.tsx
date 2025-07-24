@@ -650,7 +650,7 @@ const styles = StyleSheet.create({
     borderRadius: 20,
   },
   activeTab: {
-    backgroundColor: "#4A6FA5", // Auxiom blue
+    backgroundColor: "#0f172a", // Auxiom blue
   },
   tabText: {
     color: "#0f172a",
@@ -675,7 +675,7 @@ const styles = StyleSheet.create({
     paddingHorizontal: 12,
   },
   selectedTag: {
-    backgroundColor: "#4A6FA5", // Auxiom blue
+    backgroundColor: "#0f172a", // Auxiom blue
   },
   unselectedTag: {
     backgroundColor: "#FFFFFF",
@@ -746,7 +746,7 @@ const styles = StyleSheet.create({
   submitButton: {
     borderRadius: 24,
     paddingHorizontal: 16,
-    backgroundColor: "#4A6FA5", // Auxiom blue
+    backgroundColor: "#0f172a", // Auxiom blue
   },
   buttonLabel: {
     color: "#FFFFFF",

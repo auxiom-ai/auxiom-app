@@ -56,7 +56,8 @@ export function AuthProvider({ children }: AuthProviderProps) {
         // No user data, redirect to sign-in unless already on auth pages or email confirmation
         const inAuthGroup = segments[0] === '(auth)'
         const onEmailConfirmation = segments[0] === '(utils)' && segments[1] === 'email-confirmation'
-        if (!inAuthGroup && !onEmailConfirmation) {
+        const isOnResetPassword = segments[0] === '(utils)' && segments[1] === 'reset-password'
+        if (!inAuthGroup && !onEmailConfirmation && !isOnResetPassword) {
           router.replace("/sign-in")
         }
       } else if (!userData.active) {

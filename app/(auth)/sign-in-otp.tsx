@@ -73,7 +73,7 @@ export default function SignInOtpScreen() {
         disabled={loading}
       >
         {loading ? (
-          <ActivityIndicator color="#222" />
+          <ActivityIndicator color="#fff" />
         ) : (
           <Text style={styles.buttonText}>Send verification code</Text>
         )}
@@ -115,16 +115,17 @@ const styles = StyleSheet.create({
   input: {
     width: '100%',
     maxWidth: 500,
-    backgroundColor: '#D3D7DF',
+    backgroundColor: '#0f172a15',
     borderRadius: 20,
     padding: 16,
     marginBottom: 16,
     fontSize: 16,
+    color: '#0f172a',
   },
   button: {
     width: '100%',
     maxWidth: 500,
-    backgroundColor: '#AEB4BE',
+    backgroundColor: '#0f172a',
     borderRadius: 20,
     padding: 16,
     alignItems: 'center',
@@ -136,7 +137,7 @@ const styles = StyleSheet.create({
     opacity: 0.7,
   },
   buttonText: {
-    color: '#222',
+    color: '#fff',
     fontWeight: 'bold',
     fontSize: 18,
   },

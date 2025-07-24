@@ -80,7 +80,6 @@ export default function IdentityScreen() {
         console.error("Error updating user info:", error)
         Alert.alert("Error saving information", error.message)
       } else {
-        console.log("Updated user info:", data)
         // Navigate to the next onboarding screen
         router.push("/onboarding/interests")
       }
@@ -253,7 +252,7 @@ const styles = StyleSheet.create({
     alignItems: "center",
   },
   formContent: {
-    backgroundColor: "#E5E7EB",
+    backgroundColor: "#0f172a15",
     borderRadius: 19,
     padding: 32,
     paddingTop: 10,
@@ -363,10 +362,10 @@ const styles = StyleSheet.create({
     marginTop: 16,
   },
   submitButtonDisabled: {
-    backgroundColor: "#9CA3AF",
+    backgroundColor: "#0f172a7b",
   },
   buttonLabel: {
-    color: "#FFFFFF",
+    color: "#FAF8EC",
     fontSize: 16,
     fontWeight: "600",
     paddingVertical: 8,

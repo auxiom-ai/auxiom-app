@@ -9,7 +9,7 @@ export default function ForgotPasswordScreen() {
   const handleReset = async () => {
     setLoading(true);
     const { error } = await supabase.auth.resetPasswordForEmail(email, {
-      redirectTo: 'https://placeholder-url.com/reset-password', // Placeholder URL
+      redirectTo: 'https://auxiomai.com/reset-password', // replace with deep link later
     });
     setLoading(false);
     if (error) {
@@ -74,11 +74,12 @@ const styles = StyleSheet.create({
   input: {
     width: '100%',
     maxWidth: 500,
-    backgroundColor: '#D3D7DF',
+    backgroundColor: '#0f172a15',
     borderRadius: 20,
     padding: 16,
     marginBottom: 24,
     fontSize: 16,
+    color: '#0f172a',
   },
   button: {
     width: '100%',
@@ -94,4 +95,4 @@ const styles = StyleSheet.create({
     fontWeight: 'bold',
     fontSize: 18,
   },
-}); 
+});

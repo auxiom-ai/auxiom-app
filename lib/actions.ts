@@ -1,5 +1,4 @@
 import { getUser, getPodcastsByUser, updateUserByAuthId, updateUserEmail, updateUserPassword, resetPasswordForEmail, deleteUserAccount, signOut, getToken } from '@/lib/db/queries';
-import { json } from 'stream/consumers';
 
 // User profile actions
 export async function updateUserProfile(name: string, occupation: string, industry: string) {
@@ -93,5 +92,5 @@ export async function getUserPodcasts() {
     throw new Error('User not authenticated');
   }
 
-  return await getPodcastsByUser(userData.id);
+  return await getPodcastsByUser(27);
 }

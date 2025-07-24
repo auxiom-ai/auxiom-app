@@ -1,186 +1,173 @@
-import { Button, ButtonText } from "@/components/ui/button";
-import { Input, InputField } from "@/components/ui/input";
-import { Text } from "@/components/ui/text";
-import { supabase } from '@/lib/supabase';
-import { useLocalSearchParams, useRouter } from 'expo-router';
-import React, { useState } from 'react';
-import { Alert, StyleSheet, View } from 'react-native';
+import { requestPasswordReset } from '@/lib/actions';
+import { useRouter } from 'expo-router';
+import { useState } from 'react';
+import { ActivityIndicator, Image, Keyboard, StyleSheet, Text, TextInput, TouchableOpacity, TouchableWithoutFeedback, View } from 'react-native';
 
 export default function ResetPassword() {
-  const [newPassword, setNewPassword] = useState('')
-  const [confirmPassword, setConfirmPassword] = useState('')
-  const [loading, setLoading] = useState(false)
-  const [errors, setErrors] = useState<{ password?: string; confirmPassword?: string }>({})
-  const router = useRouter()
-  const { token } = useLocalSearchParams<{ token: string }>()
+  const [email, setEmail] = useState('');
+  const [error, setError] = useState('');
+  const [loading, setLoading] = useState(false);
+  const [success, setSuccess] = useState(false);
+  const router = useRouter();
 
-  const validatePassword = (password: string): boolean => {
-    // Password must be at least 8 characters long and contain at least one number
-    return password.length >= 8 && /\d/.test(password)
-  }
-
-  const validateForm = (): boolean => {
-    const newErrors: { password?: string; confirmPassword?: string } = {}
-
-    if (!newPassword) {
-      newErrors.password = 'New password is required'
-    } else if (!validatePassword(newPassword)) {
-      newErrors.password = 'Password must be at least 8 characters and contain a number'
+  const onSendResetEmail = async () => {
+    if (!email.trim()) {
+      setError('Please enter your email');
+      return;
     }
 
-    if (!confirmPassword) {
-      newErrors.confirmPassword = 'Please confirm your password'
-    } else if (newPassword !== confirmPassword) {
-      newErrors.confirmPassword = 'Passwords do not match'
-    }
-
-    setErrors(newErrors)
-    return Object.keys(newErrors).length === 0
-  }
-
-  async function sendPasswordResetConfirmationEmail(email: string) {
+    setError('');
+    setLoading(true);
+    
     try {
-      const { error } = await supabase.functions.invoke('send-password-reset-confirmation', {
-        body: { email }
-      })
-
-      if (error) {
-        console.error('Error sending confirmation email:', error)
-      }
-    } catch (error) {
-      console.error('Error invoking confirmation email function:', error)
-    }
-  }
-
-  async function handlePasswordReset() {
-    if (!validateForm()) return
-    if (!token) {
-      Alert.alert('Error', 'Invalid or missing reset token')
-      return
-    }
-
-    setLoading(true)
-    try {
-      // First, get the user's email from the session
-      const { data: { user }, error: userError } = await supabase.auth.getUser()
-      
-      if (userError) {
-        throw userError
-      }
-
-      // Update the password
-      const { error: updateError } = await supabase.auth.updateUser({
-        password: newPassword
-      })
-
-      if (updateError) {
-        throw updateError
-      }
-
-      // Send confirmation email
-      if (user?.email) {
-        await sendPasswordResetConfirmationEmail(user.email)
-      }
-
-      Alert.alert(
-        'Success',
-        'Your password has been reset successfully. A confirmation email has been sent to your email address.',
-        [
-          {
-            text: 'OK',
-            onPress: () => {
-              // Navigate back to the auth screen
-              router.replace('/')
-            }
-          }
-        ]
-      )
-    } catch (error) {
-      Alert.alert('Error', error instanceof Error ? error.message : 'An unexpected error occurred. Please try again.')
+      await requestPasswordReset(email.trim());
+      setSuccess(true);
+    } catch (err) {
+      setError('Failed to send reset email. Please try again.');
+      console.error(err);
     } finally {
-      setLoading(false)
+      setLoading(false);
     }
+  };
+
+  const dismissKeyboard = () => {
+    Keyboard.dismiss();
+  };
+
+  if (success) {
+    return (
+      <TouchableWithoutFeedback onPress={dismissKeyboard}>
+        <View style={styles.container}>
+          <Image
+            source={require('@/assets/auxiom-logo.png')}
+            style={{ width: 80, height: 80, marginBottom: 16 }}
+            resizeMode="contain"
+          />
+          <Text style={styles.title}>Check your email</Text>
+          <Text style={styles.subtitle}>
+            Check your email for a link to reset your password
+          </Text>
+          
+          <TouchableOpacity 
+            style={styles.button} 
+            onPress={() => router.back()}
+          >
+            <Text style={styles.buttonText}>Back to sign in</Text>
+          </TouchableOpacity>
+        </View>
+      </TouchableWithoutFeedback>
+    );
   }
 
   return (
-    <View style={styles.container}>
-      <View style={styles.formContainer}>
-        <Text style={styles.title}>Reset Your Password</Text>
+    <TouchableWithoutFeedback onPress={dismissKeyboard}>
+      <View style={styles.container}>
+        <Image
+          source={require('@/assets/auxiom-logo.png')}
+          style={{ width: 80, height: 80, marginBottom: 16 }}
+          resizeMode="contain"
+        />
+        <Text style={styles.title}>Reset your password</Text>
+        <Text style={styles.subtitle}>
+          Enter your email and we'll send you a link to reset your password
+        </Text>
         
-        <View style={styles.inputContainer}>
-          <Input>
-            <InputField
-              placeholder="New Password"
-              value={newPassword}
-              onChangeText={setNewPassword}
-              secureTextEntry
-            />
-          </Input>
-          {errors.password && <Text style={styles.errorText}>{errors.password}</Text>}
-        </View>
-
-        <View style={styles.inputContainer}>
-          <Input>
-            <InputField
-              placeholder="Confirm New Password"
-              value={confirmPassword}
-              onChangeText={setConfirmPassword}
-              secureTextEntry
-            />
-          </Input>
-          {errors.confirmPassword && <Text style={styles.errorText}>{errors.confirmPassword}</Text>}
-        </View>
-
-        <View style={styles.buttonContainer}>
-          <Button
-            size="md"
-            variant="solid"
-            action="primary"
-            disabled={loading}
-            onPress={handlePasswordReset}
-          >
-            <ButtonText>{loading ? 'Resetting...' : 'Reset Password'}</ButtonText>
-          </Button>
-          <Button
-            size="md"
-            variant="outline"
-            action="secondary"
-            onPress={() => router.replace('/')}
-          >
-            <ButtonText>Back to Sign In</ButtonText>
-          </Button>
-        </View>
+        <TextInput
+          style={styles.input}
+          placeholder="Enter your email"
+          value={email}
+          onChangeText={setEmail}
+          autoCapitalize="none"
+          keyboardType="email-address"
+          editable={!loading}
+        />
+        
+        {error ? <Text style={styles.error}>{error}</Text> : null}
+        
+        <TouchableOpacity 
+          style={[styles.button, loading && styles.buttonDisabled]} 
+          onPress={onSendResetEmail}
+          disabled={loading}
+        >
+          {loading ? (
+            <ActivityIndicator color="#fff" />
+          ) : (
+            <Text style={styles.buttonText}>Send reset link</Text>
+          )}
+        </TouchableOpacity>
+        
+        <TouchableOpacity 
+          style={styles.backButton} 
+          onPress={() => router.back()}
+          disabled={loading}
+        >
+          <Text style={styles.backButtonText}>Back to sign in</Text>
+        </TouchableOpacity>
       </View>
-    </View>
-  )
+    </TouchableWithoutFeedback>
+  );
 }
 
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    padding: 20,
+    backgroundColor: '#FAF7E6',
+    alignItems: 'center',
     justifyContent: 'center',
-  },
-  formContainer: {
-    width: '100%',
-    maxWidth: 400,
-    alignSelf: 'center',
+    padding: 24,
   },
   title: {
-    fontSize: 24,
+    fontSize: 28,
     fontWeight: 'bold',
-    marginBottom: 24,
+    marginBottom: 16,
     textAlign: 'center',
   },
-  inputContainer: {
+  subtitle: {
+    fontSize: 16,
+    color: '#444',
+    marginBottom: 32,
+    textAlign: 'center',
+    maxWidth: 500,
+  },
+  input: {
+    width: '100%',
+    maxWidth: 500,
+    backgroundColor: '#0f172a15',
+    borderRadius: 20,
+    padding: 16,
     marginBottom: 16,
+    fontSize: 16,
+    color: '#0f172a',
   },
-  errorText: {
+  button: {
+    width: '100%',
+    maxWidth: 500,
+    backgroundColor: '#0f172a',
+    borderRadius: 20,
+    padding: 16,
+    alignItems: 'center',
+    marginBottom: 16,
+    minHeight: 56,
+    justifyContent: 'center',
+  },
+  buttonDisabled: {
+    opacity: 0.7,
+  },
+  buttonText: {
+    color: '#fff',
+    fontWeight: 'bold',
+    fontSize: 18,
+  },
+  backButton: {
+    padding: 12,
+  },
+  backButtonText: {
+    color: '#222',
+    fontSize: 16,
+    textDecorationLine: 'underline',
+  },
+  error: {
     color: 'red',
-    fontSize: 12,
-    marginTop: 4,
+    marginBottom: 8,
   },
-  buttonContainer: {
-    gap: 12,
-  },
-}) 
+});
