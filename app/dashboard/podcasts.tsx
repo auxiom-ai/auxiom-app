@@ -1,31 +1,32 @@
-import { ThemedText } from "@/components/ThemedText"
-import { ThemedView } from "@/components/ThemedView"
+"use client"
+
 import { useEffect, useState } from "react"
 import {
-  Image,
+  View,
+  Text,
   SafeAreaView,
   ScrollView,
-  StatusBar,
-  StyleSheet,
   TouchableOpacity,
-  View,
+  Image,
+  StatusBar,
   RefreshControl,
   ActivityIndicator,
   Alert,
+  StyleSheet,
 } from "react-native"
+import { Audio } from "expo-av"
 import { useAuth } from "@/lib/auth-context"
 import { getUserPodcasts } from "@/lib/actions"
 import { updatePodcastListenedStatus } from "@/lib/db/queries"
-import { useAudioPlayer, AudioSource } from 'expo-audio'
+import PodcastPlayer from "@/components/podcast-player"
 
-// Types for podcasts
 export interface Podcast {
   id: number
   title: string
-  episodeNumber: number
+  episode_number: number
   date: string
   duration: string
-  audioFileUrl: string
+  audio_file_url: string
   listened: boolean
   clusters: { title: string; description: string; gov: string[]; news: string[] }[]
 }
@@ -33,16 +34,10 @@ export interface Podcast {
 export default function PodcastsScreen() {
   const { user, loading } = useAuth()
   const [podcasts, setPodcasts] = useState<Podcast[]>([])
-  const [currentPage, setCurrentPage] = useState(1)
   const [refreshing, setRefreshing] = useState(false)
-  const [loadingMore, setLoadingMore] = useState(false)
   const [podcastsLoading, setPodcastsLoading] = useState(true)
-  const [playingPodcastId, setPlayingPodcastId] = useState<number | null>(null)
-  const [currentAudioSource, setCurrentAudioSource] = useState<AudioSource | null>(null)
-  const ITEMS_PER_PAGE = 10
-
-  // Create audio player instance
-  const player = useAudioPlayer(currentAudioSource)
+  const [selectedPodcast, setSelectedPodcast] = useState<Podcast | null>(null)
+  const [playerVisible, setPlayerVisible] = useState(false)
 
   useEffect(() => {
     if (user) {
@@ -50,25 +45,32 @@ export default function PodcastsScreen() {
     }
   }, [user])
 
-  // Cleanup audio when component unmounts
   useEffect(() => {
-    return () => {
-      if (player.playing) {
-        player.pause()
+    const configureAudio = async () => {
+      try {
+        await Audio.setAudioModeAsync({
+          allowsRecordingIOS: false,
+          staysActiveInBackground: true,
+          playsInSilentModeIOS: true,
+          shouldDuckAndroid: true,
+          playThroughEarpieceAndroid: false,
+        })
+      } catch (error) {
+        console.error("Error setting audio mode:", error)
       }
     }
-  }, [player])
+    configureAudio()
+  }, [])
 
   const loadPodcasts = async () => {
     try {
       setPodcastsLoading(true)
       const podcastData = await getUserPodcasts()
-      // Sort podcasts by id in descending order
       const sortedPodcasts = podcastData.sort((a, b) => b.id - a.id)
       setPodcasts(sortedPodcasts)
     } catch (error) {
-      console.error('Error loading podcasts:', error)
-      Alert.alert('Error', 'Failed to load podcasts')
+      console.error("Error loading podcasts:", error)
+      Alert.alert("Error", "Failed to load podcasts")
     } finally {
       setPodcastsLoading(false)
     }
@@ -80,69 +82,19 @@ export default function PodcastsScreen() {
     setRefreshing(false)
   }
 
-  const handleLoadMore = () => {
-    const totalPages = Math.ceil(podcasts.length / ITEMS_PER_PAGE)
-    if (currentPage < totalPages && !loadingMore) {
-      setLoadingMore(true)
-      setTimeout(() => {
-        setCurrentPage(prev => prev + 1)
-        setLoadingMore(false)
-      }, 500)
-    }
+  const handlePodcastPress = (podcast: Podcast) => {
+    setSelectedPodcast(podcast)
+    setPlayerVisible(true)
   }
-
-  const handleScroll = (event: any) => {
-    const { layoutMeasurement, contentOffset, contentSize } = event.nativeEvent
-    const paddingToBottom = 20
-    
-    if (layoutMeasurement.height + contentOffset.y >= contentSize.height - paddingToBottom) {
-      handleLoadMore()
-    }
-  }
-
-  const playPodcast = async (podcast: Podcast) => {
-    try {
-      if (playingPodcastId === podcast.id && player.playing) {
-        // If same podcast is playing, pause it
-        player.pause()
-        setPlayingPodcastId(null)
-        return
-      }
-
-      // Set new audio source and play
-      setCurrentAudioSource({ uri: podcast.audioFileUrl })
-      setPlayingPodcastId(podcast.id)
-      
-      // Start playing
-      player.play()
-
-    } catch (error) {
-      console.error('Error playing podcast:', error)
-      Alert.alert('Error', 'Failed to play podcast')
-    }
-  }
-
-  // Monitor when audio finishes to mark as listened
-  useEffect(() => {
-    if (player.duration > 0 && player.currentTime >= player.duration) {
-      if (playingPodcastId) {
-        markAsListened(playingPodcastId)
-        setPlayingPodcastId(null)
-      }
-    }
-  }, [player.currentTime, player.duration, playingPodcastId])
 
   const markAsListened = async (podcastId: number) => {
     try {
       await updatePodcastListenedStatus(podcastId)
-      // Update local state
-      setPodcasts(prevPodcasts => 
-        prevPodcasts.map(podcast => 
-          podcast.id === podcastId ? { ...podcast, listened: true } : podcast
-        )
+      setPodcasts((prevPodcasts) =>
+        prevPodcasts.map((podcast) => (podcast.id === podcastId ? { ...podcast, listened: true } : podcast)),
       )
     } catch (error) {
-      console.error('Error marking podcast as listened:', error)
+      console.error("Error marking podcast as listened:", error)
     }
   }
 
@@ -155,198 +107,112 @@ export default function PodcastsScreen() {
     })
   }
 
-  const formatTime = (milliseconds: number) => {
-    const minutes = Math.floor(milliseconds / 60000)
-    const seconds = Math.floor((milliseconds % 60000) / 1000)
-    return `${minutes}:${seconds.toString().padStart(2, '0')}`
+  const formatDuration = (duration: string) => {
+    // Convert duration to minutes if it's in a different format
+    return duration
   }
-
-  // Calculate pagination
-  const totalPages = Math.ceil(podcasts.length / ITEMS_PER_PAGE)
-  const startIndex = 0
-  const endIndex = currentPage * ITEMS_PER_PAGE
-  const paginatedPodcasts = podcasts.slice(startIndex, endIndex)
-  const hasMorePodcasts = currentPage < totalPages
 
   if (loading || !user || podcastsLoading) {
     return (
       <SafeAreaView style={styles.safeArea}>
-        <ThemedView style={styles.container}>
-          <View style={styles.loadingContainer}>
-            <ActivityIndicator size="large" color="#0f172a" />
-            <ThemedText style={styles.loadingText}>Loading podcasts...</ThemedText>
-          </View>
-        </ThemedView>
+        <View style={styles.loadingContainer}>
+          <ActivityIndicator size="large" color="#0f172a" />
+          <Text style={styles.loadingText}>Loading podcasts...</Text>
+        </View>
       </SafeAreaView>
     )
   }
 
   return (
     <SafeAreaView style={styles.safeArea}>
-      <ThemedView style={styles.container}>
-        <StatusBar barStyle="dark-content" backgroundColor="#FAF8EC" />
-        
-        {/* Header */}
-        <View style={styles.header}>
+      <StatusBar barStyle="dark-content" backgroundColor="#FFFFFF" />
+
+      {/* Header */}
+      <View style={styles.header}>
+        <View style={styles.headerContent}>
           <View style={styles.logoContainer}>
-            <View style={styles.brainIcon}>
-              <Image 
-                source={require("@/assets/auxiom-logo.png")} 
-                style={styles.logoImage} 
-                resizeMode="contain" 
-              />
-            </View>
-            <ThemedText style={styles.logoText}>
-              {user.name ? `${user.name.split(" ")[0]}'s Podcasts` : "Your Podcasts"}
-            </ThemedText>
+            <Image source={require("@/assets/auxiom-logo.png")} style={styles.logoImage} resizeMode="contain" />
+          </View>
+          <View style={styles.headerTextContainer}>
+            <Text style={styles.headerTitle}>Podcasts</Text>
+            <Text style={styles.headerSubtitle}>
+              {user.name ? `Welcome back, ${user.name.split(" ")[0]}` : "Welcome back"}
+            </Text>
           </View>
         </View>
+      </View>
 
-        {/* Podcasts Feed */}
-        <ScrollView 
-          style={styles.scrollView} 
-          showsVerticalScrollIndicator={false}
-          onScroll={handleScroll}
-          scrollEventThrottle={400}
-          refreshControl={
-            <RefreshControl
-              refreshing={refreshing}
-              onRefresh={onRefresh}
-              tintColor="#0f172a"
-              colors={["#0f172a"]}
-            />
-          }
-        >
-          {/* Results Info */}
-          <View style={styles.resultsInfo}>
-            <ThemedText style={styles.resultsText}>
-              {podcasts.length > 0 ? (
-                `Showing ${startIndex + 1}-${Math.min(endIndex, podcasts.length)} of ${podcasts.length} ${podcasts.length === 1 ? "podcast" : "podcasts"}`
-              ) : (
-                "0 podcasts"
-              )}
-            </ThemedText>
-          </View>
-
-          {paginatedPodcasts.length === 0 ? (
-            <View style={styles.noResultsContainer}>
-              <ThemedText style={styles.noResultsTitle}>No podcasts available</ThemedText>
-              <ThemedText style={styles.noResultsText}>
-                Podcasts will appear here once they are available
-              </ThemedText>
+      {/* Podcasts List */}
+      <ScrollView
+        style={styles.scrollView}
+        showsVerticalScrollIndicator={false}
+        refreshControl={
+          <RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor="#0f172a" colors={["#0f172a"]} />
+        }
+      >
+        <View style={styles.podcastsContainer}>
+          {podcasts.length === 0 ? (
+            <View style={styles.emptyState}>
+              <Text style={styles.emptyStateTitle}>No podcasts yet</Text>
+              <Text style={styles.emptyStateSubtitle}>Your podcasts will appear here when available</Text>
             </View>
           ) : (
-            paginatedPodcasts.map((podcast) => (
-              <View key={podcast.id} style={styles.podcastCard}>
-                <View style={styles.podcastHeader}>
-                  {/* Listened Badge */}
+            podcasts.map((podcast, index) => (
+              <TouchableOpacity
+                key={podcast.id}
+                style={[
+                  styles.podcastCard,
+                  index === 0 && styles.firstCard,
+                  index === podcasts.length - 1 && styles.lastCard,
+                ]}
+                onPress={() => handlePodcastPress(podcast)}
+                activeOpacity={0.7}
+              >
+                <View style={styles.podcastArtwork}>
+                  <View style={styles.artworkPlaceholder}>
+                    <Text style={styles.episodeNumber}>{podcast.episode_number}</Text>
+                  </View>
+                  {!podcast.listened && <View style={styles.unreadIndicator} />}
+                </View>
+
+                <View style={styles.podcastInfo}>
+                  <Text style={styles.podcastTitle} numberOfLines={2}>
+                    {podcast.title}
+                  </Text>
+                  <Text style={styles.podcastMeta}>
+                    Episode {podcast.episode_number} • {formatDate(podcast.date)}
+                  </Text>
+                  <Text style={styles.podcastDuration}>{formatDuration(podcast.duration)}</Text>
+                </View>
+
+                <View style={styles.podcastActions}>
                   {podcast.listened && (
                     <View style={styles.listenedBadge}>
-                      <ThemedText style={styles.listenedBadgeText}>✓ Listened</ThemedText>
+                      <Text style={styles.listenedBadgeText}>✓</Text>
                     </View>
                   )}
-                  
-                  {/* Title and Episode */}
-                  <ThemedText style={styles.podcastTitle}>
-                    Episode {podcast.episodeNumber}: {podcast.title}
-                  </ThemedText>
-                  
-                  {/* Clusters Preview */}
-                  {podcast.clusters.length > 0 && (
-                    <View style={styles.clustersPreview}>
-                      <ThemedText style={styles.clustersTitle}>Featured Topics:</ThemedText>
-                      {podcast.clusters.slice(0, 2).map((cluster, index) => (
-                        <View key={index} style={styles.clusterItem}>
-                          <ThemedText style={styles.clusterItemTitle}>{cluster.title}</ThemedText>
-                          <ThemedText style={styles.clusterItemDescription}>
-                            {cluster.description.length > 100 
-                              ? `${cluster.description.substring(0, 100)}...` 
-                              : cluster.description}
-                          </ThemedText>
-                        </View>
-                      ))}
-                      {podcast.clusters.length > 2 && (
-                        <ThemedText style={styles.moreTopicsText}>
-                          +{podcast.clusters.length - 2} more topics
-                        </ThemedText>
-                      )}
-                    </View>
-                  )}
-                  
-                  {/* Audio Player */}
-                  <View style={styles.audioPlayerContainer}>
-                    <TouchableOpacity
-                      style={styles.playButton}
-                      onPress={() => playPodcast(podcast)}
-                    >
-                      <ThemedText style={styles.playButtonText}>
-                        {playingPodcastId === podcast.id && player.playing ? "⏸️" : "▶️"}
-                      </ThemedText>
-                    </TouchableOpacity>
-                    
-                    <View style={styles.audioInfo}>
-                      <View style={styles.progressContainer}>
-                        <View style={styles.progressBar}>
-                          <View 
-                            style={[
-                              styles.progressFill, 
-                              { 
-                                width: playingPodcastId === podcast.id && player.duration > 0 
-                                  ? `${(player.currentTime / player.duration) * 100}%` 
-                                  : '0%' 
-                              }
-                            ]} 
-                          />
-                        </View>
-                      </View>
-                      <View style={styles.timeContainer}>
-                        <ThemedText style={styles.timeText}>
-                          {playingPodcastId === podcast.id 
-                            ? `${formatTime(player.currentTime * 1000)} / ${formatTime(player.duration * 1000)}` 
-                            : podcast.duration}
-                        </ThemedText>
-                      </View>
-                    </View>
-                  </View>
-                  
-                  {/* Podcast Meta */}
-                  <View style={styles.podcastMeta}>
-                    <ThemedText style={styles.metaText}>{formatDate(podcast.date)}</ThemedText>
-                    <TouchableOpacity 
-                      onPress={() => markAsListened(podcast.id)}
-                      disabled={podcast.listened}
-                    >
-                      <ThemedText style={[
-                        styles.markListenedText,
-                        podcast.listened && styles.markListenedTextDisabled
-                      ]}>
-                        {podcast.listened ? "Listened" : "Mark as Listened"}
-                      </ThemedText>
-                    </TouchableOpacity>
-                  </View>
+                  <TouchableOpacity style={styles.playButton}>
+                    <Text style={styles.playButtonIcon}>▶</Text>
+                  </TouchableOpacity>
                 </View>
-              </View>
+              </TouchableOpacity>
             ))
           )}
+        </View>
+      </ScrollView>
 
-          {/* Loading More Indicator */}
-          {loadingMore && hasMorePodcasts && (
-            <View style={styles.loadingMoreContainer}>
-              <ActivityIndicator size="small" color="#0f172a" />
-              <ThemedText style={styles.loadingMoreText}>Loading more podcasts...</ThemedText>
-            </View>
-          )}
-
-          {/* End of Feed Message */}
-          {!hasMorePodcasts && podcasts.length > ITEMS_PER_PAGE && (
-            <View style={styles.endOfFeedContainer}>
-              <ThemedText style={styles.endOfFeedText}>
-                You've reached the end of your podcasts
-              </ThemedText>
-            </View>
-          )}
-        </ScrollView>
-      </ThemedView>
+      {/* Podcast Player Modal */}
+      {selectedPodcast && (
+        <PodcastPlayer
+          podcast={selectedPodcast}
+          visible={playerVisible}
+          onClose={() => {
+            setPlayerVisible(false)
+            setSelectedPodcast(null)
+          }}
+          onMarkAsListened={markAsListened}
+        />
+      )}
     </SafeAreaView>
   )
 }
@@ -356,234 +222,184 @@ const styles = StyleSheet.create({
     flex: 1,
     backgroundColor: "#FAF8EC",
   },
-  container: {
-    flex: 1,
-    backgroundColor: "#FAF8EC",
-  },
   loadingContainer: {
     flex: 1,
-    justifyContent: 'center',
-    alignItems: 'center',
+    justifyContent: "center",
+    alignItems: "center",
+    backgroundColor: "#FAF8EC",
   },
   loadingText: {
-    color: "#0f172a",
+    marginTop: 16,
     fontSize: 16,
+    color: "#687076",
     fontWeight: "500",
-    marginTop: 10,
   },
   header: {
-    paddingHorizontal: 24,
-    paddingVertical: 16,
+    backgroundColor: "#FAF8EC",
     borderBottomWidth: 1,
-    borderBottomColor: "#0f172a20",
-    marginTop: 20,
+    borderBottomColor: "#F0F0F0",
+  },
+  headerContent: {
+    flexDirection: "row",
+    alignItems: "center",
+    paddingHorizontal: 20,
+    paddingVertical: 16,
   },
   logoContainer: {
-    flexDirection: "row",
-    alignItems: "center",
-  },
-  brainIcon: {
-    width: 40,
-    height: 40,
-    borderRadius: 20,
-    marginRight: 10,
-  },
-  logoImage: {
-    width: 36,
-    height: 36,
-  },
-  logoText: {
-    fontSize: 30,
-    fontWeight: "700",
-    color: "#0f172a",
-    paddingTop: 10,
-  },
-  scrollView: {
-    flex: 1,
-    paddingHorizontal: 16,
-  },
-  resultsInfo: {
-    paddingVertical: 8,
-  },
-  resultsText: {
-    fontSize: 12,
-    color: "#0f172a80",
-  },
-  noResultsContainer: {
-    alignItems: "center",
-    justifyContent: "center",
-    paddingVertical: 48,
-  },
-  noResultsTitle: {
-    fontSize: 18,
-    fontWeight: "600",
-    color: "#0f172a",
-    marginBottom: 8,
-  },
-  noResultsText: {
-    fontSize: 14,
-    color: "#0f172a80",
-    marginBottom: 16,
-  },
-  podcastCard: {
-    marginVertical: 12,
-    backgroundColor: "#0f172a15",
-    borderRadius: 16,
-    overflow: "hidden",
-    elevation: 2,
-    shadowColor: "#0f172a",
-    shadowOffset: {
-      width: 0,
-      height: 1,
-    },
-    shadowOpacity: 0.1,
-    shadowRadius: 2,
-    borderWidth: 1,
-    borderColor: "#0f172a20",
-  },
-  podcastHeader: {
-    padding: 20,
-  },
-  listenedBadge: {
-    alignSelf: "flex-start",
-    backgroundColor: "#22c55e",
-    paddingHorizontal: 8,
-    paddingVertical: 4,
-    borderRadius: 12,
-    marginBottom: 12,
-  },
-  listenedBadgeText: {
-    color: "#FFFFFF",
-    fontSize: 10,
-    fontWeight: "600",
-  },
-  podcastTitle: {
-    color: "#0f172a",
-    fontSize: 20,
-    fontWeight: "bold",
-    marginBottom: 16,
-    lineHeight: 28,
-  },
-  clustersPreview: {
-    marginBottom: 16,
-  },
-  clustersTitle: {
-    fontSize: 14,
-    fontWeight: "600",
-    color: "#0f172a",
-    marginBottom: 8,
-  },
-  clusterItem: {
-    marginBottom: 8,
-    paddingLeft: 12,
-    borderLeftWidth: 3,
-    borderLeftColor: "#0f172a30",
-  },
-  clusterItemTitle: {
-    fontSize: 12,
-    fontWeight: "600",
-    color: "#0f172a",
-    marginBottom: 2,
-  },
-  clusterItemDescription: {
-    fontSize: 11,
-    color: "#0f172a70",
-    lineHeight: 16,
-  },
-  moreTopicsText: {
-    fontSize: 11,
-    color: "#0f172a60",
-    fontStyle: "italic",
-    marginTop: 4,
-  },
-  audioPlayerContainer: {
-    flexDirection: "row",
-    alignItems: "center",
-    backgroundColor: "#FFFFFF",
-    borderRadius: 12,
-    padding: 12,
-    marginBottom: 16,
-    borderWidth: 1,
-    borderColor: "#0f172a20",
-  },
-  playButton: {
     width: 48,
     height: 48,
     borderRadius: 24,
-    backgroundColor: "#0f172a",
+    backgroundColor: "#F8F9FA",
     justifyContent: "center",
     alignItems: "center",
-    marginRight: 12,
+    marginRight: 16,
   },
-  playButtonText: {
-    fontSize: 20,
-    color: "#FAF8EC",
+  logoImage: {
+    width: 32,
+    height: 32,
   },
-  audioInfo: {
+  headerTextContainer: {
     flex: 1,
   },
-  progressContainer: {
-    marginBottom: 6,
-  },
-  progressBar: {
-    height: 4,
-    backgroundColor: "#0f172a20",
-    borderRadius: 2,
-    overflow: "hidden",
-  },
-  progressFill: {
-    height: "100%",
-    backgroundColor: "#0f172a",
-    borderRadius: 2,
-  },
-  timeContainer: {
-    alignItems: "flex-end",
-  },
-  timeText: {
-    fontSize: 12,
-    color: "#0f172a70",
-  },
-  podcastMeta: {
-    flexDirection: "row",
-    justifyContent: "space-between",
-    alignItems: "center",
-    paddingTop: 16,
-    marginTop: 16,
-    borderTopWidth: 1,
-    borderTopColor: "#0f172a30",
-  },
-  metaText: {
-    fontSize: 12,
-    color: "#0f172a70",
-  },
-  markListenedText: {
-    fontSize: 12,
+  headerTitle: {
+    fontSize: 28,
+    fontWeight: "700",
     color: "#0f172a",
+    marginBottom: 2,
+  },
+  headerSubtitle: {
+    fontSize: 16,
+    color: "#687076",
     fontWeight: "500",
-    textDecorationLine: "underline",
   },
-  markListenedTextDisabled: {
-    color: "#0f172a50",
-    textDecorationLine: "none",
+  scrollView: {
+    flex: 1,
+    backgroundColor: "#FAF8EC",
   },
-  loadingMoreContainer: {
+  podcastsContainer: {
+    paddingHorizontal: 20,
+    paddingTop: 8,
+    paddingBottom: 32,
+  },
+  emptyState: {
+    alignItems: "center",
+    justifyContent: "center",
+    paddingVertical: 80,
+  },
+  emptyStateTitle: {
+    fontSize: 20,
+    fontWeight: "600",
+    color: "#0f172a",
+    marginBottom: 8,
+  },
+  emptyStateSubtitle: {
+    fontSize: 16,
+    color: "#687076",
+    textAlign: "center",
+  },
+  podcastCard: {
     flexDirection: "row",
+    alignItems: "center",
+    paddingVertical: 16,
+    paddingHorizontal: 16,
+    backgroundColor: "#FAF8EC",
+    borderRadius: 16,
+    marginVertical: 4,
+    shadowColor: "#000000",
+    shadowOffset: {
+      width: 0,
+      height: 2,
+    },
+    shadowOpacity: 0.1,
+    shadowRadius: 8,
+    elevation: 3,
+    borderWidth: 1,
+    borderColor: "#0f172a20",
+  },
+  firstCard: {
+    marginTop: 8,
+  },
+  lastCard: {
+    marginBottom: 8,
+  },
+  podcastArtwork: {
+    position: "relative",
+    marginRight: 16,
+  },
+  artworkPlaceholder: {
+    width: 64,
+    height: 64,
+    borderRadius: 12,
+    backgroundColor: "#0f172a",
     justifyContent: "center",
     alignItems: "center",
-    paddingVertical: 20,
   },
-  loadingMoreText: {
-    marginLeft: 10,
+  episodeNumber: {
+    fontSize: 18,
+    fontWeight: "700",
+    color: "#FFFFFF",
+  },
+  unreadIndicator: {
+    position: "absolute",
+    top: -4,
+    right: -4,
+    width: 12,
+    height: 12,
+    borderRadius: 6,
+    backgroundColor: "#FF3B30",
+    borderWidth: 2,
+    borderColor: "#FFFFFF",
+  },
+  podcastInfo: {
+    flex: 1,
+    marginRight: 12,
+  },
+  podcastTitle: {
+    fontSize: 16,
+    fontWeight: "600",
+    color: "#0f172a",
+    lineHeight: 22,
+    marginBottom: 4,
+  },
+  podcastMeta: {
     fontSize: 14,
-    color: "#0f172a80",
+    color: "#687076",
+    marginBottom: 2,
   },
-  endOfFeedContainer: {
+  podcastDuration: {
+    fontSize: 13,
+    color: "#687076",
+    fontWeight: "500",
+  },
+  podcastActions: {
     alignItems: "center",
-    paddingVertical: 20,
+    justifyContent: "center",
   },
-  endOfFeedText: {
-    fontSize: 14,
-    color: "#0f172a60",
-    fontStyle: "italic",
+  listenedBadge: {
+    width: 20,
+    height: 20,
+    borderRadius: 10,
+    backgroundColor: "#34C759",
+    justifyContent: "center",
+    alignItems: "center",
+    marginBottom: 8,
+  },
+  listenedBadgeText: {
+    fontSize: 12,
+    color: "#FFFFFF",
+    fontWeight: "700",
+  },
+  playButton: {
+    width: 40,
+    height: 40,
+    borderRadius: 20,
+    backgroundColor: "#0f172a",
+    justifyContent: "center",
+    alignItems: "center",
+  },
+  playButtonIcon: {
+    fontSize: 16,
+    color: "#FFFFFF",
+    marginLeft: 2,
   },
 })

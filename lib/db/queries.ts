@@ -89,7 +89,7 @@ export async function deleteUserAccount() {
 
 export async function resetPasswordForEmail(email: string) {
   const { data, error } = await supabase.auth.resetPasswordForEmail(email, {
-    redirectTo: 'https://placeholder-url.com/reset-password',
+    redirectTo: 'https://auxiomai.com/reset-password',
   });
   if (error) throw error;
   return data;
