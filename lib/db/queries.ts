@@ -116,10 +116,10 @@ export async function getArticles() {
 }
 
 // Update user's listened status for a podcast
-export async function updatePodcastListenedStatus(podcastId: number) {
+export async function updatePodcastCompletedStatus(podcastId: number) {
   const { data, error } = await supabase
     .from('podcasts')
-    .update({ listened: true })
+    .update({ completed: true })
     .eq('id', podcastId)
     .select()
     .single();

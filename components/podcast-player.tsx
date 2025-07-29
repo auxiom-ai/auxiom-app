@@ -1,32 +1,34 @@
-"use client"
-
 import { useState, useEffect } from "react"
 import { View, Text, Modal, TouchableOpacity, Dimensions, StyleSheet, StatusBar, Alert } from "react-native"
 import { Audio } from "expo-av"
+import { Ionicons } from "@expo/vector-icons"
 import type { Podcast } from "@/app/dashboard/podcasts"
 
 interface PodcastPlayerProps {
   podcast: Podcast
   visible: boolean
   onClose: () => void
-  onMarkAsListened: (podcastId: number) => void
+  onMarkAsCompleted: (podcastId: number) => void
 }
 
 const { height: SCREEN_HEIGHT } = Dimensions.get("window")
 
-export default function PodcastPlayer({ podcast, visible, onClose, onMarkAsListened }: PodcastPlayerProps) {
+export default function PodcastPlayer({ podcast, visible, onClose, onMarkAsCompleted }: PodcastPlayerProps) {
   const [sound, setSound] = useState<Audio.Sound | null>(null)
   const [isPlaying, setIsPlaying] = useState(false)
   const [isLoading, setIsLoading] = useState(false)
   const [position, setPosition] = useState(0)
   const [duration, setDuration] = useState(0)
   const [playbackRate, setPlaybackRate] = useState(1.0)
+  const [hasMarkedAsCompleted, setHasMarkedAsCompleted] = useState(false)
 
   const playbackRates = [0.5, 0.75, 1.0, 1.25, 1.5, 2.0]
+  const tenSecondsInMs = 10000
 
   useEffect(() => {
     if (visible) {
       loadAudio()
+      setHasMarkedAsCompleted(podcast.completed)
     } else {
       cleanup()
     }
@@ -50,6 +52,7 @@ export default function PodcastPlayer({ podcast, visible, onClose, onMarkAsListe
     setIsPlaying(false)
     setPosition(0)
     setDuration(0)
+    setHasMarkedAsCompleted(false)
   }
 
   const loadAudio = async () => {
@@ -67,7 +70,11 @@ export default function PodcastPlayer({ podcast, visible, onClose, onMarkAsListe
 
       const { sound: newSound } = await Audio.Sound.createAsync(
         { uri: podcast.audio_file_url.trim() },
-        { shouldPlay: false, rate: playbackRate },
+        {
+          shouldPlay: false,
+          rate: playbackRate,
+          isLooping: false,
+        },
       )
 
       setSound(newSound)
@@ -85,9 +92,18 @@ export default function PodcastPlayer({ podcast, visible, onClose, onMarkAsListe
       setDuration(status.durationMillis || 0)
       setIsPlaying(status.isPlaying || false)
 
-      // Mark as listened when finished
+      // Mark as completed after 10 seconds
+      if (!hasMarkedAsCompleted && status.positionMillis >= tenSecondsInMs) {
+        setHasMarkedAsCompleted(true)
+        onMarkAsCompleted(podcast.id)
+      }
+
+      // Also mark as completed when finished
       if (status.durationMillis && status.positionMillis >= status.durationMillis) {
-        onMarkAsListened(podcast.id)
+        if (!hasMarkedAsCompleted) {
+          setHasMarkedAsCompleted(true)
+          onMarkAsCompleted(podcast.id)
+        }
       }
     }
   }
@@ -164,7 +180,7 @@ export default function PodcastPlayer({ podcast, visible, onClose, onMarkAsListe
         {/* Header */}
         <View style={styles.header}>
           <TouchableOpacity onPress={onClose} style={styles.closeButton}>
-            <Text style={styles.closeButtonText}>✕</Text>
+            <Ionicons name="close" size={20} color="#0f172a" />
           </TouchableOpacity>
           <Text style={styles.headerTitle}>Now Playing</Text>
           <View style={styles.placeholder} />
@@ -200,20 +216,20 @@ export default function PodcastPlayer({ podcast, visible, onClose, onMarkAsListe
         {/* Controls */}
         <View style={styles.controlsContainer}>
           <TouchableOpacity style={styles.controlButton} onPress={skipBackward}>
-            <Text style={styles.controlIcon}>⏪</Text>
+            <Ionicons name="play-back" size={28} color="#0f172a" />
             <Text style={styles.controlLabel}>15s</Text>
           </TouchableOpacity>
 
           <TouchableOpacity style={styles.playButton} onPress={togglePlayback} disabled={isLoading}>
             {isLoading ? (
-              <Text style={styles.playButtonText}>⏳</Text>
+              <Ionicons name="hourglass" size={32} color="#FAF8EC" />
             ) : (
-              <Text style={styles.playButtonText}>{isPlaying ? "⏸" : "▶"}</Text>
+              <Ionicons name={isPlaying ? "pause" : "play"} size={32} color="#FAF8EC" />
             )}
           </TouchableOpacity>
 
           <TouchableOpacity style={styles.controlButton} onPress={skipForward}>
-            <Text style={styles.controlIcon}>⏩</Text>
+            <Ionicons name="play-forward" size={28} color="#0f172a" />
             <Text style={styles.controlLabel}>30s</Text>
           </TouchableOpacity>
         </View>
@@ -224,8 +240,13 @@ export default function PodcastPlayer({ podcast, visible, onClose, onMarkAsListe
             <Text style={styles.speedButtonText}>{playbackRate}×</Text>
           </TouchableOpacity>
 
-          <TouchableOpacity style={styles.actionButton} onPress={() => onMarkAsListened(podcast.id)}>
-            <Text style={styles.actionButtonText}>{podcast.listened ? "Listened ✓" : "Mark as Listened"}</Text>
+          <TouchableOpacity
+            style={[styles.actionButton, hasMarkedAsCompleted && styles.actionButtonCompleted]}
+            onPress={() => onMarkAsCompleted(podcast.id)}
+          >
+            <Text style={[styles.actionButtonText, hasMarkedAsCompleted && styles.actionButtonTextCompleted]}>
+              {hasMarkedAsCompleted ? "Completed ✓" : "Mark as Completed"}
+            </Text>
           </TouchableOpacity>
         </View>
       </View>
@@ -254,11 +275,6 @@ const styles = StyleSheet.create({
     backgroundColor: "#0f172a20",
     justifyContent: "center",
     alignItems: "center",
-  },
-  closeButtonText: {
-    fontSize: 16,
-    color: "#0f172a",
-    fontWeight: "600",
   },
   headerTitle: {
     fontSize: 16,
@@ -353,15 +369,11 @@ const styles = StyleSheet.create({
     alignItems: "center",
     marginHorizontal: 24,
   },
-  controlIcon: {
-    fontSize: 24,
-    color: "#0f172a",
-    marginBottom: 4,
-  },
   controlLabel: {
     fontSize: 12,
     color: "#687076",
     fontWeight: "500",
+    marginTop: 4,
   },
   playButton: {
     width: 80,
@@ -378,11 +390,6 @@ const styles = StyleSheet.create({
     shadowOpacity: 0.3,
     shadowRadius: 8,
     elevation: 8,
-  },
-  playButtonText: {
-    fontSize: 32,
-    color: "#FAF8EC",
-    marginLeft: 2,
   },
   additionalControls: {
     flexDirection: "row",
@@ -406,9 +413,15 @@ const styles = StyleSheet.create({
     backgroundColor: "#0f172a",
     borderRadius: 16,
   },
+  actionButtonCompleted: {
+    backgroundColor: "#34C759",
+  },
   actionButtonText: {
     fontSize: 14,
     fontWeight: "600",
     color: "#FAF8EC",
+  },
+  actionButtonTextCompleted: {
+    color: "#FFFFFF",
   },
 })

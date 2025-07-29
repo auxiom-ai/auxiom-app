@@ -15,10 +15,12 @@ import {
   StyleSheet,
 } from "react-native"
 import { Audio } from "expo-av"
+import { Ionicons } from "@expo/vector-icons"
 import { useAuth } from "@/lib/auth-context"
 import { getUserPodcasts } from "@/lib/actions"
-import { updatePodcastListenedStatus } from "@/lib/db/queries"
+import { updatePodcastCompletedStatus } from "@/lib/db/queries"
 import PodcastPlayer from "@/components/podcast-player"
+import PodcastDropdown from "@/components/podcast-dropdown"
 
 export interface Podcast {
   id: number
@@ -27,7 +29,7 @@ export interface Podcast {
   date: string
   duration: string
   audio_file_url: string
-  listened: boolean
+  completed: boolean
   clusters: { title: string; description: string; gov: string[]; news: string[] }[]
 }
 
@@ -38,6 +40,7 @@ export default function PodcastsScreen() {
   const [podcastsLoading, setPodcastsLoading] = useState(true)
   const [selectedPodcast, setSelectedPodcast] = useState<Podcast | null>(null)
   const [playerVisible, setPlayerVisible] = useState(false)
+  const [expandedPodcast, setExpandedPodcast] = useState<number | null>(null)
 
   useEffect(() => {
     if (user) {
@@ -54,6 +57,8 @@ export default function PodcastsScreen() {
           playsInSilentModeIOS: true,
           shouldDuckAndroid: true,
           playThroughEarpieceAndroid: false,
+          // interruptionModeIOS: Audio.INTERRUPTION_MODE_IOS_DO_NOT_MIX,
+          // interruptionModeAndroid: Audio.INTERRUPTION_MODE_ANDROID_DO_NOT_MIX,
         })
       } catch (error) {
         console.error("Error setting audio mode:", error)
@@ -87,14 +92,18 @@ export default function PodcastsScreen() {
     setPlayerVisible(true)
   }
 
-  const markAsListened = async (podcastId: number) => {
+  const toggleDropdown = (podcastId: number) => {
+    setExpandedPodcast(expandedPodcast === podcastId ? null : podcastId)
+  }
+
+  const markAsCompleted = async (podcastId: number) => {
     try {
-      await updatePodcastListenedStatus(podcastId)
+      await updatePodcastCompletedStatus(podcastId)
       setPodcasts((prevPodcasts) =>
-        prevPodcasts.map((podcast) => (podcast.id === podcastId ? { ...podcast, listened: true } : podcast)),
+        prevPodcasts.map((podcast) => (podcast.id === podcastId ? { ...podcast, completed: true } : podcast)),
       )
     } catch (error) {
-      console.error("Error marking podcast as listened:", error)
+      console.error("Error marking podcast as completed:", error)
     }
   }
 
@@ -108,7 +117,6 @@ export default function PodcastsScreen() {
   }
 
   const formatDuration = (duration: string) => {
-    // Convert duration to minutes if it's in a different format
     return duration
   }
 
@@ -158,44 +166,60 @@ export default function PodcastsScreen() {
             </View>
           ) : (
             podcasts.map((podcast, index) => (
-              <TouchableOpacity
-                key={podcast.id}
-                style={[
-                  styles.podcastCard,
-                  index === 0 && styles.firstCard,
-                  index === podcasts.length - 1 && styles.lastCard,
-                ]}
-                onPress={() => handlePodcastPress(podcast)}
-                activeOpacity={0.7}
-              >
-                <View style={styles.podcastArtwork}>
-                  <View style={styles.artworkPlaceholder}>
-                    <Text style={styles.episodeNumber}>{podcast.episode_number}</Text>
-                  </View>
-                  {!podcast.listened && <View style={styles.unreadIndicator} />}
-                </View>
-
-                <View style={styles.podcastInfo}>
-                  <Text style={styles.podcastTitle} numberOfLines={2}>
-                    {podcast.title}
-                  </Text>
-                  <Text style={styles.podcastMeta}>
-                    Episode {podcast.episode_number} • {formatDate(podcast.date)}
-                  </Text>
-                  <Text style={styles.podcastDuration}>{formatDuration(podcast.duration)}</Text>
-                </View>
-
-                <View style={styles.podcastActions}>
-                  {podcast.listened && (
-                    <View style={styles.listenedBadge}>
-                      <Text style={styles.listenedBadgeText}>✓</Text>
+              <View key={podcast.id}>
+                <TouchableOpacity
+                  style={[
+                    styles.podcastCard,
+                    index === 0 && styles.firstCard,
+                    index === podcasts.length - 1 && styles.lastCard,
+                  ]}
+                  onPress={() => handlePodcastPress(podcast)}
+                  activeOpacity={0.7}
+                >
+                  <View style={styles.podcastArtwork}>
+                    <View style={styles.artworkPlaceholder}>
+                      <Text style={styles.episodeNumber}>{podcast.episode_number}</Text>
                     </View>
-                  )}
-                  <TouchableOpacity style={styles.playButton}>
-                    <Text style={styles.playButtonIcon}>▶</Text>
-                  </TouchableOpacity>
-                </View>
-              </TouchableOpacity>
+                    {/* Show red dot if NOT completed */}
+                    {!podcast.completed && <View style={styles.unreadIndicator} />}
+                  </View>
+
+                  <View style={styles.podcastInfo}>
+                    <Text style={styles.podcastTitle} numberOfLines={2}>
+                      {podcast.title}
+                    </Text>
+                    <Text style={styles.podcastMeta}>
+                      Episode {podcast.episode_number} • {formatDate(podcast.date)}
+                    </Text>
+                    <Text style={styles.podcastDuration}>{formatDuration(podcast.duration)}</Text>
+                  </View>
+
+                  <View style={styles.podcastActions}>
+                    {/* <TouchableOpacity
+                      style={styles.infoButton}
+                      onPress={(e) => {
+                        e.stopPropagation()
+                        toggleDropdown(podcast.id)
+                      }}
+                    >
+                      <Ionicons
+                        name={expandedPodcast === podcast.id ? "chevron-up" : "chevron-down"}
+                        size={20}
+                        color="#687076"
+                      />
+                    </TouchableOpacity> */}
+
+                    <TouchableOpacity style={styles.playButton} onPress={() => handlePodcastPress(podcast)}>
+                      <Ionicons name="play" size={16} color="#FFFFFF" />
+                    </TouchableOpacity>
+                  </View>
+                </TouchableOpacity>
+
+                {/* Dropdown Information
+                {expandedPodcast === podcast.id && (
+                  <PodcastDropdown podcast={podcast} onClose={() => setExpandedPodcast(null)} />
+                )} */}
+              </View>
             ))
           )}
         </View>
@@ -210,7 +234,7 @@ export default function PodcastsScreen() {
             setPlayerVisible(false)
             setSelectedPodcast(null)
           }}
-          onMarkAsListened={markAsListened}
+          onMarkAsCompleted={markAsCompleted}
         />
       )}
     </SafeAreaView>
@@ -346,7 +370,7 @@ const styles = StyleSheet.create({
     width: 12,
     height: 12,
     borderRadius: 6,
-    backgroundColor: "#FF3B30",
+    backgroundColor: "#ffd900ff",
     borderWidth: 2,
     borderColor: "#FFFFFF",
   },
@@ -375,7 +399,16 @@ const styles = StyleSheet.create({
     alignItems: "center",
     justifyContent: "center",
   },
-  listenedBadge: {
+  infoButton: {
+    width: 32,
+    height: 32,
+    borderRadius: 16,
+    backgroundColor: "#0f172a10",
+    justifyContent: "center",
+    alignItems: "center",
+    marginBottom: 8,
+  },
+  completedBadge: {
     width: 20,
     height: 20,
     borderRadius: 10,
@@ -384,11 +417,6 @@ const styles = StyleSheet.create({
     alignItems: "center",
     marginBottom: 8,
   },
-  listenedBadgeText: {
-    fontSize: 12,
-    color: "#FFFFFF",
-    fontWeight: "700",
-  },
   playButton: {
     width: 40,
     height: 40,
@@ -396,10 +424,5 @@ const styles = StyleSheet.create({
     backgroundColor: "#0f172a",
     justifyContent: "center",
     alignItems: "center",
-  },
-  playButtonIcon: {
-    fontSize: 16,
-    color: "#FFFFFF",
-    marginLeft: 2,
   },
 })
