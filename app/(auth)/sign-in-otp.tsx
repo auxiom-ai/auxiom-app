@@ -1,13 +1,28 @@
-import { sendOtpToEmail } from '@/lib/auth-utils';
-import { useRouter } from 'expo-router';
-import { useState } from 'react';
+import { sendOtpToEmail, handleMigratingUserAuth } from '@/lib/auth-utils';
+import { checkUserEmail } from '@/lib/actions';
+import { useRouter, useLocalSearchParams } from 'expo-router';
+import { useState, useEffect } from 'react';
 import { ActivityIndicator, Image, Keyboard, StyleSheet, Text, TextInput, TouchableOpacity, TouchableWithoutFeedback, View } from 'react-native';
 
 export default function SignInOtpScreen() {
   const [email, setEmail] = useState('');
+  const [password, setPassword] = useState('');
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
+  const [isMigratingUser, setIsMigratingUser] = useState(false);
+  const [showPasswordField, setShowPasswordField] = useState(false);
   const router = useRouter();
+  const { email: paramEmail } = useLocalSearchParams<{ email: string }>();
+
+  // Pre-populate email if passed from previous screen
+  useEffect(() => {
+    if (paramEmail) {
+      setEmail(paramEmail);
+      // If email is pre-populated, immediately check if it's a migrating user
+      setIsMigratingUser(true);
+      setShowPasswordField(true);
+    }
+  }, [paramEmail]);
 
   const onSendOtp = async () => {
     if (!email.trim()) {
@@ -15,20 +30,72 @@ export default function SignInOtpScreen() {
       return;
     }
 
+    // If we already know it's a migrating user and password field is shown
+    if (showPasswordField) {
+      if (!password.trim()) {
+        setError('Please enter your password');
+        return;
+      }
+      
+      setError('');
+      setLoading(true);
+      
+      try {
+        // For migrating users, create auth account with email + password
+        const { success, error } = await handleMigratingUserAuth(email.trim(), password.trim());
+        
+        if (!success) {
+          setError(error || 'Failed to create account for migration');
+        } else {
+          // Navigate to email confirmation screen since signUp sends confirmation email
+          router.replace({
+            pathname: "/email-confirmation" as any,
+            params: { 
+              email: email.trim(),
+              isMigrating: 'true'
+            }
+          });
+        }
+      } catch (err) {
+        setError('An unexpected error occurred');
+        console.error(err);
+      } finally {
+        setLoading(false);
+      }
+      return;
+    }
+
     setError('');
     setLoading(true);
     
     try {
-      const { success, error } = await sendOtpToEmail(email);
-      
-      if (!success) {
-        setError(error || 'Failed to send verification code');
+      // Check if this is a migrating user first
+      const userEmailResult = await checkUserEmail(email.trim());
+
+      if (userEmailResult.error) {
+        setError('Unable to verify email. Please try again.');
+        setLoading(false);
+        return;
+      }
+
+      if (userEmailResult.isMigratingUser) {
+        // User exists in user table but not in auth table - show password field
+        setIsMigratingUser(true);
+        setShowPasswordField(true);
+        setError('');
       } else {
-        // Navigate to OTP verification screen
-        router.push({
-          pathname: "/verify-otp" as any,
-          params: { email: email.trim() }
-        });
+        // Regular OTP flow for existing auth users or new users
+        const { success, error } = await sendOtpToEmail(email.trim());
+        
+        if (!success) {
+          setError(error || 'Failed to send verification code');
+        } else {
+          // Navigate to OTP verification screen
+          router.push({
+            pathname: "/verify-otp" as any,
+            params: { email: email.trim() }
+          });
+        }
       }
     } catch (err) {
       setError('An unexpected error occurred');
@@ -50,9 +117,14 @@ export default function SignInOtpScreen() {
         style={{ width: 80, height: 80, marginBottom: 16 }}
         resizeMode="contain"
       />
-      <Text style={styles.title}>Sign in with one-time code</Text>
+      <Text style={styles.title}>
+        {isMigratingUser ? 'Account Migration' : 'Sign in with one-time code'}
+      </Text>
       <Text style={styles.subtitle}>
-        Enter your email and we'll send you a one-time verification code
+        {isMigratingUser 
+          ? 'We found your existing account. Please create a password to complete the migration.'
+          : 'Enter your email and we\'ll send you a one-time verification code'
+        }
       </Text>
       
       <TextInput
@@ -62,8 +134,19 @@ export default function SignInOtpScreen() {
         onChangeText={setEmail}
         autoCapitalize="none"
         keyboardType="email-address"
-        editable={!loading}
+        editable={!loading && !showPasswordField}
       />
+      
+      {showPasswordField && (
+        <TextInput
+          style={styles.input}
+          placeholder="Create a password"
+          value={password}
+          onChangeText={setPassword}
+          secureTextEntry
+          editable={!loading}
+        />
+      )}
       
       {error ? <Text style={styles.error}>{error}</Text> : null}
       
@@ -75,7 +158,9 @@ export default function SignInOtpScreen() {
         {loading ? (
           <ActivityIndicator color="#fff" />
         ) : (
-          <Text style={styles.buttonText}>Send verification code</Text>
+          <Text style={styles.buttonText}>
+            {showPasswordField ? 'Complete Migration' : 'Send verification code'}
+          </Text>
         )}
       </TouchableOpacity>
       

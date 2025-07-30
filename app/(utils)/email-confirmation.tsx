@@ -21,7 +21,8 @@ export default function EmailConfirmationScreen() {
   const [timer, setTimer] = useState(60);
   const [userEmail, setUserEmail] = useState('');
   const otpInputRef = useRef<TextInput>(null);
-  const { email } = useLocalSearchParams<{ email: string }>();
+  const { email, isMigrating } = useLocalSearchParams<{ email: string; isMigrating: string }>();
+  const isUserMigrating = isMigrating === 'true';
 
   // Get user email from URL parameters
   useEffect(() => {
@@ -70,11 +71,25 @@ export default function EmailConfirmationScreen() {
       } else {
         // Email verified successfully, now sync user profile
         if (data.user) {
-          await syncUserProfile(data.user);
+          if (isUserMigrating) {
+            // For migrating users, link the auth user to existing user profile
+            const userProfile = await syncUserProfile(data.user, true);
+            if (!userProfile) {
+              setError('Failed to migrate account. Please try again.');
+              return;
+            }
+          } else {
+            // For new users, create or update profile normally
+            await syncUserProfile(data.user);
+          }
         }
         
-        // Proceed to dashboard
-        router.replace('/onboarding/occupation' as any);
+        // Proceed to dashboard - migrating users skip onboarding
+        if (isUserMigrating) {
+          router.replace('/dashboard/feed' as any);
+        } else {
+          router.replace('/onboarding/occupation' as any);
+        }
       }
     } catch (err) {
       setError('An unexpected error occurred');

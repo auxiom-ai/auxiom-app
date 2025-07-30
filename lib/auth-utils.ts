@@ -1,4 +1,5 @@
 import { supabase } from './supabase';
+import { migrateUser } from './actions';
 
 export interface AuthResult {
   success: boolean;
@@ -70,8 +71,21 @@ export async function handleSignUp(email: string, password: string): Promise<Aut
 }
 
 // Create or update user profile
-export async function syncUserProfile(authUser: any): Promise<UserData | null> {
+export async function syncUserProfile(authUser: any, isExistingUser: boolean = false): Promise<Boolean | null> {
   try {
+    if (isExistingUser) {
+      const { success, error } = await migrateUser(authUser.email, authUser.id);
+
+      if (!success) {
+        console.log('Email: ', authUser.email);
+        console.log('Auth User ID: ', authUser.id);
+        console.error('Error updating existing user profile:', error);
+        return null;
+      }
+      
+      return success ? true : null;
+    }
+
     // Check if user profile exists by auth_user_id
     const { data: existingProfile, error: fetchError } = await supabase
       .from('users')
@@ -114,7 +128,7 @@ export async function syncUserProfile(authUser: any): Promise<UserData | null> {
         return null;
       }
       
-      return newProfile as UserData;
+      return true;
     } else {
       // Update existing profile if needed
       const needsUpdate = existingProfile.verified !== !!authUser.email_confirmed_at;
@@ -131,17 +145,63 @@ export async function syncUserProfile(authUser: any): Promise<UserData | null> {
 
         if (updateError) {
           console.error('Error updating user profile:', updateError);
-          return existingProfile as UserData;
+          return true;
         }
         
-        return updatedProfile as UserData;
+        return true;
       }
       
-      return existingProfile as UserData;
+      return true;
     }
   } catch (error) {
     console.error('Error in syncUserProfile:', error);
     return null;
+  }
+}
+
+// Handle migrating user authentication
+export async function handleMigratingUserAuth(
+  email: string, 
+  password?: string
+): Promise<OtpAuthResult> {
+  try {
+    if (password) {
+      // For migrating users, create a proper auth account with email + password
+      const { data, error } = await supabase.auth.signUp({
+        email: email.trim(),
+        password,
+      });
+
+      if (error) {
+        return { success: false, error: error.message };
+      }
+
+      return { 
+        success: true, 
+        data, 
+        isNewUser: false // This is an existing user migrating
+      };
+    } else {
+      // Fallback to OTP for backward compatibility
+      const { data, error } = await supabase.auth.signInWithOtp({
+        email: email.trim(),
+        options: {
+          shouldCreateUser: true,
+        }
+      });
+
+      if (error) {
+        return { success: false, error: error.message };
+      }
+
+      return { 
+        success: true, 
+        data, 
+        isNewUser: false // This is an existing user migrating
+      };
+    }
+  } catch (error) {
+    return { success: false, error: 'Failed to authenticate for migration' };
   }
 }
 

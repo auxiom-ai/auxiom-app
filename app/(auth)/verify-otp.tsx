@@ -11,16 +11,17 @@ import {
   TouchableWithoutFeedback,
   View 
 } from 'react-native';
-import { sendOtpToEmail, verifyOtp } from '@/lib/auth-utils';
+import { sendOtpToEmail, verifyOtp, syncUserProfile, handleMigratingUserAuth } from '@/lib/auth-utils';
 
 export default function VerifyOtpScreen() {
-  const { email } = useLocalSearchParams<{ email: string }>();
+  const { email, isMigrating } = useLocalSearchParams<{ email: string; isMigrating: string }>();
   const [otp, setOtp] = useState('');
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
   const [timer, setTimer] = useState(60);
   const router = useRouter();
   const otpInputRef = useRef<TextInput>(null);
+  const isUserMigrating = isMigrating === 'true';
   
   // Countdown timer for resend button
   useEffect(() => {
@@ -40,7 +41,7 @@ export default function VerifyOtpScreen() {
   }, []);
 
   const onVerifyOtp = async () => {
-    if (!otp.trim()) {
+    if (!otp.trim() || otp.length < 6) {
       setError('Please enter the verification code');
       return;
     }
@@ -55,6 +56,15 @@ export default function VerifyOtpScreen() {
       if (!success) {
         setError(verifyError || 'Invalid verification code');
       } else {
+        if (isUserMigrating && data.user) {
+          // For migrating users, sync the existing user profile with new auth_user_id
+          const userProfile = await syncUserProfile(data.user, true);
+          if (!userProfile) {
+            setError('Failed to migrate account. Please try again.');
+            return;
+          }
+        }
+
         // Check if email is verified
         if (data.user && !data.user.email_confirmed_at) {
           // Email not verified, redirect to confirmation screen
@@ -80,7 +90,15 @@ export default function VerifyOtpScreen() {
     setLoading(true);
     
     try {
-      const { success, error } = await sendOtpToEmail(email as string);
+      let success, error;
+      
+      if (isUserMigrating) {
+        // For migrating users, use the migration auth function
+        ({ success, error } = await handleMigratingUserAuth(email as string));
+      } else {
+        // For regular users, use normal OTP flow
+        ({ success, error } = await sendOtpToEmail(email as string));
+      }
       
       if (!success) {
         setError(error || 'Failed to resend verification code');

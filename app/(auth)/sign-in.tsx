@@ -2,7 +2,8 @@ import { supabase } from '@/lib/supabase';
 import { useRouter } from 'expo-router';
 import { useState } from 'react';
 import { Image, Keyboard, StyleSheet, Text, TextInput, TouchableOpacity, TouchableWithoutFeedback, View } from 'react-native';
-import { handleSignIn } from '@/lib/auth-utils';
+import { handleSignIn, handleMigratingUserAuth } from '@/lib/auth-utils';
+import { checkUserEmail } from '@/lib/actions';
 
 export default function SignInScreen() {
   const [email, setEmail] = useState('');
@@ -12,10 +13,21 @@ export default function SignInScreen() {
 
   const OnSignIn = async () => {
     setError('');
-    const { success, data, error } = await handleSignIn(email, password);
-    if (!success) {
-      setError(error || 'Failed to sign in');
-    } else {
+    
+    if (!email.trim()) {
+      setError('Please enter your email');
+      return;
+    }
+
+    if (!password.trim()) {
+      setError('Please enter your password');
+      return;
+    }
+
+    // First, try regular sign in
+    const { success, data, error: signInError } = await handleSignIn(email, password);
+    
+    if (success) {
       // Check if email is verified
       if (data.user && !data.user.email_confirmed_at) {
         // Email not verified, redirect to confirmation screen
@@ -29,6 +41,33 @@ export default function SignInScreen() {
         // Email verified, proceed to dashboard
         router.replace('/dashboard/feed' as any);   // TODO - should check onboarding state and direct accordingly 
       }
+      return;
+    }
+
+    // Sign in failed, check if this is a migrating user
+    try {
+      const userEmailResult = await checkUserEmail(email.trim());
+
+      if (userEmailResult.error) {
+        setError('Unable to verify email. Please try again.');
+        return;
+      }
+
+      if (userEmailResult.isMigratingUser) {
+        // User exists in user table but not in auth table - redirect to OTP page for migration
+        router.push({
+          pathname: "/sign-in-otp" as any,
+          params: { 
+            email: email.trim() 
+          }
+        });
+      } else {
+        // Either account doesn't exist or it's a regular auth error
+        setError(signInError || 'Account not found. Please create a new account or check your credentials.');
+      }
+    } catch (err) {
+      console.error('Error checking email existence:', err);
+      setError('An unexpected error occurred. Please try again.');
     }
   };
 
