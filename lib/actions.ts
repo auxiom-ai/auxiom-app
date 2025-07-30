@@ -86,11 +86,6 @@ export async function getUserPlan(): Promise<string> {
 }
 
 // Get user's podcasts
-export async function getUserPodcasts() {
-  const userData = await getUser();
-  if (!userData) {
-    throw new Error('User not authenticated');
-  }
-
-  return await getPodcastsByUser(27);
+export async function getUserPodcasts(id: number) {
+  return await getPodcastsByUser(id);
 }

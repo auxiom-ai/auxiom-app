@@ -13,6 +13,7 @@ import {
   ActivityIndicator,
   Alert,
   StyleSheet,
+  Linking,
 } from "react-native"
 import { Audio } from "expo-av"
 import { Ionicons } from "@expo/vector-icons"
@@ -41,6 +42,13 @@ export default function PodcastsScreen() {
   const [selectedPodcast, setSelectedPodcast] = useState<Podcast | null>(null)
   const [playerVisible, setPlayerVisible] = useState(false)
   const [expandedPodcast, setExpandedPodcast] = useState<number | null>(null)
+  const [isPlayerMinimized, setIsPlayerMinimized] = useState(false)
+  const [playbackState, setPlaybackState] = useState<{
+    isPlaying: boolean
+    position: number
+    duration: number
+    sound: any
+  } | null>(null)
 
   useEffect(() => {
     if (user) {
@@ -70,7 +78,11 @@ export default function PodcastsScreen() {
   const loadPodcasts = async () => {
     try {
       setPodcastsLoading(true)
-      const podcastData = await getUserPodcasts()
+      if (!user) {
+        Alert.alert("Error", "User not authenticated")
+        return
+      }
+      const podcastData = await getUserPodcasts(user.id)
       const sortedPodcasts = podcastData.sort((a, b) => b.id - a.id)
       setPodcasts(sortedPodcasts)
     } catch (error) {
@@ -90,6 +102,44 @@ export default function PodcastsScreen() {
   const handlePodcastPress = (podcast: Podcast) => {
     setSelectedPodcast(podcast)
     setPlayerVisible(true)
+    setIsPlayerMinimized(false)
+  }
+
+  const handleMinimizePlayer = () => {
+    setPlayerVisible(false)
+    setIsPlayerMinimized(true)
+  }
+
+  const handleMaximizePlayer = () => {
+    setPlayerVisible(true)
+    setIsPlayerMinimized(false)
+  }
+
+  const handleClosePlayer = () => {
+    // Clean up audio if it exists
+    if (playbackState?.sound) {
+      try {
+        playbackState.sound.unloadAsync()
+      } catch (error) {
+        console.error("Error cleaning up audio:", error)
+      }
+    }
+    
+    setPlayerVisible(false)
+    setIsPlayerMinimized(false)
+    setSelectedPodcast(null)
+    setPlaybackState(null)
+  }
+
+  const handlePlaybackStateChange = (state: any) => {
+    setPlaybackState(state)
+  }
+
+  const formatTime = (milliseconds: number) => {
+    const totalSeconds = Math.floor(milliseconds / 1000)
+    const minutes = Math.floor(totalSeconds / 60)
+    const seconds = totalSeconds % 60
+    return `${minutes}:${seconds.toString().padStart(2, "0")}`
   }
 
   const toggleDropdown = (podcastId: number) => {
@@ -118,6 +168,14 @@ export default function PodcastsScreen() {
 
   const formatDuration = (duration: string) => {
     return duration
+  }
+
+  const handleUpgradePress = async () => {
+    try {
+      await Linking.openURL("https://auxiomai.com/pricing")
+    } catch (error) {
+      console.error("Error opening pricing URL:", error)
+    }
   }
 
   if (loading || !user || podcastsLoading) {
@@ -161,8 +219,20 @@ export default function PodcastsScreen() {
         <View style={styles.podcastsContainer}>
           {podcasts.length === 0 ? (
             <View style={styles.emptyState}>
+              <View style={styles.emptyStateIcon}>
+                <Ionicons name="headset-outline" size={64} color="#687076" />
+              </View>
               <Text style={styles.emptyStateTitle}>No podcasts yet</Text>
               <Text style={styles.emptyStateSubtitle}>Your podcasts will appear here when available</Text>
+              
+              {user.plan === "free" && (
+                <TouchableOpacity style={styles.upgradePrompt} onPress={handleUpgradePress} activeOpacity={0.8}>
+                  <Ionicons name="star-outline" size={20} color="#ffd900" />
+                  <Text style={styles.upgradeText}>
+                    Upgrade to our paid or plus plan to get a weekly podcast!
+                  </Text>
+                </TouchableOpacity>
+              )}
             </View>
           ) : (
             podcasts.map((podcast, index) => (
@@ -230,12 +300,80 @@ export default function PodcastsScreen() {
         <PodcastPlayer
           podcast={selectedPodcast}
           visible={playerVisible}
-          onClose={() => {
-            setPlayerVisible(false)
-            setSelectedPodcast(null)
-          }}
+          onClose={handleClosePlayer}
+          onMinimize={handleMinimizePlayer}
           onMarkAsCompleted={markAsCompleted}
+          onPlaybackStateChange={handlePlaybackStateChange}
+          isMinimized={isPlayerMinimized}
+          initialState={isPlayerMinimized && playbackState ? playbackState : undefined}
         />
+      )}
+
+      {/* Minimized Player Bar */}
+      {isPlayerMinimized && selectedPodcast && playbackState && (
+        <TouchableOpacity 
+          style={styles.minimizedPlayer} 
+          onPress={handleMaximizePlayer}
+          activeOpacity={0.9}
+        >
+          <View style={styles.minimizedPlayerContent}>
+            <View style={styles.minimizedArtwork}>
+              <Text style={styles.minimizedEpisodeNumber}>{selectedPodcast.episode_number}</Text>
+            </View>
+            
+            <View style={styles.minimizedInfo}>
+              <Text style={styles.minimizedTitle} numberOfLines={1}>
+                {selectedPodcast.title}
+              </Text>
+              <View style={styles.minimizedProgressContainer}>
+                <View style={styles.minimizedProgressBar}>
+                  <View 
+                    style={[
+                      styles.minimizedProgressFill, 
+                      { 
+                        width: `${playbackState.duration > 0 ? (playbackState.position / playbackState.duration) * 100 : 0}%` 
+                      }
+                    ]} 
+                  />
+                </View>
+              </View>
+            </View>
+
+            <TouchableOpacity 
+              style={styles.minimizedPlayButton}
+              onPress={async (e) => {
+                e.stopPropagation()
+                if (playbackState.sound) {
+                  try {
+                    if (playbackState.isPlaying) {
+                      await playbackState.sound.pauseAsync()
+                    } else {
+                      await playbackState.sound.playAsync()
+                    }
+                  } catch (error) {
+                    console.error("Error toggling playback:", error)
+                  }
+                }
+              }}
+            >
+              <Ionicons 
+                name={playbackState.isPlaying ? "pause" : "play"} 
+                size={16} 
+                color="#FFFFFF" 
+              />
+            </TouchableOpacity>
+
+            <TouchableOpacity 
+              style={styles.minimizedCloseButton}
+              onPress={(e) => {
+                e.stopPropagation()
+                handleClosePlayer()
+              }}
+            >
+              <Ionicons name="close" size={16} color="#687076" />
+            </TouchableOpacity>
+          </View>
+        </TouchableOpacity>
       )}
     </SafeAreaView>
   )
@@ -273,7 +411,6 @@ const styles = StyleSheet.create({
     width: 48,
     height: 48,
     borderRadius: 24,
-    backgroundColor: "#F8F9FA",
     justifyContent: "center",
     alignItems: "center",
     marginRight: 16,
@@ -309,17 +446,49 @@ const styles = StyleSheet.create({
     alignItems: "center",
     justifyContent: "center",
     paddingVertical: 80,
+    paddingHorizontal: 32,
+  },
+  emptyStateIcon: {
+    width: 120,
+    height: 120,
+    borderRadius: 60,
+    backgroundColor: "#0f172a08",
+    justifyContent: "center",
+    alignItems: "center",
+    marginBottom: 24,
   },
   emptyStateTitle: {
-    fontSize: 20,
-    fontWeight: "600",
+    fontSize: 24,
+    fontWeight: "700",
     color: "#0f172a",
-    marginBottom: 8,
+    marginBottom: 12,
+    textAlign: "center",
   },
   emptyStateSubtitle: {
     fontSize: 16,
     color: "#687076",
     textAlign: "center",
+    lineHeight: 24,
+    marginBottom: 24,
+  },
+  upgradePrompt: {
+    flexDirection: "row",
+    alignItems: "center",
+    backgroundColor: "#ffd90015",
+    paddingHorizontal: 20,
+    paddingVertical: 16,
+    borderRadius: 16,
+    borderWidth: 1,
+    borderColor: "#ffd90030",
+    maxWidth: 320,
+  },
+  upgradeText: {
+    fontSize: 15,
+    color: "#0f172a",
+    fontWeight: "500",
+    marginLeft: 8,
+    textAlign: "center",
+    lineHeight: 20,
   },
   podcastCard: {
     flexDirection: "row",
@@ -422,6 +591,84 @@ const styles = StyleSheet.create({
     height: 40,
     borderRadius: 20,
     backgroundColor: "#0f172a",
+    justifyContent: "center",
+    alignItems: "center",
+  },
+  minimizedPlayer: {
+    position: "absolute",
+    bottom: 0,
+    left: 0,
+    right: 0,
+    backgroundColor: "#FFFFFF",
+    borderTopWidth: 1,
+    borderTopColor: "#F0F0F0",
+    shadowColor: "#000000",
+    shadowOffset: {
+      width: 0,
+      height: -2,
+    },
+    shadowOpacity: 0.1,
+    shadowRadius: 8,
+    elevation: 8,
+  },
+  minimizedPlayerContent: {
+    flexDirection: "row",
+    alignItems: "center",
+    paddingHorizontal: 16,
+    paddingVertical: 12,
+  },
+  minimizedArtwork: {
+    width: 40,
+    height: 40,
+    borderRadius: 8,
+    backgroundColor: "#0f172a",
+    justifyContent: "center",
+    alignItems: "center",
+    marginRight: 12,
+  },
+  minimizedEpisodeNumber: {
+    fontSize: 14,
+    fontWeight: "700",
+    color: "#FFFFFF",
+  },
+  minimizedInfo: {
+    flex: 1,
+    marginRight: 12,
+  },
+  minimizedTitle: {
+    fontSize: 14,
+    fontWeight: "600",
+    color: "#0f172a",
+    marginBottom: 4,
+  },
+  minimizedProgressContainer: {
+    width: "100%",
+  },
+  minimizedProgressBar: {
+    height: 2,
+    backgroundColor: "#0f172a20",
+    borderRadius: 1,
+    overflow: "hidden",
+  },
+  minimizedProgressFill: {
+    height: "100%",
+    backgroundColor: "#0f172a",
+    borderRadius: 1,
+  },
+  minimizedPlayButton: {
+    width: 32,
+    height: 32,
+    borderRadius: 16,
+    backgroundColor: "#0f172a",
+    justifyContent: "center",
+    alignItems: "center",
+    marginRight: 8,
+  },
+  minimizedCloseButton: {
+    width: 32,
+    height: 32,
+    borderRadius: 16,
+    backgroundColor: "#0f172a10",
     justifyContent: "center",
     alignItems: "center",
   },

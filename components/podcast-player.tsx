@@ -4,16 +4,74 @@ import { Audio } from "expo-av"
 import { Ionicons } from "@expo/vector-icons"
 import type { Podcast } from "@/app/dashboard/podcasts"
 
+// Global audio manager to ensure only one podcast plays at a time
+class AudioManager {
+  private static instance: AudioManager
+  private currentSound: Audio.Sound | null = null
+  private currentPlayerId: string | null = null
+
+  static getInstance(): AudioManager {
+    if (!AudioManager.instance) {
+      AudioManager.instance = new AudioManager()
+    }
+    return AudioManager.instance
+  }
+
+  async stopCurrentAudio(): Promise<void> {
+    if (this.currentSound) {
+      try {
+        await this.currentSound.unloadAsync()
+      } catch (error) {
+        console.error("Error stopping current audio:", error)
+      }
+      this.currentSound = null
+      this.currentPlayerId = null
+    }
+  }
+
+  setCurrentAudio(sound: Audio.Sound, playerId: string): void {
+    this.currentSound = sound
+    this.currentPlayerId = playerId
+  }
+
+  getCurrentPlayerId(): string | null {
+    return this.currentPlayerId
+  }
+}
+
 interface PodcastPlayerProps {
   podcast: Podcast
   visible: boolean
   onClose: () => void
+  onMinimize?: () => void
   onMarkAsCompleted: (podcastId: number) => void
+  onPlaybackStateChange?: (state: {
+    isPlaying: boolean
+    position: number
+    duration: number
+    sound: Audio.Sound | null
+  }) => void
+  isMinimized?: boolean
+  initialState?: {
+    sound: Audio.Sound | null
+    position: number
+    duration: number
+    isPlaying: boolean
+  }
 }
 
 const { height: SCREEN_HEIGHT } = Dimensions.get("window")
 
-export default function PodcastPlayer({ podcast, visible, onClose, onMarkAsCompleted }: PodcastPlayerProps) {
+export default function PodcastPlayer({ 
+  podcast, 
+  visible, 
+  onClose, 
+  onMinimize, 
+  onMarkAsCompleted,
+  onPlaybackStateChange,
+  isMinimized,
+  initialState
+}: PodcastPlayerProps) {
   const [sound, setSound] = useState<Audio.Sound | null>(null)
   const [isPlaying, setIsPlaying] = useState(false)
   const [isLoading, setIsLoading] = useState(false)
@@ -24,19 +82,44 @@ export default function PodcastPlayer({ podcast, visible, onClose, onMarkAsCompl
 
   const playbackRates = [0.5, 0.75, 1.0, 1.25, 1.5, 2.0]
   const tenSecondsInMs = 10000
+  const audioManager = AudioManager.getInstance()
+  const playerId = `podcast-${podcast.id}`
 
   useEffect(() => {
     if (visible) {
-      loadAudio()
-      setHasMarkedAsCompleted(podcast.completed)
-    } else {
-      cleanup()
+      // If we have initial state (maximizing from minimized), restore it
+      if (initialState) {
+        setSound(initialState.sound)
+        setPosition(initialState.position)
+        setDuration(initialState.duration)
+        setIsPlaying(initialState.isPlaying)
+        setHasMarkedAsCompleted(podcast.completed)
+        
+        // Set up playback status updates for existing sound
+        if (initialState.sound) {
+          initialState.sound.setOnPlaybackStatusUpdate(onPlaybackStatusUpdate)
+        }
+      } else {
+        // Fresh load - only if we don't have a sound already
+        if (!sound) {
+          loadAudio()
+          setHasMarkedAsCompleted(podcast.completed)
+        }
+      }
     }
+    // Don't cleanup when visible becomes false (minimizing)
+    // Cleanup will be handled by the onClose callback
 
     return () => {
-      cleanup()
+      // Only cleanup on unmount, not when minimizing
     }
-  }, [visible])
+  }, [visible, initialState])
+
+  // Cleanup when the component is truly closed (not just minimized)
+  useEffect(() => {
+    // When the close button is pressed, onClose will handle cleanup
+    // We don't need automatic cleanup here
+  }, [])
 
   useEffect(() => {
     if (sound) {
@@ -49,6 +132,10 @@ export default function PodcastPlayer({ podcast, visible, onClose, onMarkAsCompl
       sound.unloadAsync()
       setSound(null)
     }
+    // Clear audio manager if this was the current playing audio
+    if (audioManager.getCurrentPlayerId() === playerId) {
+      audioManager.stopCurrentAudio()
+    }
     setIsPlaying(false)
     setPosition(0)
     setDuration(0)
@@ -58,6 +145,9 @@ export default function PodcastPlayer({ podcast, visible, onClose, onMarkAsCompl
   const loadAudio = async () => {
     try {
       setIsLoading(true)
+
+      // Stop any currently playing audio from other players
+      await audioManager.stopCurrentAudio()
 
       if (sound) {
         await sound.unloadAsync()
@@ -88,9 +178,23 @@ export default function PodcastPlayer({ podcast, visible, onClose, onMarkAsCompl
 
   const onPlaybackStatusUpdate = (status: any) => {
     if (status.isLoaded) {
-      setPosition(status.positionMillis || 0)
-      setDuration(status.durationMillis || 0)
-      setIsPlaying(status.isPlaying || false)
+      const currentPosition = status.positionMillis || 0
+      const currentDuration = status.durationMillis || 0
+      const currentIsPlaying = status.isPlaying || false
+      
+      setPosition(currentPosition)
+      setDuration(currentDuration)
+      setIsPlaying(currentIsPlaying)
+
+      // Notify parent component about playback state changes
+      if (onPlaybackStateChange) {
+        onPlaybackStateChange({
+          isPlaying: currentIsPlaying,
+          position: currentPosition,
+          duration: currentDuration,
+          sound
+        })
+      }
 
       // Mark as completed after 10 seconds
       if (!hasMarkedAsCompleted && status.positionMillis >= tenSecondsInMs) {
@@ -115,6 +219,8 @@ export default function PodcastPlayer({ podcast, visible, onClose, onMarkAsCompl
       if (isPlaying) {
         await sound.pauseAsync()
       } else {
+        // Register this sound with the audio manager when starting playback
+        audioManager.setCurrentAudio(sound, playerId)
         await sound.playAsync()
       }
     } catch (error) {
@@ -183,7 +289,11 @@ export default function PodcastPlayer({ podcast, visible, onClose, onMarkAsCompl
             <Ionicons name="close" size={20} color="#0f172a" />
           </TouchableOpacity>
           <Text style={styles.headerTitle}>Now Playing</Text>
-          <View style={styles.placeholder} />
+          {onMinimize && (
+            <TouchableOpacity onPress={onMinimize} style={styles.minimizeButton}>
+              <Ionicons name="chevron-down" size={20} color="#0f172a" />
+            </TouchableOpacity>
+          )}
         </View>
 
         {/* Podcast Artwork */}
@@ -269,6 +379,14 @@ const styles = StyleSheet.create({
     marginBottom: 32,
   },
   closeButton: {
+    width: 32,
+    height: 32,
+    borderRadius: 16,
+    backgroundColor: "#0f172a20",
+    justifyContent: "center",
+    alignItems: "center",
+  },
+  minimizeButton: {
     width: 32,
     height: 32,
     borderRadius: 16,

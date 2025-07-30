@@ -1,3 +1,5 @@
+"use client"
+
 import { ThemedText } from "@/components/ThemedText"
 import { ThemedView } from "@/components/ThemedView"
 import { Ionicons } from "@expo/vector-icons"
@@ -11,7 +13,6 @@ import {
   StyleSheet,
   TouchableOpacity,
   View,
-  FlatList,
   ActivityIndicator,
 } from "react-native"
 import RenderHtml from "react-native-render-html"
@@ -25,16 +26,14 @@ export default function ArticleDetailScreen() {
   const { articleData } = useLocalSearchParams()
 
   // Parse the article data from the navigation params using useMemo to prevent recreation on every render
-  const article = React.useMemo(() => 
-    articleData ? JSON.parse(articleData as string) : null
-  , [articleData])
-  
+  const article = React.useMemo(() => (articleData ? JSON.parse(articleData as string) : null), [articleData])
+
   const [similarArticles, setSimilarArticles] = useState<any[]>([])
   const [isLoading, setIsLoading] = useState(false)
 
   // Fetch similar articles based on the current article's embedding
   useEffect(() => {
-    const fetchSimilarArticles = async() => {
+    const fetchSimilarArticles = async () => {
       if (article && article.embedding) {
         try {
           setIsLoading(true)
@@ -51,7 +50,7 @@ export default function ArticleDetailScreen() {
     }
 
     fetchSimilarArticles()
-  }, [article?.embedding]) // Only depend on the embedding, not the entire article object
+  }, [article]) // Only depend on the article object
 
   if (!article) {
     return (
@@ -87,7 +86,7 @@ export default function ArticleDetailScreen() {
   const navigateToArticle = (article: any) => {
     router.push({
       pathname: "/(utils)/article-detail",
-      params: { articleData: JSON.stringify(article) }
+      params: { articleData: JSON.stringify(article) },
     })
   }
 
@@ -176,7 +175,7 @@ export default function ArticleDetailScreen() {
           </View>
 
           {/* People Section */}
-          <View style={styles.section}>
+          { article.people.length > 0 && <View style={styles.section}>
             <View style={styles.sectionHeader}>
               <Ionicons name="people" size={20} color="#1F2937" />
               <ThemedText style={styles.sectionTitle}>Key Figures</ThemedText>
@@ -186,17 +185,21 @@ export default function ArticleDetailScreen() {
                 <View key={index} style={styles.authorCard}>
                   <View style={styles.authorAvatar}>
                     <ThemedText style={styles.authorInitials}>
-                      {person.split(" ").map((n: string) => n[0]).join("").slice(0, 2)}
+                      {person
+                        .split(" ")
+                        .map((n: string) => n[0])
+                        .join("")
+                        .slice(0, 2)}
                     </ThemedText>
                   </View>
                   <ThemedText style={styles.authorName}>{person}</ThemedText>
                 </View>
               ))}
             </View>
-          </View>
+          </View> }
 
           {/* Similar Articles Section */}
-          <View style={[styles.section, styles.lastSection]}>
+          <View style={styles.section}>
             <View style={styles.sectionHeader}>
               <Ionicons name="link" size={20} color="#1F2937" />
               <ThemedText style={styles.sectionTitle}>Similar Articles</ThemedText>
@@ -204,14 +207,14 @@ export default function ArticleDetailScreen() {
             {isLoading ? (
               <ActivityIndicator size="small" color="#3B82F6" />
             ) : similarArticles.length > 0 ? (
-              <ScrollView 
+              <ScrollView
                 horizontal
                 showsHorizontalScrollIndicator={false}
                 contentContainerStyle={styles.horizontalScrollContent}
               >
                 {similarArticles.map((similarArticle: any, index: number) => (
-                  <TouchableOpacity 
-                    key={index} 
+                  <TouchableOpacity
+                    key={index}
                     style={styles.newsCard}
                     onPress={() => navigateToArticle(similarArticle)}
                   >
@@ -237,6 +240,73 @@ export default function ArticleDetailScreen() {
               <ThemedText style={styles.noContentText}>No similar articles found</ThemedText>
             )}
           </View>
+
+          {/* Sources Section - Moved to bottom and redesigned */}
+          {article.sources && article.sources.length > 0 && (
+            <View style={[styles.section, styles.lastSection]}>
+              <View style={styles.sectionHeader}>
+                <Ionicons name="library-outline" size={20} color="#1F2937" />
+                <ThemedText style={styles.sectionTitle}>Sources & References</ThemedText>
+              </View>
+              <ThemedText style={styles.sourcesSubtitle}>
+                {article.sources.length} source{article.sources.length !== 1 ? "s" : ""} referenced
+              </ThemedText>
+
+              <ScrollView
+                horizontal
+                showsHorizontalScrollIndicator={false}
+                contentContainerStyle={styles.horizontalScrollContent}
+              >
+                {article.sources.map((source: any, index: number) => (
+                  <TouchableOpacity
+                    key={index}
+                    style={styles.modernSourceCard}
+                    onPress={() => handleOpenLink(source.url)}
+                    activeOpacity={0.8}
+                  >
+                    <View style={styles.sourceCardHeader}>
+                      <View style={styles.sourceNumberBadge}>
+                        <ThemedText style={styles.sourceNumber}>{index + 1}</ThemedText>
+                      </View>
+                      <View
+                        style={[
+                          styles.modernSourceTypeBadge,
+                          source.type === "primary" ? styles.modernPrimaryBadge : styles.modernNewsBadge,
+                        ]}
+                      >
+                        <Ionicons
+                          name={source.type === "primary" ? "document-text" : "newspaper"}
+                          size={12}
+                          color="#FFFFFF"
+                          style={styles.badgeIcon}
+                        />
+                        <ThemedText style={styles.modernSourceTypeText}>
+                          {source.type === "primary" ? "Primary" : "News"}
+                        </ThemedText>
+                      </View>
+                    </View>
+
+                    <View style={styles.sourceCardContent}>
+                      <ThemedText style={styles.modernSourceTitle} numberOfLines={3}>
+                        {source.title}
+                      </ThemedText>
+                      <View style={styles.modernSourceProvider}>
+                        <Ionicons name="globe-outline" size={14} color="#9BA1A6" />
+                        <ThemedText style={styles.modernSourceProviderText}>{source.source}</ThemedText>
+                      </View>
+                    </View>
+
+                    <View style={styles.sourceCardFooter}>
+                      <View style={styles.sourceActionButton}>
+                        <ThemedText style={styles.sourceActionText}>View Source</ThemedText>
+                        <Ionicons name="open-outline" size={14} color="#FFFFFF" />
+                      </View>
+                    </View>
+                  </TouchableOpacity>
+                ))}
+              </ScrollView>
+            </View>
+          )}
         </ScrollView>
       </ThemedView>
     </SafeAreaView>
@@ -468,8 +538,7 @@ const styles = StyleSheet.create({
     flexWrap: "wrap",
   },
   topicTag: {
-    backgroundColor: "#DBEAFE",
-    borderColor: "#93C5FD",
+    backgroundColor: "#0f172a",
     borderWidth: 1,
     paddingHorizontal: 12,
     paddingVertical: 6,
@@ -478,7 +547,7 @@ const styles = StyleSheet.create({
     marginBottom: 8,
   },
   topicTagText: {
-    color: "#1E40AF",
+    color: "#FAF8EC",
     fontSize: 12,
     fontWeight: "600",
   },
@@ -527,5 +596,115 @@ const styles = StyleSheet.create({
     fontWeight: "500",
     textAlign: "center",
     lineHeight: 16,
+  },
+  sourcesSubtitle: {
+    fontSize: 14,
+    color: "#6B7280",
+    fontWeight: "500",
+    marginBottom: 16,
+    marginLeft: 28, // Align with section title
+  },
+  modernSourceCard: {
+    width: cardWidth,
+    backgroundColor: "#1F2937",
+    borderRadius: 16,
+    marginRight: 16,
+    height: 220,
+    shadowColor: "#000",
+    shadowOffset: {
+      width: 0,
+      height: 2,
+    },
+    shadowOpacity: 0.1,
+    shadowRadius: 3,
+    elevation: 3,
+  },
+  sourceCardHeader: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "space-between",
+    padding: 16,
+    paddingBottom: 12,
+    borderBottomWidth: 1,
+    borderBottomColor: "rgba(255, 255, 255, 0.1)",
+  },
+  sourceNumberBadge: {
+    width: 24,
+    height: 24,
+    borderRadius: 12,
+    backgroundColor: "rgba(255, 255, 255, 0.2)",
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  sourceNumber: {
+    fontSize: 11,
+    fontWeight: "700",
+    color: "#FFFFFF",
+  },
+  modernSourceTypeBadge: {
+    flexDirection: "row",
+    alignItems: "center",
+    paddingHorizontal: 8,
+    paddingVertical: 4,
+    borderRadius: 10,
+  },
+  modernPrimaryBadge: {
+    backgroundColor: "#DC2626",
+  },
+  modernNewsBadge: {
+    backgroundColor: "#3B82F6",
+  },
+  badgeIcon: {
+    marginRight: 3,
+  },
+  modernSourceTypeText: {
+    fontSize: 10,
+    fontWeight: "700",
+    color: "#FFFFFF",
+    textTransform: "uppercase",
+    letterSpacing: 0.5,
+  },
+  sourceCardContent: {
+    flex: 1,
+    padding: 16,
+    paddingTop: 12,
+    paddingBottom: 12,
+    justifyContent: "space-between",
+  },
+  modernSourceTitle: {
+    fontSize: 15,
+    fontWeight: "600",
+    color: "#FFFFFF",
+    lineHeight: 22,
+    marginBottom: 12,
+    flex: 1,
+  },
+  modernSourceProvider: {
+    flexDirection: "row",
+    alignItems: "center",
+    marginTop: 8,
+  },
+  modernSourceProviderText: {
+    fontSize: 13,
+    color: "#9BA1A6",
+    fontWeight: "500",
+    marginLeft: 6,
+  },
+  sourceCardFooter: {
+    padding: 16,
+    paddingTop: 12,
+    borderTopWidth: 1,
+    borderTopColor: "rgba(255, 255, 255, 0.1)",
+  },
+  sourceActionButton: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "space-between",
+  },
+  sourceActionText: {
+    fontSize: 13,
+    fontWeight: "600",
+    color: "#FFFFFF",
+    flex: 1,
   },
 })

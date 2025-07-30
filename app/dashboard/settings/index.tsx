@@ -1,6 +1,6 @@
 import { router } from 'expo-router';
 import { useEffect, useState } from 'react';
-import { Alert, ScrollView, StyleSheet, Text, TextInput, TouchableOpacity, View } from 'react-native';
+import { Alert, Linking, ScrollView, StyleSheet, Text, TextInput, TouchableOpacity, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { getUser } from '@/lib/db/queries';
 import { requestPasswordReset, deleteAccount } from '@/lib/actions';
@@ -99,6 +99,13 @@ export default function ProfileScreen() {
     router.push('/dashboard/settings/edit-interests' as any);
   };
 
+  const handleContactSupport = () => {
+    Linking.openURL('mailto:rahil@auxiomai.com');
+  };
+
+  const handlePrivacyPolicy = () => {
+    Linking.openURL('https://auxiomai.com/privacy');
+  };
 
   return (
     <SafeAreaView style={{ flex: 1, backgroundColor: '#FAF7E6' }}>
@@ -203,6 +210,26 @@ export default function ProfileScreen() {
           </TouchableOpacity>
         </View>
 
+        {/* Information */}
+        <View style={styles.card}>
+          <Text style={styles.cardTitle}>Information</Text>
+          <Text style={styles.cardDesc}>Get help and learn more about our policies.</Text>
+          
+          <TouchableOpacity 
+            style={styles.linkButton} 
+            onPress={handleContactSupport}
+          >
+            <Text style={styles.linkButtonText}>Contact Support</Text>
+          </TouchableOpacity>
+          
+          <TouchableOpacity 
+            style={styles.linkButton} 
+            onPress={handlePrivacyPolicy}
+          >
+            <Text style={styles.linkButtonText}>Privacy Policy</Text>
+          </TouchableOpacity>
+        </View>
+
         {error ? <Text style={styles.error}>{error}</Text> : null}
       </ScrollView>
     </SafeAreaView>
@@ -301,5 +328,20 @@ const styles = StyleSheet.create({
     marginBottom: 2,
   },
   dangerButtonText: { color: '#fff', fontWeight: 'bold', fontSize: 16 },
+  linkButton: {
+    backgroundColor: 'transparent',
+    borderRadius: 8,
+    padding: 14,
+    alignItems: 'center',
+    marginTop: 6,
+    marginBottom: 2,
+    borderWidth: 1,
+    borderColor: '#888',
+  },
+  linkButtonText: { 
+    color: '#222', 
+    fontWeight: '600', 
+    fontSize: 16 
+  },
   error: { color: 'red', marginTop: 10, textAlign: 'center' },
 });

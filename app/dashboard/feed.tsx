@@ -13,10 +13,12 @@ import {
   TextInput,
   RefreshControl,
   ActivityIndicator,
+  Linking,
 } from "react-native"
 import { useArticleCache } from "@/lib/article-cache-context"
 import { useAuth } from "@/lib/auth-context"
 import { FeedSkeleton } from "@/components/feed-skeleton"
+import AsyncStorage from '@react-native-async-storage/async-storage'
 
 // Types for articles
 export interface Article {
@@ -31,6 +33,12 @@ export interface Article {
   duration: number
   featured: boolean
   embedding: number[]
+  sources: Array<{
+    url: string
+    type: string
+    title: string
+    source: string
+  }>
 }
 
 export default function FeedScreen() {
@@ -41,7 +49,40 @@ export default function FeedScreen() {
   const [currentPage, setCurrentPage] = useState(1)
   const [refreshing, setRefreshing] = useState(false)
   const [loadingMore, setLoadingMore] = useState(false)
+  const [isBannerDismissed, setIsBannerDismissed] = useState(false)
   const ITEMS_PER_PAGE = 10
+
+  // Check if banner was previously dismissed
+  useEffect(() => {
+    const checkBannerStatus = async () => {
+      try {
+        const dismissed = await AsyncStorage.getItem('upgrade_banner_dismissed')
+        if (dismissed === 'true') {
+          setIsBannerDismissed(true)
+        }
+      } catch (error) {
+        console.error('Error checking banner status:', error)
+      }
+    }
+    checkBannerStatus()
+  }, [])
+
+  const dismissBanner = async () => {
+    try {
+      await AsyncStorage.setItem('upgrade_banner_dismissed', 'true')
+      setIsBannerDismissed(true)
+    } catch (error) {
+      console.error('Error dismissing banner:', error)
+    }
+  }
+
+  const handleUpgradePress = async () => {
+    try {
+      await Linking.openURL('https://auxiomai.com/pricing')
+    } catch (error) {
+      console.error('Error opening pricing URL:', error)
+    }
+  }
 
   const onRefresh = async () => {
     setRefreshing(true)
@@ -201,6 +242,32 @@ export default function FeedScreen() {
               onChangeText={handleSearch}
             />
           </View>
+
+          {/* Upgrade Banner for Free Users */}
+          {user?.plan === 'free' && !isBannerDismissed && (
+            <View style={styles.upgradeBanner}>
+              <View style={styles.bannerContent}>
+                <ThemedText style={styles.bannerText}>
+                  Upgrade your plan to get your own personalized weekly briefing of the latest policy shifts!
+                </ThemedText>
+                <View style={styles.bannerButtons}>
+                  <TouchableOpacity 
+                    style={styles.upgradeButton}
+                    onPress={handleUpgradePress}
+                  >
+                    <ThemedText style={styles.upgradeButtonText}>Upgrade</ThemedText>
+                  </TouchableOpacity>
+                  <TouchableOpacity 
+                    style={styles.dismissButton}
+                    onPress={dismissBanner}
+                    hitSlop={{top: 10, bottom: 10, left: 10, right: 10}}
+                  >
+                    <ThemedText style={styles.dismissButtonText}>✕</ThemedText>
+                  </TouchableOpacity>
+                </View>
+              </View>
+            </View>
+          )}
 
           {/* Topic Filter */}
           <ScrollView 
@@ -636,5 +703,52 @@ const styles = StyleSheet.create({
     fontSize: 14,
     color: "#0f172a60",
     fontStyle: "italic",
+  },
+  upgradeBanner: {
+    backgroundColor: "#fef3c7",
+    borderWidth: 1,
+    borderColor: "#f59e0b",
+    borderRadius: 12,
+    marginVertical: 8,
+    overflow: "hidden",
+  },
+  bannerContent: {
+    flexDirection: "row",
+    alignItems: "center",
+    paddingHorizontal: 16,
+    paddingVertical: 12,
+  },
+  bannerText: {
+    flex: 1,
+    fontSize: 14,
+    color: "#92400e",
+    lineHeight: 20,
+    fontWeight: "500",
+  },
+  bannerButtons: {
+    flexDirection: "row",
+    alignItems: "center",
+    marginLeft: 12,
+  },
+  upgradeButton: {
+    backgroundColor: "#f59e0b",
+    paddingHorizontal: 12,
+    paddingVertical: 6,
+    borderRadius: 6,
+    marginRight: 8,
+  },
+  upgradeButtonText: {
+    fontSize: 12,
+    color: "#FFFFFF",
+    fontWeight: "600",
+  },
+  dismissButton: {
+    padding: 4,
+    borderRadius: 4,
+  },
+  dismissButtonText: {
+    fontSize: 16,
+    color: "#92400e",
+    fontWeight: "600",
   },
 })
