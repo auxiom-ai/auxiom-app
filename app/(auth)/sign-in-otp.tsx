@@ -122,7 +122,7 @@ export default function SignInOtpScreen() {
       </Text>
       <Text style={styles.subtitle}>
         {isMigratingUser 
-          ? 'We found your existing account. Please create a password to complete the migration.'
+          ? 'We found your existing account from our website. Please enter your password to complete your mobile account.'
           : 'Enter your email and we\'ll send you a one-time verification code'
         }
       </Text>
@@ -140,7 +140,7 @@ export default function SignInOtpScreen() {
       {showPasswordField && (
         <TextInput
           style={styles.input}
-          placeholder="Create a password"
+          placeholder="Enter your password"
           value={password}
           onChangeText={setPassword}
           secureTextEntry
