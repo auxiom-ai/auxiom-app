@@ -147,6 +147,7 @@ export async function getRecommendedArticles(userEmbedding: number[]) {
   const { data, error } = await supabase
     .rpc('sim_search', {
       query_embedding: userEmbedding,
+      match_count: 200, 
     });
 
   if (error) throw error;

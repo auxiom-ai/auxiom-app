@@ -74,6 +74,13 @@ export function ArticleCacheProvider({ children }: { children: ReactNode }) {
 
   // Fetch articles when the user changes, when the app loads initially, or when the cache expires
   useEffect(() => {
+    // Wait for user to be present (not null/undefined) before making requests
+    // This prevents fetching articles before user state is fully loaded
+    if (!user) {
+      console.log('User not present yet, skipping fetch')
+      return
+    }
+    
     // Only fetch if we don't have articles, user has changed, or cache is expired
     // And we're not already fetching
     if ((articles.length === 0 || !lastFetchTime || isCacheExpired()) && !isFetchingRef.current) {
