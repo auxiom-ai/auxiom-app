@@ -88,23 +88,19 @@ export default function PodcastPlayer({
   useEffect(() => {
     if (visible) {
       // If we have initial state (maximizing from minimized), restore it
-      if (initialState) {
+      if (initialState && !sound) {
         setSound(initialState.sound)
         setPosition(initialState.position)
         setDuration(initialState.duration)
         setIsPlaying(initialState.isPlaying)
-        setHasMarkedAsCompleted(podcast.completed)
         
         // Set up playback status updates for existing sound
         if (initialState.sound) {
           initialState.sound.setOnPlaybackStatusUpdate(onPlaybackStatusUpdate)
         }
-      } else {
+      } else if (!initialState && !sound) {
         // Fresh load - only if we don't have a sound already
-        if (!sound) {
-          loadAudio()
-          setHasMarkedAsCompleted(podcast.completed)
-        }
+        loadAudio()
       }
     }
     // Don't cleanup when visible becomes false (minimizing)
@@ -113,13 +109,12 @@ export default function PodcastPlayer({
     return () => {
       // Only cleanup on unmount, not when minimizing
     }
-  }, [visible, initialState])
+  }, [visible]) // Removed initialState from dependencies to break the cycle
 
-  // Cleanup when the component is truly closed (not just minimized)
+  // Initialize completed state when podcast changes
   useEffect(() => {
-    // When the close button is pressed, onClose will handle cleanup
-    // We don't need automatic cleanup here
-  }, [])
+    setHasMarkedAsCompleted(podcast.completed)
+  }, [podcast.id, podcast.completed])
 
   useEffect(() => {
     if (sound) {

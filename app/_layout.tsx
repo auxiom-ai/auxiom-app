@@ -34,7 +34,6 @@ export default function RootLayout() {
             <Stack.Screen name="(utils)/reset-password" options={{ headerShown: false }} />
             <Stack.Screen name="(utils)/forgot-password" options={{ headerShown: false }} />
             <Stack.Screen name="(utils)/email-confirmation" options={{ headerShown: false }} />
-            <Stack.Screen name="(utils)/article-detail" options={{ headerShown: false }} />
             <Stack.Screen name="+not-found" />
           </Stack>
           <StatusBar style="auto" />

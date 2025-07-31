@@ -85,7 +85,7 @@ export default function ArticleDetailScreen() {
 
   const navigateToArticle = (article: any) => {
     router.push({
-      pathname: "/(utils)/article-detail",
+      pathname: "/dashboard/article-detail",
       params: { articleData: JSON.stringify(article) },
     })
   }

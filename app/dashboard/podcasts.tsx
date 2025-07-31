@@ -15,12 +15,11 @@ import {
   StyleSheet,
   Linking,
 } from "react-native"
-import { Audio } from "expo-av"
 import { Ionicons } from "@expo/vector-icons"
 import { useAuth } from "@/lib/auth-context"
+import { usePodcast } from "@/lib/podcast-context"
 import { getUserPodcasts } from "@/lib/actions"
 import { updatePodcastCompletedStatus } from "@/lib/db/queries"
-import PodcastPlayer from "@/components/podcast-player"
 import PodcastDropdown from "@/components/podcast-dropdown"
 
 export interface Podcast {
@@ -36,44 +35,17 @@ export interface Podcast {
 
 export default function PodcastsScreen() {
   const { user, loading } = useAuth()
+  const { setCurrentPodcast, showPlayer } = usePodcast()
   const [podcasts, setPodcasts] = useState<Podcast[]>([])
   const [refreshing, setRefreshing] = useState(false)
   const [podcastsLoading, setPodcastsLoading] = useState(true)
-  const [selectedPodcast, setSelectedPodcast] = useState<Podcast | null>(null)
-  const [playerVisible, setPlayerVisible] = useState(false)
   const [expandedPodcast, setExpandedPodcast] = useState<number | null>(null)
-  const [isPlayerMinimized, setIsPlayerMinimized] = useState(false)
-  const [playbackState, setPlaybackState] = useState<{
-    isPlaying: boolean
-    position: number
-    duration: number
-    sound: any
-  } | null>(null)
 
   useEffect(() => {
     if (user) {
       loadPodcasts()
     }
   }, [user])
-
-  useEffect(() => {
-    const configureAudio = async () => {
-      try {
-        await Audio.setAudioModeAsync({
-          allowsRecordingIOS: false,
-          staysActiveInBackground: true,
-          playsInSilentModeIOS: true,
-          shouldDuckAndroid: true,
-          playThroughEarpieceAndroid: false,
-          // interruptionModeIOS: Audio.INTERRUPTION_MODE_IOS_DO_NOT_MIX,
-          // interruptionModeAndroid: Audio.INTERRUPTION_MODE_ANDROID_DO_NOT_MIX,
-        })
-      } catch (error) {
-        console.error("Error setting audio mode:", error)
-      }
-    }
-    configureAudio()
-  }, [])
 
   const loadPodcasts = async () => {
     try {
@@ -100,46 +72,8 @@ export default function PodcastsScreen() {
   }
 
   const handlePodcastPress = (podcast: Podcast) => {
-    setSelectedPodcast(podcast)
-    setPlayerVisible(true)
-    setIsPlayerMinimized(false)
-  }
-
-  const handleMinimizePlayer = () => {
-    setPlayerVisible(false)
-    setIsPlayerMinimized(true)
-  }
-
-  const handleMaximizePlayer = () => {
-    setPlayerVisible(true)
-    setIsPlayerMinimized(false)
-  }
-
-  const handleClosePlayer = () => {
-    // Clean up audio if it exists
-    if (playbackState?.sound) {
-      try {
-        playbackState.sound.unloadAsync()
-      } catch (error) {
-        console.error("Error cleaning up audio:", error)
-      }
-    }
-    
-    setPlayerVisible(false)
-    setIsPlayerMinimized(false)
-    setSelectedPodcast(null)
-    setPlaybackState(null)
-  }
-
-  const handlePlaybackStateChange = (state: any) => {
-    setPlaybackState(state)
-  }
-
-  const formatTime = (milliseconds: number) => {
-    const totalSeconds = Math.floor(milliseconds / 1000)
-    const minutes = Math.floor(totalSeconds / 60)
-    const seconds = totalSeconds % 60
-    return `${minutes}:${seconds.toString().padStart(2, "0")}`
+    setCurrentPodcast(podcast)
+    showPlayer()
   }
 
   const toggleDropdown = (podcastId: number) => {
@@ -295,86 +229,6 @@ export default function PodcastsScreen() {
         </View>
       </ScrollView>
 
-      {/* Podcast Player Modal */}
-      {selectedPodcast && (
-        <PodcastPlayer
-          podcast={selectedPodcast}
-          visible={playerVisible}
-          onClose={handleClosePlayer}
-          onMinimize={handleMinimizePlayer}
-          onMarkAsCompleted={markAsCompleted}
-          onPlaybackStateChange={handlePlaybackStateChange}
-          isMinimized={isPlayerMinimized}
-          initialState={isPlayerMinimized && playbackState ? playbackState : undefined}
-        />
-      )}
-
-      {/* Minimized Player Bar */}
-      {isPlayerMinimized && selectedPodcast && playbackState && (
-        <TouchableOpacity 
-          style={styles.minimizedPlayer} 
-          onPress={handleMaximizePlayer}
-          activeOpacity={0.9}
-        >
-          <View style={styles.minimizedPlayerContent}>
-            <View style={styles.minimizedArtwork}>
-              <Text style={styles.minimizedEpisodeNumber}>{selectedPodcast.episode_number}</Text>
-            </View>
-            
-            <View style={styles.minimizedInfo}>
-              <Text style={styles.minimizedTitle} numberOfLines={1}>
-                {selectedPodcast.title}
-              </Text>
-              <View style={styles.minimizedProgressContainer}>
-                <View style={styles.minimizedProgressBar}>
-                  <View 
-                    style={[
-                      styles.minimizedProgressFill, 
-                      { 
-                        width: `${playbackState.duration > 0 ? (playbackState.position / playbackState.duration) * 100 : 0}%` 
-                      }
-                    ]} 
-                  />
-                </View>
-              </View>
-            </View>
-
-            <TouchableOpacity 
-              style={styles.minimizedPlayButton}
-              onPress={async (e) => {
-                e.stopPropagation()
-                if (playbackState.sound) {
-                  try {
-                    if (playbackState.isPlaying) {
-                      await playbackState.sound.pauseAsync()
-                    } else {
-                      await playbackState.sound.playAsync()
-                    }
-                  } catch (error) {
-                    console.error("Error toggling playback:", error)
-                  }
-                }
-              }}
-            >
-              <Ionicons 
-                name={playbackState.isPlaying ? "pause" : "play"} 
-                size={16} 
-                color="#FFFFFF" 
-              />
-            </TouchableOpacity>
-
-            <TouchableOpacity 
-              style={styles.minimizedCloseButton}
-              onPress={(e) => {
-                e.stopPropagation()
-                handleClosePlayer()
-              }}
-            >
-              <Ionicons name="close" size={16} color="#687076" />
-            </TouchableOpacity>
-          </View>
-        </TouchableOpacity>
-      )}
     </SafeAreaView>
   )
 }
@@ -591,84 +445,6 @@ const styles = StyleSheet.create({
     height: 40,
     borderRadius: 20,
     backgroundColor: "#0f172a",
-    justifyContent: "center",
-    alignItems: "center",
-  },
-  minimizedPlayer: {
-    position: "absolute",
-    bottom: 0,
-    left: 0,
-    right: 0,
-    backgroundColor: "#FFFFFF",
-    borderTopWidth: 1,
-    borderTopColor: "#F0F0F0",
-    shadowColor: "#000000",
-    shadowOffset: {
-      width: 0,
-      height: -2,
-    },
-    shadowOpacity: 0.1,
-    shadowRadius: 8,
-    elevation: 8,
-  },
-  minimizedPlayerContent: {
-    flexDirection: "row",
-    alignItems: "center",
-    paddingHorizontal: 16,
-    paddingVertical: 12,
-  },
-  minimizedArtwork: {
-    width: 40,
-    height: 40,
-    borderRadius: 8,
-    backgroundColor: "#0f172a",
-    justifyContent: "center",
-    alignItems: "center",
-    marginRight: 12,
-  },
-  minimizedEpisodeNumber: {
-    fontSize: 14,
-    fontWeight: "700",
-    color: "#FFFFFF",
-  },
-  minimizedInfo: {
-    flex: 1,
-    marginRight: 12,
-  },
-  minimizedTitle: {
-    fontSize: 14,
-    fontWeight: "600",
-    color: "#0f172a",
-    marginBottom: 4,
-  },
-  minimizedProgressContainer: {
-    width: "100%",
-  },
-  minimizedProgressBar: {
-    height: 2,
-    backgroundColor: "#0f172a20",
-    borderRadius: 1,
-    overflow: "hidden",
-  },
-  minimizedProgressFill: {
-    height: "100%",
-    backgroundColor: "#0f172a",
-    borderRadius: 1,
-  },
-  minimizedPlayButton: {
-    width: 32,
-    height: 32,
-    borderRadius: 16,
-    backgroundColor: "#0f172a",
-    justifyContent: "center",
-    alignItems: "center",
-    marginRight: 8,
-  },
-  minimizedCloseButton: {
-    width: 32,
-    height: 32,
-    borderRadius: 16,
-    backgroundColor: "#0f172a10",
     justifyContent: "center",
     alignItems: "center",
   },

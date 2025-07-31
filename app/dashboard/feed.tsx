@@ -149,7 +149,7 @@ export default function FeedScreen() {
 
   const handleCardPress = (article: Article) => {
     router.push({
-      pathname: "/article-detail",
+      pathname: "/dashboard/article-detail",
       params: {
         articleData: JSON.stringify(article),
       },
