@@ -52,28 +52,8 @@ export default function FeedScreen() {
   const [isBannerDismissed, setIsBannerDismissed] = useState(false)
   const ITEMS_PER_PAGE = 10
 
-  // Check if banner was previously dismissed
-  useEffect(() => {
-    const checkBannerStatus = async () => {
-      try {
-        const dismissed = await AsyncStorage.getItem('upgrade_banner_dismissed')
-        if (dismissed === 'true') {
-          setIsBannerDismissed(true)
-        }
-      } catch (error) {
-        console.error('Error checking banner status:', error)
-      }
-    }
-    checkBannerStatus()
-  }, [])
-
-  const dismissBanner = async () => {
-    try {
-      await AsyncStorage.setItem('upgrade_banner_dismissed', 'true')
-      setIsBannerDismissed(true)
-    } catch (error) {
-      console.error('Error dismissing banner:', error)
-    }
+  const dismissBanner = () => {
+    setIsBannerDismissed(true)
   }
 
   const handleUpgradePress = async () => {
