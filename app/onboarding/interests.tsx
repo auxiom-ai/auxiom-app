@@ -1,781 +1,681 @@
 "use client"
 
-import { supabase } from "@/lib/supabase"
-import { Feather } from "@expo/vector-icons"
-import { useNavigation } from "@react-navigation/native"
-import { router } from "expo-router"
+import type React from "react"
+import { useState, useRef, useMemo } from "react"
+import {
+  View,
+  Text,
+  TextInput,
+  TouchableOpacity,
+  ScrollView,
+  StyleSheet,
+  Alert,
+} from "react-native"
+import { SafeAreaView } from "react-native-safe-area-context"
 import Fuse from "fuse.js"
-import React, { useEffect, useLayoutEffect, useMemo, useRef, useState } from "react"
-import { Alert, Image, Platform, SafeAreaView, ScrollView, StatusBar, StyleSheet, TouchableOpacity, View } from "react-native"
-import { Button, DefaultTheme, Provider as PaperProvider, Text, TextInput } from "react-native-paper"
+import { Ionicons } from "@expo/vector-icons"
+import { router } from "expo-router"
 
-// Import the policy map
-const policyMap: Record<string, string[]> = require("@/assets/policy-subject-map-116-119.json")
+import { ThemedText } from "@/components/ThemedText"
+import { ThemedView } from "@/components/ThemedView"
+import { updateUserInterests } from '@/lib/actions'
+import { useAuth } from '@/lib/auth-context'
 
-// Get all policy areas (top-level categories)
-const POLICY_AREAS = Object.keys(policyMap)
+const SUGGESTED_INTERESTS = Array.from(new Set([
+  "Climate",
+  "Trade",
+  "Energy",
+  "Cybersecurity",
+  "Technology",
+  "Economics",
+  "Voting",
+  "International Relations",
+  "Public Health",
+  "Immigration",
+  "Media",
+  "Inequality",
+  "Healthcare",
+  "Finance",
+  "Space",
+  "Arms Control",
+  "Education",
+  "Civil Rights",
+  "Equality",
+  "Global Trade",
+  "Misinformation",
+  "Urban Planning",
+  "Human Rights",
+  "Political Trends",
+  "Corporate Influence",
+  "Infrastructure",
+  "Food Security",
+  "Water Resources",
+  "Economic Agreements",
+  "Gun Laws",
+  "Housing",
+  "Labor",
+  "Transportation",
+  "Indigenous Issues",
+  "Taxation",
+  "Law Enforcement",
+  "Drugs",
+  "Justice System",
+  "Religious Rights",
+  "Science",
+  "Diversity",
+  "Conservation",
+  "Digital Privacy",
+  "Corporate Law",
+  "Election Security",
+  "Transparency",
+  "National Security",
+  "Media Regulation",
+  "Biodiversity",
+  "Wages",
+  "Rural Development",
+  "Child Welfare",
+  "Healthcare Access",
+  "Education Standards",
+  "Civic Engagement",
+  "Globalization",
+  "Energy Markets",
+  "Automation",
+  "Campaign Finance",
+  "Veterans",
+  "Corporate Taxes",
+  "Statehood",
+  "Climate Change",
+  "Free Speech",
+  "Government Spending",
+  "Food Safety",
+  "Mental Health",
+  "Diplomacy",
+  "AI Ethics",
+  "Consumer Safety",
+  "Animal Welfare",
+  "Foreign Aid",
+  "Legal Systems",
+  "Housing Access",
+  "Nuclear Issues",
+  "Education Reform",
+  "Workplace Rights",
+  "Family Policy",
+  "Crime & Sentencing",
+  "Healthcare Costs",
+  "Substance Use",
+  "Land Use",
+  "Government Ethics",
+  "Tech Regulation",
+  "Death Penalty",
+  "Consumer Rights",
+  "Wildlife Protection",
+  "Research Funding",
+  "Economic Justice",
+  "Governance",
+  "Courts & Law",
+  "Social Welfare",
+  "Waste Management",
+  "Political Expression",
+  "Digital Economy",
+  "Rural Policy",
+  "United States",
+  "China",
+  "European Union",
+  "Middle East",
+  "Russia",
+  "Latin America",
+  "India",
+  "Africa",
+  "Japan",
+  "South Korea",
+  "Australia",
+  "Canada",
+  "Brazil",
+  "Germany",
+  "United Kingdom",
+  "France",
+  "Italy",
+  "Scandinavia",
+  "Domestic Policy",
+  "Foreign Policy",
+  "Social Issues",
+  "Economic Issues",
+  "Environment",
+  "Tech Policy",
+  "Law",
+  "International Affairs",
+  "Public Policy",
+  "Political Movements",
+  "Arts & Culture",
+  "Community",
+  "Disability Rights",
+  "Aging & Elder Care",
+  "Entertainment",
+  "Firearms",
+  "Gambling",
+  "Genetics",
+  "Government Budget",
+  "Higher Education",
+  "Intellectual Property",
+  "Judicial Appointments",
+  "Lobbying",
+  "Military Spending",
+  "Wages & Employment",
+  "Monetary Policy",
+  "Natural Resources",
+  "Nonprofits",
+  "Energy Production",
+  "Public Safety",
+  "Patents",
+  "Police",
+  "Poverty",
+  "Privacy",
+  "Public Media",
+  "Refugees",
+  "Renewable Energy",
+  "Reproductive Rights",
+  "School Choice",
+  "Small Business",
+  "Social Security",
+  "Space Exploration",
+  "Sports",
+  "Surveillance",
+  "Tourism",
+  "Trade Deals",
+  "Indigenous Rights",
+  "Unemployment",
+  "Basic Income",
+  "Vaccines",
+  "Voting Rights",
+  "Wealth Distribution",
+  "Worker Safety",
+  "Youth Issues",
+  "Agriculture",
+  "Border Control",
+  "Coastal Management",
+  "Decolonization",
+  "Cryptocurrency",
+  "Migration",
+  "Economy",
+  "Inflation",
+  "Health",
+  "Abortion",
+  "Tax Reform",
+  "National Debt",
+  "Populism",
+  "Authoritarianism",
+  "Disinformation",
+  "Social Justice",
+  "Discrimination",
+  "Feminism",
+  "LGBTQ+ Rights",
+  "Nationalism",
+  "Trade Wars",
+  "Nuclear Weapons",
+  "Censorship",
+  "Capitalism",
+  "Socialism",
+  "Communism",
+  "Fascism",
+  "Democracy",
+  "Monarchy",
+  "Oligarchy",
+  "Terrorism",
+  "Refugee Issues",
+  "Sanctions",
+  "War Crimes",
+  "Genocide",
+  "Disarmament",
+  "NATO",
+  "UN",
+  "European Politics",
+  "Brexit",
+  "Secession",
+  "Federalism",
+  "State Rights",
+  "Gun Rights",
+  "Protest Laws",
+  "Unions",
+  "Wealth Tax",
+  "Banking",
+  "Crypto",
+  "Biotech",
+  "Scientific Innovation",
+  "End-of-Life Rights",
+  "Prison Reform",
+  "Police Brutality",
+  "Racial Profiling",
+  "Affirmative Action",
+  "Education Access",
+  "Meritocracy",
+  "Economic Class",
+  "Public Schools",
+  "Charter Schools",
+  "Student Debt",
+  "Debt Relief",
+  "Bankruptcy",
+  "Antitrust",
+  "Monopolies",
+  "Regulatory Oversight",
+  "Voter ID",
+  "Gerrymandering",
+  "Election Methods",
+  "Democratic Reform",
+  "Constitutional Law",
+  "Impeachment",
+  "Tariffs",
+  "Domestic Labor",
+  "Foreign Labor",
+  "Labor Rights",
+]))
 
-// Flatten every subject term into one master array (deduped + sorted)
-const ALL_SUBJECT_TERMS: string[] = Array.from(new Set(Object.values(policyMap).flat() as string[])).sort()
-
-// All searchable terms (policy areas + legislative areas)
-// Ensure uniqueness by using a Set
-const ALL_SEARCHABLE_TERMS = Array.from(new Set([...POLICY_AREAS, ...ALL_SUBJECT_TERMS]))
-
-// ---- similarity helper (unchanged) -------------------------------------
+// Function to calculate similarity between two strings (same as original)
 function calculateSimilarity(str1: string, str2: string): number {
   const s1 = str1.toLowerCase()
   const s2 = str2.toLowerCase()
+
   const words1 = s1.split(/\s+/)
   const words2 = s2.split(/\s+/)
+
   let wordMatchCount = 0
-  for (const w1 of words1) {
-    if (w1.length < 3) continue
-    for (const w2 of words2) {
-      if (w2.length < 3) continue
-      if (w1 === w2 || w1.includes(w2) || w2.includes(w1)) wordMatchCount++
+  for (const word1 of words1) {
+    if (word1.length < 3) continue
+    for (const word2 of words2) {
+      if (word2.length < 3) continue
+      if (word1 === word2 || word1.includes(word2) || word2.includes(word1)) {
+        wordMatchCount++
+      }
     }
   }
+
   let charMatchCount = 0
   for (let i = 0; i < s1.length - 2; i++) {
     const trigram = s1.substring(i, i + 3)
-    if (s2.includes(trigram)) charMatchCount++
+    if (s2.includes(trigram)) {
+      charMatchCount++
+    }
   }
+
   return wordMatchCount * 3 + charMatchCount
 }
 
-// ---- custom theme (updated to match Auxiom light theme) -------------
-const theme = {
-  ...DefaultTheme,
-  colors: {
-    ...DefaultTheme.colors,
-    primary: "#4A6FA5", // Auxiom primary blue
-    accent: "#E8B64C", // Auxiom accent gold
-    background: "#FAF8EC", // Auxiom light background
-  },
-}
-
-// Custom Tag component
-type TagProps = {
-  tag: string
-  isSelected: boolean
-  onToggle: () => void
-  isSuggested?: boolean
-}
-
-const Tag = ({ tag, isSelected, onToggle, isSuggested = false }: TagProps) => {
-  return (
+// Interest tag component
+const InterestTag: React.FC<{ keyword: string; onRemove: (keyword: string) => void }> = ({ keyword, onRemove }) => (
+  <ThemedView style={styles.tag}>
+    <ThemedText style={styles.tagText}>{keyword}</ThemedText>
     <TouchableOpacity
-      style={[
-        styles.tag,
-        isSelected ? styles.selectedTag : styles.unselectedTag,
-        { minWidth: 40 + tag.length * 8 }, // Dynamic width based on text length
-      ]}
-      onPress={onToggle}
+      onPress={() => onRemove(keyword)}
+      style={styles.removeButton}
+      hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
     >
-      <View style={styles.tagContent}>
-        {isSuggested && <View style={styles.suggestedIndicator} />}
-        <Text style={[styles.tagText, isSelected && styles.selectedTagText]} numberOfLines={1} ellipsizeMode="tail">
-          {tag}
-        </Text>
-        <Feather
-          name={isSelected ? "x" : "plus"}
-          size={16}
-          color={isSelected ? "#FAF8EC" : "#333"}
-          style={styles.tagIcon}
-        />
-      </View>
+      <Ionicons name="close" size={14} color="#FAF8EC" />
     </TouchableOpacity>
-  )
-}
+  </ThemedView>
+)
 
-// Search Result component
-type SearchResultProps = {
-  result: string
-  isSelected: boolean
-  onAdd: () => void
-  index: number // Add index to ensure unique keys
-}
-
-const SearchResult = ({ result, isSelected, onAdd, index }: SearchResultProps) => {
-  return (
-    <TouchableOpacity style={styles.searchResult} onPress={onAdd}>
-      <Text style={styles.searchResultText}>{result}</Text>
-      <Feather name={isSelected ? "check" : "plus"} size={18} color={isSelected ? "#4A6FA5" : "#4A6FA5"} />
-    </TouchableOpacity>
-  )
-}
-
-// Type for tag with suggestion info
-type TagWithSuggestions = {
-  id: string // Unique identifier
-  tag: string
-  isSuggested: boolean
-  suggestedBy?: string // The tag that suggested this one
-  isSelected: boolean
-}
+// Suggestion item component
+const SuggestionItem: React.FC<{ suggestion: string; onPress: (suggestion: string) => void }> = ({
+  suggestion,
+  onPress,
+}) => (
+  <TouchableOpacity style={styles.suggestionItem} onPress={() => onPress(suggestion)}>
+    <Ionicons name="add" size={12} color="#0f172a" style={styles.suggestionIcon} />
+    <ThemedText style={styles.suggestionText}>{suggestion}</ThemedText>
+  </TouchableOpacity>
+)
 
 export default function InterestsScreen() {
-  // hide this tab
-  const navigation = useNavigation()
-  useLayoutEffect(() => {
-    navigation.setOptions({ tabBarButton: () => null })
-  }, [navigation])
-
+  const { refetchUser } = useAuth()
   const [keywords, setKeywords] = useState<string[]>([])
-  const [mostRecentKeyword, setMostRecentKeyword] = useState<string | null>(null)
   const [inputValue, setInputValue] = useState("")
-  const [searchResults, setSearchResults] = useState<string[]>([])
-  const [activeTab, setActiveTab] = useState("suggested")
-  const [allTags, setAllTags] = useState<TagWithSuggestions[]>([])
-  const [selectedSuggestions, setSelectedSuggestions] = useState<Set<string>>(new Set())
-  const [isSearching, setIsSearching] = useState(false)
-  const inputRef = useRef<any>(null)
+  const [suggestions, setSuggestions] = useState<string[]>([])
+  const [showSuggestions, setShowSuggestions] = useState(false)
+  const [isSubmitting, setIsSubmitting] = useState(false)
+  const inputRef = useRef<TextInput>(null)
 
-  // ---- fuzzy search over ALL_SUBJECT_TERMS -----------------------------
-  const fuse = useMemo(
-    () =>
-      new Fuse(ALL_SEARCHABLE_TERMS, {
-        threshold: 0.4,
-        distance: 100,
-        includeScore: true,
-        ignoreLocation: true,
-      }),
-    [],
-  )
+  // Initialize Fuse.js with stronger fuzziness
+  const fuse = useMemo(() => new Fuse(SUGGESTED_INTERESTS, { threshold: 0.4, distance: 100 }), [])
 
-  // Find which policy area a legislative area belongs to
-  const findPolicyForLegislativeArea = (area: string): string | null => {
-    for (const [policy, areas] of Object.entries(policyMap)) {
-      if (areas.includes(area)) {
-        return policy
-      }
-    }
-    return null
-  }
-
-  // Get semantically similar tags for a specific tag
-  const getSimilarTags = (tag: string, count = 3, excludeTags: string[] = []): string[] => {
-    let similarTags: string[] = []
-
-    if (POLICY_AREAS.includes(tag)) {
-      // If it's a policy area, suggest legislative areas from that policy
-      const areas = policyMap[tag].filter((area) => !excludeTags.includes(area))
-
-      // Sort by similarity to the tag
-      similarTags = areas
-        .map((area) => ({ area, score: calculateSimilarity(tag, area) }))
-        .sort((a, b) => b.score - a.score)
-        .slice(0, count)
-        .map((item) => item.area)
-    } else {
-      // If it's a legislative area, find semantically similar areas
-      const parentPolicy = findPolicyForLegislativeArea(tag)
-      if (parentPolicy) {
-        // Get areas from the same policy
-        const policyAreas = policyMap[parentPolicy].filter((area) => area !== tag && !excludeTags.includes(area))
-
-        // Sort by similarity
-        similarTags = policyAreas
-          .map((area) => ({ area, score: calculateSimilarity(tag, area) }))
-          .sort((a, b) => b.score - a.score)
-          .slice(0, count)
-          .map((item) => item.area)
-      }
+  // Get dynamic suggestions based on current interests
+  const dynamicSuggestions = useMemo(() => {
+    if (keywords.length === 0) {
+      return SUGGESTED_INTERESTS
     }
 
-    // If we couldn't find enough suggestions, add some from other policies
-    if (similarTags.length < count) {
-      // Get all legislative areas that aren't already selected or suggested
-      const remainingAreas = ALL_SUBJECT_TERMS.filter(
-        (area) => !excludeTags.includes(area) && !similarTags.includes(area),
-      )
+    const scoredSuggestions = SUGGESTED_INTERESTS.filter((suggestion) => !keywords.includes(suggestion)).map(
+      (suggestion) => {
+        let totalScore = 0
+        for (const keyword of keywords) {
+          totalScore += calculateSimilarity(keyword, suggestion)
+        }
+        return { suggestion, score: totalScore }
+      },
+    )
 
-      // Sort by similarity to the tag
-      const additionalSuggestions = remainingAreas
-        .map((area) => ({ area, score: calculateSimilarity(tag, area) }))
-        .sort((a, b) => b.score - a.score)
-        .slice(0, count - similarTags.length)
-        .map((item) => item.area)
+    return scoredSuggestions
+      .sort((a, b) => b.score - a.score)
+      .slice(0, 5)
+      .map((item) => item.suggestion)
+  }, [keywords])
 
-      similarTags = [...similarTags, ...additionalSuggestions]
-    }
-
-    return similarTags
-  }
-
-  // Initialize all tags
-  useEffect(() => {
-  const initialTags: TagWithSuggestions[] = POLICY_AREAS.map((tag) => ({
-    id: `base-${tag}`,
-    tag,
-    isSuggested: false,
-    isSelected: false,
-  }))
-
-  setAllTags(initialTags)
-}, [])
-
-  // Update tags when keywords or most recent keyword changes
-  useEffect(() => {
-    if (allTags.length === 0) return
-
-    // Get all base tags and selected suggestions
-    const baseTags = allTags.filter((tag) => !tag.isSuggested || selectedSuggestions.has(tag.tag))
-
-    // Update selection state
-    const updatedBaseTags = baseTags.map((tag) => ({
-      ...tag,
-      isSelected: keywords.includes(tag.tag),
-    }))
-
-    // Create a new array for all tags including suggestions
-    const newAllTags: TagWithSuggestions[] = []
-    const processedTags = new Set<string>()
-
-    // Add all base tags and selected suggestions to the processed set
-    updatedBaseTags.forEach((tag) => {
-      processedTags.add(tag.tag)
-      newAllTags.push(tag)
-    })
-
-    // Prioritize the most recent keyword for suggestions
-    const keywordsToProcess = [...keywords]
-    if (mostRecentKeyword && keywords.includes(mostRecentKeyword)) {
-      // Move the most recent keyword to the end so it's processed last
-      keywordsToProcess.splice(keywordsToProcess.indexOf(mostRecentKeyword), 1)
-      keywordsToProcess.push(mostRecentKeyword)
-    }
-
-    // For each selected tag, add its suggestions
-    keywordsToProcess.forEach((keyword) => {
-      // Find the tag in our list
-      const tagIndex = newAllTags.findIndex((t) => t.tag === keyword)
-      if (tagIndex !== -1) {
-        // Get suggestions for this tag
-        const excludeTags = [...keywords, ...Array.from(processedTags)]
-        const similarTags = getSimilarTags(keyword, 3, excludeTags)
-
-        // Insert suggestions right after the selected tag
-        let insertPosition = tagIndex + 1
-        similarTags.forEach((tag) => {
-          if (!processedTags.has(tag)) {
-            // Create a new tag object for this suggestion
-            const newTag: TagWithSuggestions = {
-              id: `suggestion-${keyword}-${tag}`,
-              tag,
-              isSuggested: true,
-              suggestedBy: keyword,
-              isSelected: keywords.includes(tag),
-            }
-
-            // Insert at the correct position
-            newAllTags.splice(insertPosition, 0, newTag)
-            insertPosition++
-
-            // Mark as processed
-            processedTags.add(tag)
-          }
-        })
-      }
-    })
-
-    setAllTags(newAllTags)
-  }, [keywords, mostRecentKeyword, selectedSuggestions])
-
-  const handleTextChange = (text: string) => {
+  const handleInputChange = (text: string) => {
     setInputValue(text)
-
     if (text.trim()) {
-      setIsSearching(true)
-
-      // Perform fuzzy search
-      const results = fuse.search(text)
-
-      // Extract and sort results
-      const filteredResults = results
-        .filter((result) => result.score && result.score < 0.4) // Only include good matches
+      const filtered = fuse
+        .search(text)
         .map((result) => result.item)
-        .slice(0, 8) // Limit to 8 results
-
-      // Ensure uniqueness in search results
-      const uniqueResults = Array.from(new Set(filteredResults))
-
-      // Don't filter out already selected items in search results
-      // This allows users to see and select items they've already chosen
-      setSearchResults(uniqueResults)
+        .filter((interest) => !keywords.includes(interest))
+      
+      // Add the search query itself as the first option if it's not already selected
+      // and doesn't exactly match any of the filtered suggestions
+      const searchQuery = text.trim()
+      const suggestionsToShow = []
+      
+      if (!keywords.includes(searchQuery) && 
+          !filtered.some(interest => interest.toLowerCase() === searchQuery.toLowerCase())) {
+        suggestionsToShow.push(searchQuery)
+      }
+      
+      // Add the filtered predefined interests
+      suggestionsToShow.push(...filtered)
+      
+      setSuggestions(suggestionsToShow)
+      setShowSuggestions(true)
     } else {
-      setIsSearching(false)
-      setSearchResults([])
+      setSuggestions([])
+      setShowSuggestions(false)
     }
   }
 
   const addInterest = (interest: string) => {
     if (interest.trim() && !keywords.includes(interest)) {
-      // Add the interest
-      const newKeywords = [...keywords, interest]
-      setKeywords(newKeywords)
-      setMostRecentKeyword(interest) // Track the most recently added keyword
-
-      // If this is a suggested interest, add it to selectedSuggestions
-      const isSuggested = allTags.some((tag) => tag.tag === interest && tag.isSuggested)
-      if (isSuggested) {
-        setSelectedSuggestions((prev) => {
-          const newSet = new Set(prev)
-          newSet.add(interest)
-          return newSet
-        })
-      }
-
-      // Clear search after adding
+      setKeywords([...keywords, interest])
       setInputValue("")
-      setSearchResults([])
-      setIsSearching(false)
-
-      // Set active tab to "suggested" to show the suggestions
-      setActiveTab("suggested")
-
-      // If this is a legislative area, we DON'T automatically add its parent policy
-      // This ensures legislative areas selected from search appear as their own cards
-      // with their own suggestions
+      setSuggestions([])
+      setShowSuggestions(false)
     }
   }
 
   const removeInterest = (interest: string) => {
     setKeywords(keywords.filter((i) => i !== interest))
+  }
 
-    // If we're removing a selected suggestion, remove it from selectedSuggestions
-    if (selectedSuggestions.has(interest)) {
-      setSelectedSuggestions((prev) => {
-        const newSet = new Set(prev)
-        newSet.delete(interest)
-        return newSet
-      })
+  const handleSubmit = async () => {
+    if (keywords.length < 5) {
+      Alert.alert("Error", "Please select at least 5 interests.")
+      return
     }
+    setIsSubmitting(true)
+    try {
+      await updateUserInterests(keywords)
+      
+      // Refetch user to update the context with new interests
+      await refetchUser()
 
-    // If we're removing the most recent keyword, clear it
-    if (mostRecentKeyword === interest) {
-      setMostRecentKeyword(keywords.length > 1 ? keywords[keywords.length - 2] : null)
+      // Navigate to dashboard after successful submission
+      router.replace("/dashboard/feed")
+    } catch (error) {
+      console.error("Error submitting interests:", error)
+      Alert.alert("Error", "Failed to save your interests. Please try again.")
+    } finally {
+      setIsSubmitting(false)
     }
   }
 
-  const toggleInterest = (interest: string) => {
-    if (keywords.includes(interest)) {
-      removeInterest(interest)
-    } else {
-      addInterest(interest)
-    }
-  }
-
-const handleSubmit = async (): Promise<void> => {
-  // Get the current signed-in user
-  const { data: { user }, error: userError } = await supabase.auth.getUser();
-  if (userError) throw userError;
-  if (!user) {
-    Alert.alert("Error", "No authenticated user found");
-    return;
-  }
-  const userId = user.id;
-  const { data, error } = await supabase
-    .from('users')
-    .update({ 
-      keywords,   // pass the array directly
-      active: true // Activate the user now that onboarding is complete
-    })
-    .eq('auth_user_id', user.id) // match by auth_user_id
-    .select()
-
-  console.log('update returned:', { data, error })
-
-  if (error) {
-    console.error(error)
-    Alert.alert("Error saving interests", error.message)
-  } else {
-    // Navigate to dashboard after successful completion
-    router.replace("/dashboard/feed" as any)
-  }
-}
-
-
-  // Create a list of tags for the "My tags" tab
-  const myTags = useMemo(() => {
-    // Create a map of all tags for quick lookup
-    const tagMap = new Map<string, TagWithSuggestions>()
-    allTags.forEach((tag) => {
-      tagMap.set(tag.tag, tag)
-    })
-
-    // Create tags for all selected keywords
-    return keywords.map((keyword) => {
-      const existingTag = tagMap.get(keyword)
-      if (existingTag) {
-        return {
-          ...existingTag,
-          isSelected: true,
-        }
-      } else {
-        // Create a new tag if it doesn't exist in allTags
-        return {
-          id: `mytag-${keyword}`,
-          tag: keyword,
-          isSuggested: false,
-          isSelected: true,
-        }
-      }
-    })
-  }, [keywords, allTags])
-
-  // Filter tags based on search and active tab
-  const filteredTags = useMemo(() => {
-    // If we're actively searching, don't show the tag grid
-    if (isSearching) {
-      return []
-    }
-
-    // Determine which tag list to use based on the active tab
-    const tagsToFilter = activeTab === "suggested" ? allTags : myTags
-
-    if (!inputValue.trim()) {
-      return tagsToFilter
-    }
-
-    const query = inputValue.toLowerCase()
-    const processedTags = new Set<string>() // Track tags we've already included
-    const results: TagWithSuggestions[] = []
-
-    // Filter tags and ensure no duplicates
-    tagsToFilter.forEach((item) => {
-      if (item.tag.toLowerCase().includes(query) && !processedTags.has(item.tag)) {
-        results.push(item)
-        processedTags.add(item.tag)
-      }
-    })
-    return results
-  }, [inputValue, activeTab, allTags, myTags, isSearching])
-
-  // Clear search and return to normal view
-  const clearSearch = () => {
-    setInputValue("")
-    setSearchResults([])
-    setIsSearching(false)
-  }
 
   return (
-    <PaperProvider theme={theme}>
-      <SafeAreaView style={styles.safeArea}>
-        <StatusBar barStyle="dark-content" backgroundColor="#FAF8EC" />
-        <View style={styles.header}>
-          <View style={styles.logoContainer}>
-            <View style={styles.brainIcon}>
-              <Image source={require("@/assets/auxiom-logo.png")} style={styles.logoImage} resizeMode="contain" />
-            </View>
-            <Text style={styles.logoText}>Onboarding</Text>
-          </View>
-        </View>
-        <View style={styles.content}>
-          <View style={styles.header}>
-            <Text style={styles.title}>Political Interests</Text>
-            <Text style={styles.subtitle}>Select 5+ topics to stay informed about</Text>
-          </View>
+    <SafeAreaView style={styles.container}>
+      <ScrollView style={styles.scrollView} keyboardShouldPersistTaps="handled">
+        {/* Header Section */}
+        <ThemedView style={styles.header}>
+          <ThemedText type="title" style={styles.title}>Tell us about your interests</ThemedText>
+          <ThemedText style={styles.subtitle}>Enter 5+ topics to stay informed about.</ThemedText>
+        </ThemedView>
 
-          <View style={styles.searchContainer}>
-            <View style={styles.searchInputContainer}>
-              <Feather name="search" size={18} color="#777" style={styles.searchIcon} />
-              <TextInput
-                ref={inputRef}
-                value={inputValue}
-                onChangeText={handleTextChange}
-                placeholder="Search interests"
-                style={styles.searchInput}
-                placeholderTextColor="#999999"
-                theme={{ colors: { text: "#333333" } }}
-              />
-              {inputValue.length > 0 && (
-                <TouchableOpacity onPress={clearSearch} style={styles.clearButton}>
-                  <Feather name="x" size={18} color="#777" />
-                </TouchableOpacity>
-              )}
-            </View>
-          </View>
+        {/* Main Content */}
+        <ThemedView style={styles.content}>
+          <ThemedView style={styles.interestsContainer}>
+            <ThemedText type="subtitle" style={styles.sectionTitle}>I want my podcasts to be about...</ThemedText>
 
-          {isSearching && searchResults.length > 0 ? (
-            <View style={styles.searchResultsContainer}>
-              {searchResults.map((result, index) => (
-                <SearchResult
-                  key={`${result}-${index}`} // Use both result and index for a unique key
-                  result={result}
-                  isSelected={keywords.includes(result)}
-                  onAdd={() => addInterest(result)}
-                  index={index}
-                />
-              ))}
-            </View>
-          ) : (
-            <>
-              <View style={styles.tabContainer}>
-                <TouchableOpacity
-                  style={[styles.tab, activeTab === "suggested" && styles.activeTab]}
-                  onPress={() => setActiveTab("suggested")}
-                >
-                  <Text style={[styles.tabText, activeTab === "suggested" && styles.activeTabText]}>Suggested</Text>
-                </TouchableOpacity>
-                <TouchableOpacity
-                  style={[styles.tab, activeTab === "my-tags" && styles.activeTab]}
-                  onPress={() => setActiveTab("my-tags")}
-                >
-                  <Text style={[styles.tabText, activeTab === "my-tags" && styles.activeTabText]}>My interests</Text>
-                </TouchableOpacity>
+            {/* Selected Interests */}
+            <View style={styles.tagsContainer}>
+              <View style={styles.tagsList}>
+                {keywords.map((item, index) => (
+                  <InterestTag key={`${item}-${index}`} keyword={item} onRemove={removeInterest} />
+                ))}
               </View>
 
-              <ScrollView style={styles.scrollContainer} contentContainerStyle={styles.tagsContainer}>
-                {filteredTags.length > 0 ? (
-                  filteredTags.map((item) => (
-                    <Tag
-                      key={item.id}
-                      tag={item.tag}
-                      isSelected={item.isSelected}
-                      onToggle={() => toggleInterest(item.tag)}
-                      isSuggested={item.isSuggested}
-                    />
-                  ))
-                ) : (
-                  <View style={styles.emptyState}>
-                    <Text style={styles.emptyStateText}>
-                      {activeTab === "suggested" ? "No matching interests found" : "No interests selected yet"}
-                    </Text>
-                    <Text style={styles.emptyStateSubtext}>
-                      {activeTab === "suggested"
-                        ? "Try a different search term"
-                        : "Select interests from the Suggested tab"}
-                    </Text>
-                  </View>
-                )}
-              </ScrollView>
-            </>
-          )}
+              {/* Input Field */}
+              <View style={styles.inputContainer}>
+                <TextInput
+                  ref={inputRef}
+                  style={styles.input}
+                  placeholder={keywords.length === 0 ? "Search interest..." : "Search another interest..."}
+                  placeholderTextColor="#9CA3AF"
+                  value={inputValue}
+                  onChangeText={handleInputChange}
+                  onSubmitEditing={() => addInterest(inputValue)}
+                  returnKeyType="done"
+                  onFocus={() => setShowSuggestions(true)}
+                />
+                <TouchableOpacity style={styles.addButton} onPress={() => addInterest(inputValue)}>
+                  <Ionicons name="add" size={14} color="#9CA3AF" />
+                </TouchableOpacity>
+              </View>
+            </View>
 
-          <View style={styles.buttonContainer}>
-            <Button mode="contained" onPress={handleSubmit} style={styles.submitButton} labelStyle={styles.buttonLabel}>
-              Next
-            </Button>
-          </View>
-        </View>
-      </SafeAreaView>
-    </PaperProvider>
+            {/* Search Suggestions Dropdown */}
+            {showSuggestions && suggestions.length > 0 && (
+              <View style={styles.suggestionsDropdown}>
+                <ScrollView style={styles.dropdownList} keyboardShouldPersistTaps="handled">
+                  {suggestions.map((item, index) => (
+                    <TouchableOpacity key={`suggestion-${item}-${index}`} style={styles.dropdownItem} onPress={() => addInterest(item)}>
+                      <Text style={styles.dropdownText}>{item}</Text>
+                    </TouchableOpacity>
+                  ))}
+                </ScrollView>
+              </View>
+            )}
+          </ThemedView>
+
+          {/* Dynamic Suggestions */}
+          <ThemedView style={styles.suggestionsSection}>
+            <ThemedText style={styles.suggestionsTitle}>
+              {keywords.length > 0 ? "Related interests" : "Suggested interests"}
+            </ThemedText>
+            <View style={styles.suggestionsList}>
+              {dynamicSuggestions.slice(0, 10).filter((interest) => !keywords.includes(interest)).map((item, index) => (
+                <SuggestionItem key={`dynamic-${item}-${index}`} suggestion={item} onPress={addInterest} />
+              ))}
+            </View>
+          </ThemedView>
+
+          {/* Submit Button */}
+          <ThemedView style={styles.submitContainer}>
+            <TouchableOpacity
+              style={[styles.submitButton, keywords.length === 0 && styles.submitButtonDisabled]}
+              onPress={handleSubmit}
+              disabled={keywords.length === 0 || isSubmitting}
+            >
+              <ThemedText style={styles.submitButtonText}>
+                {isSubmitting ? "Submitting..." : "Submit"}
+              </ThemedText>
+            </TouchableOpacity>
+          </ThemedView>
+        </ThemedView>
+      </ScrollView>
+    </SafeAreaView>
   )
 }
 
 const styles = StyleSheet.create({
-  safeArea: {
+  container: {
     flex: 1,
-    backgroundColor: "#FAF8EC", // Auxiom light background
-    paddingTop: Platform.OS === "android" ? StatusBar.currentHeight : 0,
+    backgroundColor: "#FAF8EC",
   },
-  content: {
+  scrollView: {
     flex: 1,
-    padding: 16,
   },
   header: {
-    marginBottom: 10,
-    marginTop: 10,
+    paddingHorizontal: 24,
+    paddingVertical: 32,
   },
   title: {
-    fontSize: 28,
-    fontWeight: "bold",
+    fontSize: 32,
+    fontWeight: "700",
     color: "#0f172a",
-    marginBottom: 8,
+    marginBottom: 16,
   },
   subtitle: {
     fontSize: 16,
-    color: "#0f172a",
-    marginTop: 0,
-    marginBottom: 0,
-    fontWeight: '400',
+    color: "#0f172a80",
+    lineHeight: 24,
   },
-  searchContainer: {
-    marginVertical: 16,
-  },
-  searchInputContainer: {
-    flexDirection: "row",
-    alignItems: "center",
-    backgroundColor: "#FFFFFF",
-    borderRadius: 24,
+  content: {
     paddingHorizontal: 16,
-    height: 48,
-    borderWidth: 1,
-    borderColor: "#E5E5E5",
   },
-  searchIcon: {
-    marginRight: 8,
-  },
-  searchInput: {
-    flex: 1,
-    backgroundColor: "transparent",
-    color: "#333333",
-    height: 48,
-    padding: 0,
-    margin: 0,
-  },
-  clearButton: {
-    padding: 8,
-  },
-  searchResultsContainer: {
-    backgroundColor: "#FFFFFF",
-    borderRadius: 12,
+  interestsContainer: {
+    backgroundColor: "#0f172a15",
+    borderRadius: 16,
+    padding: 24,
     marginBottom: 16,
-    overflow: "hidden",
     borderWidth: 1,
-    borderColor: "#E5E5E5",
+    borderColor: "#0f172a20",
   },
-  searchResult: {
-    flexDirection: "row",
-    alignItems: "center",
-    justifyContent: "space-between",
-    padding: 16,
-    borderBottomWidth: 1,
-    borderBottomColor: "#E5E5E5",
-  },
-  searchResultText: {
-    fontSize: 16,
+  sectionTitle: {
+    fontSize: 20,
+    fontWeight: "600",
     color: "#0f172a",
-  },
-  tabContainer: {
-    flexDirection: "row",
     marginBottom: 16,
-  },
-  tab: {
-    paddingVertical: 8,
-    paddingHorizontal: 16,
-    marginRight: 8,
-    borderRadius: 20,
-  },
-  activeTab: {
-    backgroundColor: "#0f172a", // Auxiom blue
-  },
-  tabText: {
-    color: "#0f172a",
-    fontWeight: "500",
-  },
-  activeTabText: {
-    color: "#FFFFFF",
-  },
-  scrollContainer: {
-    flex: 1,
   },
   tagsContainer: {
-    flexDirection: "row",
-    flexWrap: "wrap",
-    paddingBottom: 16,
-  },
-  tag: {
-    borderRadius: 20,
-    marginRight: 8,
-    marginBottom: 8,
-    paddingVertical: 8,
-    paddingHorizontal: 12,
-  },
-  selectedTag: {
-    backgroundColor: "#0f172a", // Auxiom blue
-  },
-  unselectedTag: {
-    backgroundColor: "#FFFFFF",
-    borderWidth: 1,
-    borderColor: "#E5E5E5",
-  },
-  tagContent: {
-    flexDirection: "row",
-    alignItems: "center",
-  },
-  tagText: {
-    color: "#0f172a",
-    fontSize: 14,
-    marginRight: 4,
-  },
-  selectedTagText: {
-    color: "#FFFFFF",
-  },
-  tagIcon: {
-    marginLeft: 4,
-  },
-  suggestedIndicator: {
-    width: 8,
-    height: 8,
-    borderRadius: 4,
-    backgroundColor: "#E8B64C", // Auxiom gold
-    marginRight: 6,
-  },
-  emptyState: {
-    flex: 1,
-    alignItems: "center",
-    justifyContent: "center",
-    padding: 32,
-  },
-  emptyStateText: {
-    fontSize: 18,
-    fontWeight: "500",
-    color: "#0f172a",
-    marginBottom: 8,
-  },
-  emptyStateSubtext: {
-    fontSize: 14,
-    color: "#0f172a",
-  },
-  suggestionsContainer: {
-    marginTop: 8,
-    borderWidth: 1,
-    borderColor: "#E5E5E5",
-    borderRadius: 4,
-    maxHeight: 200,
-  },
-  suggestionsList: {
-    backgroundColor: "#FFFFFF",
-  },
-  suggestionItem: {
-    padding: 12,
-    borderBottomWidth: 1,
-    borderBottomColor: "#E5E5E5",
-  },
-  suggestionText: {
-    color: "#333333",
-  },
-  buttonContainer: {
-    alignItems: "flex-end",
-    marginTop: 16,
     marginBottom: 16,
   },
-  submitButton: {
-    borderRadius: 24,
-    paddingHorizontal: 16,
-    backgroundColor: "#0f172a", // Auxiom blue
+  tagsList: {
+    marginBottom: 16,
+    flexDirection: "row",
+    flexWrap: "wrap",
   },
-  buttonLabel: {
-    color: "#FFFFFF",
-    fontWeight: "600",
-  },
-  logoContainer: {
+  tag: {
+    backgroundColor: "#0f172a",
+    borderRadius: 20,
+    paddingHorizontal: 12,
+    paddingVertical: 8,
     flexDirection: "row",
     alignItems: "center",
-    justifyContent: "center",
-    marginTop: 30,
-    marginBottom: 8,
+    margin: 4,
+    alignSelf: "flex-start",
   },
-  brainIcon: {
-    width: 40,
-    height: 40,
-    borderRadius: 20,
-    justifyContent: "center",
+  tagText: {
+    color: "#FAF8EC",
+    fontSize: 14,
+    fontWeight: "500",
+    marginRight: 4,
+  },
+  removeButton: {
+    marginLeft: 4,
+  },
+  inputContainer: {
+    flexDirection: "row",
     alignItems: "center",
-    marginRight: 16,
-    overflow: "hidden",
+    backgroundColor: "#FFFFFF",
+    borderRadius: 12,
+    paddingHorizontal: 16,
+    paddingVertical: 12,
+    alignSelf: "flex-start",
+    minWidth: 200,
+    borderWidth: 1,
+    borderColor: "#0f172a20",
   },
-  logoImage: {
-    width: 36,
-    height: 36,
-  },
-  logoText: {
-    fontSize: 30,
-    fontWeight: "700",
+  input: {
     color: "#0f172a",
- 
+    fontSize: 16,
+    flex: 1,
+    paddingVertical: 0,
+  },
+  addButton: {
+    marginLeft: 8,
+  },
+  suggestionsDropdown: {
+    backgroundColor: "#FFFFFF",
+    borderRadius: 12,
+    borderWidth: 1,
+    borderColor: "#0f172a20",
+    maxHeight: 200,
+    marginTop: 8,
+    shadowColor: "#0f172a",
+    shadowOffset: {
+      width: 0,
+      height: 2,
+    },
+    shadowOpacity: 0.1,
+    shadowRadius: 3,
+    elevation: 3,
+  },
+  dropdownList: {
+    maxHeight: 200,
+  },
+  dropdownItem: {
+    paddingHorizontal: 16,
+    paddingVertical: 12,
+    borderBottomWidth: 1,
+    borderBottomColor: "#0f172a10",
+  },
+  dropdownText: {
+    fontSize: 14,
+    color: "#0f172a",
+  },
+  suggestionsSection: {
+    marginBottom: 24,
+  },
+  suggestionsTitle: {
+    fontSize: 14,
+    fontWeight: "600",
+    color: "#0f172a80",
+    marginBottom: 12,
+  },
+  suggestionsList: {
+    flexDirection: "row",
+    flexWrap: "wrap",
+  },
+  suggestionItem: {
+    flexDirection: "row",
+    alignItems: "center",
+    backgroundColor: "#FFFFFF",
+    borderWidth: 1,
+    borderColor: "#0f172a30",
+    borderRadius: 20,
+    paddingHorizontal: 12,
+    paddingVertical: 8,
+    margin: 4,
+    alignSelf: "flex-start",
+  },
+  suggestionIcon: {
+    marginRight: 6,
+  },
+  suggestionText: {
+    fontSize: 14,
+    color: "#0f172a",
+    fontWeight: "500",
+  },
+  submitContainer: {
+    alignItems: "center",
+    paddingVertical: 32,
+  },
+  submitButton: {
+    backgroundColor: "#0f172a",
+    borderRadius: 12,
+    paddingHorizontal: 32,
+    paddingVertical: 16,
+    minWidth: 160,
+    alignItems: "center",
+  },
+  submitButtonDisabled: {
+    backgroundColor: "#0f172a60",
+  },
+  submitButtonText: {
+    color: "#FAF8EC",
+    fontSize: 16,
+    fontWeight: "600",
   },
 })

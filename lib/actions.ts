@@ -14,15 +14,69 @@ export async function updateUserProfile(name: string, occupation: string, indust
   });
 }
 
+export async function sendKeywordsToSQS(id: number, interests: string[]) {
+
+  const accessToken = await getToken();
+  if (!accessToken) {
+    throw new Error('No access token available');
+  }
+
+  try {
+    const response = await fetch('https://uufxuxbilvlzllxgbewh.supabase.co/functions/v1/send-keywords-to-sqs', {
+      method: 'POST',
+      headers: {
+        'Authorization': `Bearer ${accessToken}`,
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({
+        user_id: id,
+        keywords: interests
+      }),
+    });
+
+    if (!response.ok) {
+      console.error('Failed to send keywords to SQS:', response.status);
+      const errorText = await response.text();
+      console.error('Response:', errorText);
+      throw new Error(`HTTP error! status: ${response.status}`);
+    }
+
+    const result = await response.json();
+    return result;
+  } catch (error) {
+    console.error('Error sending keywords to SQS:', error);
+    throw error;
+  }
+}
+
 export async function updateUserInterests(keywords: string[]) {
   const userData = await getUser();
   if (!userData) {
     throw new Error('User not authenticated');
   }
   
-  return await updateUserByAuthId(userData.auth_user_id, {
+  // Update the database
+  const result = await updateUserByAuthId(userData.auth_user_id, {
     keywords
   });
+
+  // Send keywords to SQS
+  try {
+    const id = userData.id;
+    await sendKeywordsToSQS(id, keywords);
+  } catch (error) {
+    console.error('Failed to send keywords to SQS, but database update succeeded:', error);
+    // Don't throw here - we don't want to fail the entire operation if SQS fails
+  }
+
+  // Activate user if onboarding is complete
+  if (userData.occupation) {
+    await updateUserByAuthId(userData.auth_user_id, {
+      active: true
+    });
+  }
+
+  return result;
 }
 
 
