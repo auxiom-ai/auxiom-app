@@ -28,6 +28,7 @@
     "@rneui/themed": "^4.0.0-rc.8",
     "@supabase/supabase-js": "^2.49.5-next.1",
     "@types/node": "^22.15.18",
+    "ajv": "^8.17.1",
     "babel-plugin-module-resolver": "^5.0.2",
     "drizzle-orm": "^0.43.1",
     "expo": "53.0.20",
