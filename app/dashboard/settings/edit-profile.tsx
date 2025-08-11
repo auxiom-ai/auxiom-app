@@ -19,6 +19,7 @@ import {
 import { Button } from "react-native-paper"
 import { getUser } from "@/lib/db/queries"
 import { updateUserProfile } from "@/lib/actions"
+import { useAuth } from "@/lib/auth-context"
 
 // Industry options for the dropdown
 const INDUSTRY_OPTIONS = [
@@ -36,6 +37,7 @@ const INDUSTRY_OPTIONS = [
 ]
 
 export default function EditProfileScreen() {
+  const { refetchUser } = useAuth()
   const [name, setName] = useState<string>("")
   const [occupation, setOccupation] = useState<string>("")
   const [industry, setIndustry] = useState<string>("")
@@ -81,6 +83,10 @@ export default function EditProfileScreen() {
     setLoading(true)
     try {
       await updateUserProfile(name.trim(), occupation, industry)
+      
+      // Refetch user to update the context with new profile information
+      await refetchUser()
+
       Alert.alert("Success", "Your profile has been updated successfully", [
         { text: "OK", onPress: () => router.back() }
       ])
@@ -109,7 +115,7 @@ export default function EditProfileScreen() {
       <ScrollView style={styles.container} contentContainerStyle={styles.content}>
         {/* Form Container */}
         <View style={styles.formContainer}>
-          <ThemedText style={styles.subtitle}>Update your professional information</ThemedText>
+          <ThemedText style={styles.subtitle}>Update your personal information</ThemedText>
 
           {/* Name Field */}
           <View style={styles.fieldContainer}>

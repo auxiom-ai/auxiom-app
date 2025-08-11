@@ -105,11 +105,12 @@ export default function PodcastsScreen() {
   }
 
   const handleUpgradePress = async () => {
-    try {
-      await Linking.openURL("https://auxiomai.com/pricing")
-    } catch (error) {
-      console.error("Error opening pricing URL:", error)
-    }
+    // implement apple payments to upgrade the user
+    // try {
+    //   await Linking.openURL("https://auxiomai.com/pricing")
+    // } catch (error) {
+    //   console.error("Error opening pricing URL:", error)
+    // }
   }
 
   if (loading || !user || podcastsLoading) {

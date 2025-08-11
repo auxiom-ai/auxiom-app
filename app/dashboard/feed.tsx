@@ -18,7 +18,6 @@ import {
 import { useArticleCache } from "@/lib/article-cache-context"
 import { useAuth } from "@/lib/auth-context"
 import { FeedSkeleton } from "@/components/feed-skeleton"
-import AsyncStorage from '@react-native-async-storage/async-storage'
 
 // Types for articles
 export interface Article {
@@ -224,7 +223,7 @@ export default function FeedScreen() {
           </View>
 
           {/* Upgrade Banner for Free Users */}
-          {user?.plan === 'free' && !isBannerDismissed && (
+          {/* {user?.plan === 'free' && !isBannerDismissed && (
             <View style={styles.upgradeBanner}>
               <View style={styles.bannerContent}>
                 <ThemedText style={styles.bannerText}>
@@ -247,7 +246,7 @@ export default function FeedScreen() {
                 </View>
               </View>
             </View>
-          )}
+          )} */}
 
           {/* Topic Filter */}
           <ScrollView 
@@ -478,22 +477,25 @@ const styles = StyleSheet.create({
   },
   topicContainer: {
     paddingBottom: 8,
-    maxHeight: 60, // Increased height to prevent cutoff
+    // Removed fixed maxHeight to allow dynamic sizing
   },
   topicContentContainer: {
-    paddingVertical: 8, // Increased padding
+    paddingVertical: 12, // Increased padding for better spacing
+    alignItems: 'flex-start', // Ensure proper alignment
   },
   topicButton: {
     backgroundColor: "#FFFFFF",
     paddingHorizontal: 16,
-    paddingVertical: 10, // Increased vertical padding
+    paddingVertical: 12, // Increased padding for better text fit
     borderRadius: 20,
     marginRight: 8,
+    marginBottom: 4, // Added bottom margin for better spacing
     borderWidth: 1,
     borderColor: "#0f172a30",
     alignItems: "center",
     justifyContent: "center",
-    minHeight: 40, // Ensured minimum height
+    // Removed fixed minHeight to allow dynamic sizing
+    flexShrink: 0, // Prevent button from shrinking
   },
   selectedTopicButton: {
     backgroundColor: "#0f172a",
@@ -503,7 +505,9 @@ const styles = StyleSheet.create({
     fontSize: 12,
     fontWeight: "600",
     color: "#0f172a",
-    textAlign: "center", // Ensured text is centered
+    textAlign: "center",
+    lineHeight: 16, // Added explicit line height for better text rendering
+    includeFontPadding: false, // Remove extra font padding on Android
   },
   selectedTopicButtonText: {
     color: "#FAF8EC",

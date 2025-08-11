@@ -435,7 +435,7 @@ export default function InterestsScreen() {
         {/* Main Content */}
         <ThemedView style={styles.content}>
           <ThemedView style={styles.interestsContainer}>
-            <ThemedText type="subtitle" style={styles.sectionTitle}>I want my podcasts to be about...</ThemedText>
+            <ThemedText type="subtitle" style={styles.sectionTitle}>I care about...</ThemedText>
 
             {/* Selected Interests */}
             <View style={styles.tagsContainer}>

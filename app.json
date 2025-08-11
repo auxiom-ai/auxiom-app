@@ -6,21 +6,21 @@
       "policy": "sdkVersion"
     },
     "splash": {
-      "image": "./assets/images/splash-icon.png",
+      "image": "./assets/auxiom-logo.png",
       "resizeMode": "contain",
       "backgroundColor": "#ffffff"
     },
     "updates": {
       "url": "https://u.expo.dev/0a5a4d91-f01b-4289-a03c-fe58fcf6e856"
     },
-    "version": "1.0.1",
+    "version": "1.0.2",
     "orientation": "portrait",
-    "icon": "./assets/auxiom-logo.png",
+    "icon": "./assets/images/splash-icon.png",
     "scheme": "auxiomapp",
     "userInterfaceStyle": "automatic",
     "newArchEnabled": true,
     "ios": {
-      "buildNumber": 1,
+      "buildNumber": "2",
       "supportsTablet": true,
       "bundleIdentifier": "com.auxiomai.auxiom",
       "infoPlist": {
@@ -29,14 +29,17 @@
     },
     "android": {
       "adaptiveIcon": {
-        "foregroundImage": "./assets/auxiom-logo.png",
+        "foregroundImage": "./assets/images/splash-icon.png",
         "backgroundColor": "#ffffff"
       },
       "edgeToEdgeEnabled": true,
       "permissions": [
         "android.permission.RECORD_AUDIO",
+        "android.permission.MODIFY_AUDIO_SETTINGS",
+        "android.permission.RECORD_AUDIO",
         "android.permission.MODIFY_AUDIO_SETTINGS"
-      ]
+      ],
+      "package": "com.auxiomai.auxiom"
     },
     "web": {
       "bundler": "metro",

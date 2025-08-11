@@ -1,53 +1,47 @@
-import { router } from 'expo-router';
-import { useEffect, useState } from 'react';
+import { router, useFocusEffect } from 'expo-router';
+import { useCallback, useEffect, useState } from 'react';
 import { Alert, Linking, ScrollView, StyleSheet, Text, TextInput, TouchableOpacity, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { getUser } from '@/lib/db/queries';
 import { requestPasswordReset, deleteAccount } from '@/lib/actions';
 import { supabase } from '@/lib/supabase';
+import { useAuth } from '@/lib/auth-context';
 
 export default function ProfileScreen() {
-  const [userData, setUserData] = useState<any>(null);
+  const { user, refetchUser } = useAuth();
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
 
+  // Refetch user data when screen comes into focus (returning from edit screens)
+  useFocusEffect(
+    useCallback(() => {
+      refetchUser();
+    }, [refetchUser])
+  );
+
   useEffect(() => {
-    const fetchUser = async () => {
-      try {
-        setLoading(true);
-        const user = await getUser();
-        
-        if (!user) {
-          router.replace("/sign-in");
-          return;
-        }
-        
-        setUserData(user);
+    if (!user) {
+      router.replace("/sign-in");
+      return;
+    }
 
-        if (!user.active) {
-          if (!user.occupation) {
-            router.replace("/onboarding/occupation");
-          }
-          else if (!user.interests || !user.keywords || user.keywords.length === 0) {
-            router.replace("/onboarding/interests");
-          }
-        }
-      } catch (error) {
-        console.error("Error fetching user:", error);
-        router.replace("/sign-in");
-      } finally {
-        setLoading(false);
+    if (!user.active) {
+      if (!user.occupation) {
+        router.replace("/onboarding/occupation");
       }
-    };
-
-    fetchUser();
-  }, []);
+      else if (!user.keywords || user.keywords.length === 0) {
+        router.replace("/onboarding/interests");
+      }
+    }
+  }, [user]);
 
   const handleResetPassword = async () => {
+    if (!user) return;
+    
     try {
       setLoading(true);
       setError('');
-      await requestPasswordReset(userData.email);
+      await requestPasswordReset(user.email);
       Alert.alert('Success', 'Check your email for a password reset link.');
     } catch (error: any) {
       setError(error.message || 'Failed to send password reset email');
@@ -122,21 +116,21 @@ export default function ProfileScreen() {
           <View style={styles.infoRow}>
             <View style={styles.infoDetail}>
               <Text style={styles.infoLabel}>Name</Text>
-              <Text style={styles.infoValue}>{userData?.name || 'Not set'}</Text>
+              <Text style={styles.infoValue}>{user?.name || 'Not set'}</Text>
             </View>
           </View>
           
           <View style={styles.infoRow}>
             <View style={styles.infoDetail}>
               <Text style={styles.infoLabel}>Occupation</Text>
-              <Text style={styles.infoValue}>{userData?.occupation || 'Not set'}</Text>
+              <Text style={styles.infoValue}>{user?.occupation || 'Not set'}</Text>
             </View>
           </View>
           
           <View style={styles.infoRow}>
             <View style={styles.infoDetail}>
               <Text style={styles.infoLabel}>Industry</Text>
-              <Text style={styles.infoValue}>{userData?.industry || 'Not set'}</Text>
+              <Text style={styles.infoValue}>{user?.industry || 'Not set'}</Text>
             </View>
           </View>
           
@@ -155,8 +149,8 @@ export default function ProfileScreen() {
           <Text style={styles.cardDesc}>Manage your topics of interest.</Text>
           
           <View style={styles.interestsContainer}>
-            {userData?.keywords && userData.keywords.length > 0 ? (
-              userData.keywords.slice(0, 3).map((keyword: string, index: number) => (
+            {user?.keywords && user.keywords.length > 0 ? (
+              user.keywords.slice(0, 3).map((keyword: string, index: number) => (
                 <View key={index} style={styles.interestTag}>
                   <Text style={styles.interestTagText}>{keyword}</Text>
                 </View>
@@ -165,9 +159,9 @@ export default function ProfileScreen() {
               <Text style={styles.noInterests}>No interests set</Text>
             )}
             
-            {userData?.keywords && userData.keywords.length > 3 && (
+            {user?.keywords && user.keywords.length > 3 && (
               <View style={styles.interestTag}>
-                <Text style={styles.interestTagText}>+{userData.keywords.length - 3} more</Text>
+                <Text style={styles.interestTagText}>+{user.keywords.length - 3} more</Text>
               </View>
             )}
           </View>
