@@ -1,10 +1,45 @@
 import { Redirect } from 'expo-router';
 import { useAuth } from '@/lib/auth-context';
-import { View, StyleSheet, ActivityIndicator, Image } from 'react-native';
+import { View, StyleSheet, ActivityIndicator, Image, Platform } from 'react-native';
 import { ThemedText } from '@/components/ThemedText';
+import { useEffect } from 'react';
+import Purchases, { LOG_LEVEL } from 'react-native-purchases';
+import RevenueCatUI, { PAYWALL_RESULT } from "react-native-purchases-ui";
 
 export default function Index() {
   const { user, loading } = useAuth();
+
+  useEffect(() => {
+    Purchases.setLogLevel(LOG_LEVEL.VERBOSE);
+
+    if (Platform.OS === 'ios') {
+        Purchases.configure({apiKey: process.env.EXPO_PUBLIC_REVENUECAT_PROJECT_APPLE_API_KEY!});
+    } else if (Platform.OS === 'android') {
+        Purchases.configure({apiKey: process.env.EXPO_PUBLIC_REVENUECAT_PROJECT_ANDROID_API_KEY!});
+    }
+
+  }, []);
+
+  useEffect(() => {
+    const checkPaywall = async () => {
+      try {
+        const paywallResult = await RevenueCatUI.presentPaywallIfNeeded({
+          requiredEntitlementIdentifier: "pro"
+        });
+
+        if (paywallResult === PAYWALL_RESULT.PURCHASED || 
+            paywallResult === PAYWALL_RESULT.RESTORED) {
+          console.log("User has access to pro features");
+          // Handle successful purchase or restore here
+        }
+      } catch (error) {
+        console.error("Error presenting paywall:", error);
+      }
+    };
+
+    checkPaywall();
+  }, []);
+
 
   if (loading) {
     return (

@@ -13,14 +13,14 @@
     "updates": {
       "url": "https://u.expo.dev/0a5a4d91-f01b-4289-a03c-fe58fcf6e856"
     },
-    "version": "1.0.2",
+    "version": "1.0.3",
     "orientation": "portrait",
     "icon": "./assets/images/splash-icon.png",
     "scheme": "auxiomapp",
     "userInterfaceStyle": "automatic",
     "newArchEnabled": true,
     "ios": {
-      "buildNumber": "2",
+      "buildNumber": "1",
       "supportsTablet": true,
       "bundleIdentifier": "com.auxiomai.auxiom",
       "infoPlist": {

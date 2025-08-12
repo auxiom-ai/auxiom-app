@@ -1,3 +1,4 @@
+import { logIntoRevenueCat } from '@/lib/actions';
 import { handleSignUp } from '@/lib/auth-utils';
 import { useRouter } from 'expo-router';
 import { useState } from 'react';
@@ -19,6 +20,13 @@ export default function SignUpScreen() {
       // Check if the user needs email confirmation
       if (data.user.email_confirmed_at) {
         // User is already verified, redirect to onboarding
+        const { success, data, error: signInError } = await logIntoRevenueCat();
+        
+        if (!success) {
+          console.error('Error logging into RevenueCat:', error);
+          setError('Failed to log into subscription service. Please try again later.');
+          return;
+        }
         router.replace('/onboarding/occupation');
       } else {
         // User needs to verify email first

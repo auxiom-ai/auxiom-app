@@ -12,6 +12,7 @@ import {
   View 
 } from 'react-native';
 import { sendOtpToEmail, verifyOtp, syncUserProfile, handleMigratingUserAuth } from '@/lib/auth-utils';
+import { logIntoRevenueCat } from '@/lib/actions';
 
 export default function VerifyOtpScreen() {
   const { email, isMigrating } = useLocalSearchParams<{ email: string; isMigrating: string }>();
@@ -73,6 +74,13 @@ export default function VerifyOtpScreen() {
             params: { email }
           });
         } else {
+          const { success, data, error: signInError } = await logIntoRevenueCat();
+          
+          if (!success) {
+            console.error('Error logging into RevenueCat:', error);
+            setError('Failed to log into subscription service. Please try again later.');
+            return;
+          }
           // Email verified, proceed to dashboard
           router.replace('/dashboard/feed');
         }

@@ -13,7 +13,6 @@ import {
   ActivityIndicator,
   Alert,
   StyleSheet,
-  Linking,
 } from "react-native"
 import { Ionicons } from "@expo/vector-icons"
 import { useAuth } from "@/lib/auth-context"
@@ -21,6 +20,7 @@ import { usePodcast } from "@/lib/podcast-context"
 import { getUserPodcasts } from "@/lib/actions"
 import { updatePodcastCompletedStatus } from "@/lib/db/queries"
 import PodcastDropdown from "@/components/podcast-dropdown"
+import RevenueCatUI from "react-native-purchases-ui";
 
 export interface Podcast {
   id: number
@@ -161,7 +161,11 @@ export default function PodcastsScreen() {
               <Text style={styles.emptyStateSubtitle}>Your podcasts will appear here when available</Text>
               
               {user.plan === "free" && (
-                <TouchableOpacity style={styles.upgradePrompt} onPress={handleUpgradePress} activeOpacity={0.8}>
+                <TouchableOpacity style={styles.upgradePrompt} 
+                                  onPress={() => RevenueCatUI.presentPaywallIfNeeded({
+                                                        requiredEntitlementIdentifier: "pro"
+                                                      })} 
+                                    activeOpacity={0.8}>
                   <Ionicons name="star-outline" size={20} color="#ffd900" />
                   <Text style={styles.upgradeText}>
                     Upgrade to our paid or plus plan to get a weekly podcast!

@@ -3,7 +3,8 @@ import { useRouter } from 'expo-router';
 import { useState } from 'react';
 import { Image, Keyboard, StyleSheet, Text, TextInput, TouchableOpacity, TouchableWithoutFeedback, View } from 'react-native';
 import { handleSignIn, handleMigratingUserAuth } from '@/lib/auth-utils';
-import { checkUserEmail } from '@/lib/actions';
+import { checkUserEmail, logIntoRevenueCat } from '@/lib/actions';
+
 
 export default function SignInScreen() {
   const [email, setEmail] = useState('');
@@ -38,8 +39,15 @@ export default function SignInScreen() {
           }
         });
       } else {
+        const { success, data, error: signInError } = await logIntoRevenueCat();
+
+        if (!success) {
+          console.error('Error logging into RevenueCat:', error);
+          setError('Failed to log into subscription service. Please try again later.');
+          return;
+        }
         // Email verified, proceed to dashboard
-        router.replace('/dashboard/feed' as any);   // TODO - should check onboarding state and direct accordingly 
+        router.replace('/dashboard/feed' as any); 
       }
       return;
     }

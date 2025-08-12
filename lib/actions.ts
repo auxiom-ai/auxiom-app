@@ -1,4 +1,5 @@
 import { getUser, getPodcastsByUser, updateUserByAuthId, updateUserEmail, updateUserPassword, resetPasswordForEmail, deleteUserAccount, signOut, getToken } from '@/lib/db/queries';
+import Purchases from 'react-native-purchases';
 
 // User profile actions
 export async function updateUserProfile(name: string, occupation: string, industry: string) {
@@ -148,6 +149,8 @@ export async function deleteAccount() {
     throw new Error('User not authenticated');
   }
 
+  await Purchases.logOut();
+
   // Delete from users table
   await deleteUserAccount();
 
@@ -192,4 +195,35 @@ export async function getUserPlan(): Promise<string> {
 // Get user's podcasts
 export async function getUserPodcasts(id: number) {
   return await getPodcastsByUser(id);
+}
+
+export async function logIntoRevenueCat() {
+  const userData = await getUser();
+  if (!userData) {
+    return { success: false, error: 'User not authenticated' };
+  }
+
+  const id = userData.id;
+  if (!id) {
+    return { success: false, error: 'User ID not found, cannot integrate with react-native-purchases' };
+  }
+
+  try {
+    const { customerInfo, created } = await Purchases.logIn(id);
+    console.log('RevenueCat logIn successful:', customerInfo);
+    return { success: true, data: customerInfo, isNewUser: created };
+  } catch (error) {
+    console.error('Error logging into RevenueCat:', error);
+    return { success: false, error: 'Failed to log into RevenueCat' };
+  }
+}
+
+export async function logOutRevenueCat() {
+  try {
+    await Purchases.logOut();
+    return { success: true };
+  } catch (error) {
+    console.error('Error logging out of RevenueCat:', error);
+    return { success: false, error: 'Failed to log out of RevenueCat' };
+  }
 }

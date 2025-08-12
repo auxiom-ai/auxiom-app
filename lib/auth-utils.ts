@@ -1,5 +1,5 @@
 import { supabase } from './supabase';
-import { migrateUser } from './actions';
+import { logOutRevenueCat, migrateUser } from './actions';
 
 export interface AuthResult {
   success: boolean;
@@ -271,6 +271,7 @@ export async function verifyOtp(email: string, otp: string): Promise<AuthResult>
 // Sign out user
 export async function signOut(): Promise<{ success: boolean; error?: string }> {
   try {
+    await logOutRevenueCat();
     const { error } = await supabase.auth.signOut();
     if (error) {
       return { success: false, error: error.message };

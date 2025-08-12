@@ -13,6 +13,7 @@ import {
 } from 'react-native';
 import { supabase } from '@/lib/supabase';
 import { verifyOtp, syncUserProfile } from '@/lib/auth-utils';
+import { logIntoRevenueCat } from '@/lib/actions';
 
 export default function EmailConfirmationScreen() {
   const [otp, setOtp] = useState('');
@@ -83,9 +84,18 @@ export default function EmailConfirmationScreen() {
             await syncUserProfile(data.user);
           }
         }
-        
+
+        const { success, error: signInError } = await logIntoRevenueCat();
+          
+        if (!success) {
+          console.error('Error logging into RevenueCat:', error);
+          setError('Failed to log into subscription service. Please try again later.');
+          return;
+        }
+
         // Proceed to dashboard - migrating users skip onboarding
         if (isUserMigrating) {
+
           router.replace('/dashboard/feed' as any);
         } else {
           router.replace('/onboarding/occupation' as any);

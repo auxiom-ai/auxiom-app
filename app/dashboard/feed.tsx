@@ -1,7 +1,7 @@
 import { ThemedText } from "@/components/ThemedText"
 import { ThemedView } from "@/components/ThemedView"
 import { router } from "expo-router"
-import { useEffect, useState } from "react"
+import { useState } from "react"
 import {
   Image,
   SafeAreaView,
@@ -13,11 +13,11 @@ import {
   TextInput,
   RefreshControl,
   ActivityIndicator,
-  Linking,
 } from "react-native"
 import { useArticleCache } from "@/lib/article-cache-context"
 import { useAuth } from "@/lib/auth-context"
 import { FeedSkeleton } from "@/components/feed-skeleton"
+import RevenueCatUI from "react-native-purchases-ui";
 
 // Types for articles
 export interface Article {
@@ -53,14 +53,6 @@ export default function FeedScreen() {
 
   const dismissBanner = () => {
     setIsBannerDismissed(true)
-  }
-
-  const handleUpgradePress = async () => {
-    try {
-      await Linking.openURL('https://auxiomai.com/pricing')
-    } catch (error) {
-      console.error('Error opening pricing URL:', error)
-    }
   }
 
   const onRefresh = async () => {
@@ -223,7 +215,7 @@ export default function FeedScreen() {
           </View>
 
           {/* Upgrade Banner for Free Users */}
-          {/* {user?.plan === 'free' && !isBannerDismissed && (
+          {user?.plan === 'free' && !isBannerDismissed && (
             <View style={styles.upgradeBanner}>
               <View style={styles.bannerContent}>
                 <ThemedText style={styles.bannerText}>
@@ -232,7 +224,9 @@ export default function FeedScreen() {
                 <View style={styles.bannerButtons}>
                   <TouchableOpacity 
                     style={styles.upgradeButton}
-                    onPress={handleUpgradePress}
+                    onPress={() => RevenueCatUI.presentPaywallIfNeeded({
+                      requiredEntitlementIdentifier: "pro"
+                    })}
                   >
                     <ThemedText style={styles.upgradeButtonText}>Upgrade</ThemedText>
                   </TouchableOpacity>
@@ -246,7 +240,7 @@ export default function FeedScreen() {
                 </View>
               </View>
             </View>
-          )} */}
+          )}
 
           {/* Topic Filter */}
           <ScrollView 
