@@ -58,10 +58,51 @@ export async function updateUserByAuthId(authUserId: string, data: any) {
   return updatedUser;
 }
 
+export async function updateUserPlan(plan: string) {
+  const userData = await getUser();
+  if (!userData) {
+    throw new Error('User not authenticated');
+  }
+  return await updateUserByAuthId(userData.auth_user_id, { plan });
+}
+
 export async function updateUserEmail(email: string) {
-  const { data, error } = await supabase.auth.updateUser({ email });
-  if (error) throw error;
-  return data;
+  // Get user data first to validate user exists
+  const userData = await getUser();
+  if (!userData) {
+    throw new Error('User not authenticated');
+  }
+
+  // Store original email for potential rollback
+  const originalEmail = userData.email;
+  
+  let authUpdateSuccessful = false;
+  
+  try {
+    // Step 1: Update auth table
+    const { data, error } = await supabase.auth.updateUser({ email });
+    if (error) throw error;
+    
+    authUpdateSuccessful = true;
+
+    // Step 2: Update user table
+    await updateUserByAuthId(userData.auth_user_id, { email });
+    
+    return data;
+  } catch (error) {
+    // If user table update fails but auth update succeeded, rollback auth change
+    if (authUpdateSuccessful) {
+      try {
+        await supabase.auth.updateUser({ email: originalEmail });
+      } catch (rollbackError) {
+        console.error('Failed to rollback auth email change:', rollbackError);
+        // Log the inconsistent state for manual resolution
+        console.error(`Data inconsistency detected: Auth email updated to ${email} but user table update failed. Manual intervention required for user ${userData.auth_user_id}`);
+      }
+    }
+    
+    throw error;
+  }
 }
 
 export async function updateUserPassword(password: string) {

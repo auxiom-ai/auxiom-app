@@ -1,4 +1,4 @@
-import { getUser, getPodcastsByUser, updateUserByAuthId, updateUserEmail, updateUserPassword, resetPasswordForEmail, deleteUserAccount, signOut, getToken } from '@/lib/db/queries';
+import { getUser, getPodcastsByUser, updateUserByAuthId, updateUserPlan, updateUserEmail, updateUserPassword, resetPasswordForEmail, deleteUserAccount, signOut, getToken } from '@/lib/db/queries';
 import Purchases from 'react-native-purchases';
 
 // User profile actions
@@ -80,6 +80,9 @@ export async function updateUserInterests(keywords: string[]) {
   return result;
 }
 
+export async function updatePlan(plan: string) {
+  return await updateUserPlan(plan);
+}
 
 export async function updateEmail(email: string) {
   return await updateUserEmail(email);

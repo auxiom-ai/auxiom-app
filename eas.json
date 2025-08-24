@@ -1,6 +1,7 @@
 {
   "cli": {
-    "version": ">= 3.0.0"
+    "version": ">= 3.0.0",
+    "appVersionSource": "remote"
   },
   "build": {
     "development": {
@@ -11,6 +12,7 @@
       "distribution": "internal"
     },
     "production": {
+      "autoIncrement": true,
       "distribution": "store"
     },
     "ios-simulator": {
@@ -23,8 +25,8 @@
   "submit": {
     "production": {
       "ios": {
-          "ascAppId": "6749377569"
-        }
+        "ascAppId": "6749377569"
+      }
     }
   }
 }

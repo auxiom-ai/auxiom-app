@@ -17,10 +17,10 @@ import {
 import { Ionicons } from "@expo/vector-icons"
 import { useAuth } from "@/lib/auth-context"
 import { usePodcast } from "@/lib/podcast-context"
-import { getUserPodcasts } from "@/lib/actions"
+import { getUserPodcasts, updatePlan } from "@/lib/actions"
 import { updatePodcastCompletedStatus } from "@/lib/db/queries"
 import PodcastDropdown from "@/components/podcast-dropdown"
-import RevenueCatUI from "react-native-purchases-ui";
+import RevenueCatUI, { PAYWALL_RESULT } from "react-native-purchases-ui";
 
 export interface Podcast {
   id: number
@@ -46,6 +46,22 @@ export default function PodcastsScreen() {
       loadPodcasts()
     }
   }, [user])
+
+  const checkPaywall = async () => {
+      try {
+        const paywallResult = await RevenueCatUI.presentPaywallIfNeeded({
+          requiredEntitlementIdentifier: "pro"
+        });
+        
+        if (paywallResult === PAYWALL_RESULT.PURCHASED || 
+            paywallResult === PAYWALL_RESULT.RESTORED) {
+          console.log("User has access to pro features");
+          updatePlan("pro");
+        }
+      } catch (error) {
+        console.error("Error presenting paywall:", error);
+      }
+    };
 
   const loadPodcasts = async () => {
     try {
@@ -162,9 +178,7 @@ export default function PodcastsScreen() {
               
               {user.plan === "free" && (
                 <TouchableOpacity style={styles.upgradePrompt} 
-                                  onPress={() => RevenueCatUI.presentPaywallIfNeeded({
-                                                        requiredEntitlementIdentifier: "pro"
-                                                      })} 
+                                  onPress={checkPaywall} 
                                     activeOpacity={0.8}>
                   <Ionicons name="star-outline" size={20} color="#ffd900" />
                   <Text style={styles.upgradeText}>

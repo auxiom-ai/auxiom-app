@@ -18,6 +18,7 @@ import { useArticleCache } from "@/lib/article-cache-context"
 import { useAuth } from "@/lib/auth-context"
 import { FeedSkeleton } from "@/components/feed-skeleton"
 import RevenueCatUI, { PAYWALL_RESULT } from "react-native-purchases-ui";
+import { updatePlan } from "@/lib/actions"
 
 // Types for articles
 export interface Article {
@@ -70,7 +71,7 @@ export default function FeedScreen() {
       if (paywallResult === PAYWALL_RESULT.PURCHASED || 
           paywallResult === PAYWALL_RESULT.RESTORED) {
         console.log("User has access to pro features");
-        // Handle successful purchase or restore here
+        updatePlan("pro");
       }
     } catch (error) {
       console.error("Error presenting paywall:", error);
@@ -240,9 +241,7 @@ export default function FeedScreen() {
                 <View style={styles.bannerButtons}>
                   <TouchableOpacity 
                     style={styles.upgradeButton}
-                    onPress={() => RevenueCatUI.presentPaywallIfNeeded({
-                      requiredEntitlementIdentifier: "pro"
-                    })}
+                    onPress={checkPaywall}
                   >
                     <ThemedText style={styles.upgradeButtonText}>Upgrade</ThemedText>
                   </TouchableOpacity>
