@@ -7,6 +7,9 @@ import { StatusBar } from 'expo-status-bar';
 import 'react-native-reanimated';
 import { useColorScheme } from '@/hooks/useColorScheme';
 import { AuthProvider } from '@/lib/auth-context';
+import { Platform } from 'react-native';
+import { useEffect } from 'react';
+import Purchases, { LOG_LEVEL } from 'react-native-purchases';
 
 export default function RootLayout() {
   const colorScheme = useColorScheme();
@@ -14,6 +17,17 @@ export default function RootLayout() {
   const [loaded] = useFonts({
     SpaceMono: require('@/assets/fonts/SpaceMono-Regular.ttf'),
   });
+
+  // Initialize RevenueCat as early as possible
+  useEffect(() => {
+    Purchases.setLogLevel(LOG_LEVEL.VERBOSE);
+
+    if (Platform.OS === 'ios') {
+        Purchases.configure({apiKey: process.env.EXPO_PUBLIC_REVENUECAT_PROJECT_APPLE_API_KEY!});
+    } else if (Platform.OS === 'android') {
+        Purchases.configure({apiKey: process.env.EXPO_PUBLIC_REVENUECAT_PROJECT_ANDROID_API_KEY!});
+    }
+  }, []);
 
   if (!loaded) {
     // Async font loading only occurs in development.
