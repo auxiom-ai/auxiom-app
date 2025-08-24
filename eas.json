@@ -12,6 +12,12 @@
     },
     "production": {
       "distribution": "store"
+    },
+    "ios-simulator": {
+      "extends": "development",
+      "ios": {
+        "simulator": true
+      }
     }
   },
   "submit": {

@@ -203,7 +203,7 @@ export async function logIntoRevenueCat() {
     return { success: false, error: 'User not authenticated' };
   }
 
-  const id = userData.id;
+  const id = String(userData.id);
   if (!id) {
     return { success: false, error: 'User ID not found, cannot integrate with react-native-purchases' };
   }

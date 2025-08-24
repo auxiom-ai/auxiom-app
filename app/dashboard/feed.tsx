@@ -17,7 +17,7 @@ import {
 import { useArticleCache } from "@/lib/article-cache-context"
 import { useAuth } from "@/lib/auth-context"
 import { FeedSkeleton } from "@/components/feed-skeleton"
-import RevenueCatUI from "react-native-purchases-ui";
+import RevenueCatUI, { PAYWALL_RESULT } from "react-native-purchases-ui";
 
 // Types for articles
 export interface Article {
@@ -60,6 +60,22 @@ export default function FeedScreen() {
     await refreshArticles()
     setRefreshing(false)
   }
+
+  const checkPaywall = async () => {
+    try {
+      const paywallResult = await RevenueCatUI.presentPaywallIfNeeded({
+        requiredEntitlementIdentifier: "pro"
+      });
+      
+      if (paywallResult === PAYWALL_RESULT.PURCHASED || 
+          paywallResult === PAYWALL_RESULT.RESTORED) {
+        console.log("User has access to pro features");
+        // Handle successful purchase or restore here
+      }
+    } catch (error) {
+      console.error("Error presenting paywall:", error);
+    }
+  };
 
   // Get all unique topics from articles for filtering
   const getAllTopics = (articles: Article[]) => {
