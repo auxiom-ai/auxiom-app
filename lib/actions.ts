@@ -209,13 +209,6 @@ export async function logIntoRevenueCat() {
   }
 
   try {
-    // Check if RevenueCat is configured
-    const isConfigured = await Purchases.isConfigured();
-    if (!isConfigured) {
-      console.warn('RevenueCat is not configured yet. This should not happen if initialization is in root layout.');
-      return { success: false, error: 'RevenueCat not configured yet' };
-    }
-
     const { customerInfo, created } = await Purchases.logIn(id.toString());
     console.log('RevenueCat logIn successful:', customerInfo);
     return { success: true, data: customerInfo, isNewUser: created };
